@@ -343,8 +343,10 @@ def create_app(database_path: str | None = None):
                            request.client.host if request.client else "unknown", 30, 900)
         handle = payload.handle.strip().lower()
         name = payload.name.strip()
-        if not HANDLES.fullmatch(handle) or len(name) < 2:
-            fail(422, "Handle must have 3–22 letters, digits or underscores; name must have 2+ characters")
+        if not HANDLES.fullmatch(handle):
+            fail(422, "Username must use 3–22 letters (a-z), digits (0-9), or underscores (_), without spaces or @ signs.")
+        if len(name) < 2:
+            fail(422, "Display name must have at least 2 characters.")
         uid = new_id()
         try:
             with db.connection() as cx:
