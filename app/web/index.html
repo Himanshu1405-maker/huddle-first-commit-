@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1528" />
+  <meta name="description" content="Huddle – the joyful, real-time chat space built for campus communities." />
+  <title>Huddle — Find your people, keep the conversation going</title>
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div class="auth-screen" id="authScreen">
+    <div class="auth-hero">
+      <div class="brand brand-light"><span class="brand-logo">✳</span><span>huddle<span class="brand-period">.</span></span></div>
+      <div class="auth-copy">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> BUILT FOR THE WAY CAMPUS CONNECTS</div>
+        <h1>Big ideas start with <em>small conversations.</em></h1>
+        <p>From your first hello to your next big project. A little place for every conversation that matters.</p>
+        <div class="hero-conversation" aria-hidden="true">
+          <div class="floating-chat c-one"><span class="mini-avatar peach">AS</span><span>Team, what if we build something amazing? <b>✨</b></span></div>
+          <div class="floating-chat c-two"><span class="mini-avatar lilac">KM</span><span>I'm in. Let's make it happen <b>🚀</b></span></div>
+          <div class="floating-chat c-three"><span class="mini-avatar mint">MR</span><span>Already opened my laptop 💻</span></div>
+        </div>
+      </div>
+      <div class="hero-foot"><span class="live-dot"></span> Conversations move in real time <span class="line"></span> Made for First Commit · IIT Mandi</div>
+    </div>
+    <div class="auth-panel">
+      <div class="mobile-brand brand"><span class="brand-logo">✳</span> huddle<span class="brand-period">.</span></div>
+      <div class="auth-form-shell">
+        <div class="welcome-icon">✦</div>
+        <h2 id="authTitle">Welcome back<span class="accent">.</span></h2>
+        <p class="muted auth-sub" id="authSubtitle">Your people are just one hello away.</p>
+        <form id="authForm" autocomplete="on">
+          <div id="registerNameField" class="form-field hidden">
+            <label for="authName">Your name</label>
+            <input id="authName" type="text" maxlength="60" placeholder="e.g. Aarya Sharma" autocomplete="name" />
+          </div>
+          <div class="form-field"><label for="authHandle">Username</label><div class="field-icon"><span>@</span><input id="authHandle" type="text" maxlength="22" placeholder="your_handle" autocomplete="username" required /></div></div>
+          <div class="form-field"><div class="label-line"><label for="authPassword">Password</label><span class="small-hint" id="passwordHint"></span></div><div class="field-icon"><span id="lockGlyph">✳</span><input id="authPassword" type="password" minlength="8" maxlength="128" placeholder="Enter your password" autocomplete="current-password" required /><button class="field-eye" type="button" id="togglePassword" aria-label="Toggle password visibility">◉</button></div></div>
+          <div class="form-error" role="alert" id="authError"></div>
+          <button class="btn btn-primary btn-wide" type="submit" id="authSubmit">Sign in <span>→</span></button>
+        </form>
+        <p class="switch-auth"><span id="authSwitchPrefix">New around here?</span> <button id="switchAuth" type="button">Create an account</button></p>
+        <div class="auth-bottom"><span class="shield">♢</span> Private conversations. Real people. No noise.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-screen hidden" id="appScreen">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-top">
+        <div class="brand"><span class="brand-logo">✳</span><span>huddle<span class="brand-period">.</span></span><span class="brand-beta">BETA</span></div>
+        <button class="icon-btn only-mobile" id="closeSidebar" title="Close menu" aria-label="Close menu" data-icon="x"></button>
+      </div>
+      <div class="side-intro"><span class="side-eyebrow">YOUR SPACE</span><h2>Good conversations,<br /><em>great company.</em></h2></div>
+      <div class="side-actions"><button id="newChatBtn" class="btn btn-new"><span data-icon="plus"></span> New conversation <span class="new-chevron">↗</span></button></div>
+      <div class="searchbox"><span data-icon="search"></span><input id="sidebarSearch" placeholder="Find a conversation" aria-label="Find a conversation" /><span class="search-shortcut">⌕</span></div>
+      <nav class="filter-nav" aria-label="Conversation filters"><button class="filter selected" data-filter="all">All <span id="allCount">0</span></button><button class="filter" data-filter="dm">Messages</button><button class="filter" data-filter="group">Circles</button></nav>
+      <div class="conversation-list" id="conversationList" aria-label="Your conversations"></div>
+      <div class="side-bottom"><button class="profile-button" id="profileButton"><span id="selfAvatar"></span><span class="profile-info"><strong id="selfName"></strong><small id="selfHandle"></small></span><span class="profile-more" data-icon="settings"></span></button></div>
+    </aside>
+
+    <main class="chat-main">
+      <header class="chat-top" id="chatHeader">
+        <button class="icon-btn mobile-menu only-mobile" id="openSidebar" aria-label="Open conversations"><span data-icon="menu"></span></button>
+        <div class="header-identity" id="headerIdentity"><span class="header-placeholder">YOUR CONVERSATION SPACE</span></div>
+        <div class="header-actions"><span class="ws-status" id="wsStatus" title="Connecting to server"><span></span> Connecting</span><button class="icon-btn" id="searchMessagesBtn" aria-label="Search messages" title="Search messages"><span data-icon="search"></span></button><button class="icon-btn" id="infoBtn" aria-label="Conversation details" title="Conversation details"><span data-icon="info"></span></button></div>
+      </header>
+      <section class="welcome-chat" id="welcomeChat">
+        <div class="welcome-inner"><div class="welcome-badge"><span class="twinkle t1">✦</span><span class="huddle-symbol">✳</span><span class="twinkle t2">✧</span></div><div class="welcome-kicker">A SPACE FOR YOUR PEOPLE</div><h1>The best things start<br />with a <em>hello.</em></h1><p>Ideas, laughter, late-night plans. Keep them all in one place. Pick a conversation or start something new.</p><button class="btn btn-primary welcome-button" id="welcomeNewBtn"><span data-icon="plus"></span> Start a conversation <span>↗</span></button><div class="welcome-facts"><div><span class="fact-icon">⚡</span> Instant messages</div><div><span class="fact-icon">◎</span> Real connections</div><div><span class="fact-icon">✳</span> Your circles</div></div></div>
+        <div class="decor-shape ds1"></div><div class="decor-shape ds2"></div>
+      </section>
+      <section class="conversation-view hidden" id="conversationView">
+        <div class="chat-banner" id="chatBanner"></div>
+        <div class="message-scroller" id="messageScroller"><button class="load-more hidden" id="loadMoreBtn">↑ Load earlier messages</button><div class="messages" id="messages"></div><div class="typing-container" id="typingIndicator"></div></div>
+        <div class="composer-area"><div class="composer-tip" id="composerTip"></div><div class="composer"><button class="composer-emoji" id="emojiBtn" aria-label="Insert emoji" title="Insert emoji">☺</button><textarea rows="1" maxlength="4000" id="messageInput" placeholder="Write a message…" aria-label="Type your message"></textarea><span class="composer-count" id="composerCount"></span><button class="send-btn" id="sendBtn" title="Send message" aria-label="Send message"><span data-icon="arrow-up"></span></button></div><div class="composer-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift + Enter</kbd> for a new line <span>Be kind out there <b>✳</b></span></div><div class="emoji-picker hidden" id="emojiPicker"><button>✨</button><button>🚀</button><button>🔥</button><button>❤️</button><button>😂</button><button>🎉</button><button>👍</button><button>💡</button><button>👋</button><button>😊</button></div></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="overlay hidden" id="modalOverlay" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-header"><div><div class="modal-eyebrow">HUDDLE / <span id="modalEyebrow">NEW</span></div><h2 id="modalTitle">Start something good<span class="accent">.</span></h2></div><button class="icon-btn" id="closeModal" title="Close" aria-label="Close"><span data-icon="x"></span></button></div><div class="modal-content" id="modalContent"></div></section></div>
+  <div id="toastArea" class="toast-area" role="status" aria-live="polite"></div>
+  <div class="mobile-scrim hidden" id="mobileScrim"></div>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
