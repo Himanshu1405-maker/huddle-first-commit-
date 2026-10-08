@@ -353,7 +353,7 @@ def create_app(database_path: str | None = None):
                 cx.execute("INSERT INTO users(id,handle,name,password_hash,created_at) VALUES(?,?,?,?,?)",
                            (uid, handle, name, PH.hash(payload.password), now()))
         except sqlite3.IntegrityError:
-            fail(409, "Handle already taken")
+            fail(409, "That username is already taken. Please choose another one.")
         create_session(response, uid)
         with db.connection() as cx:
             return {"user": public_user(cx.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone())}
@@ -514,15 +514,17 @@ def create_app(database_path: str | None = None):
             args = [conversation_id]
             cond = ""
             if before:
-                anchor = cx.execute("SELECT created_at FROM messages WHERE id=? AND conversation_id=?", (before, conversation_id)).fetchone()
+                anchor = cx.execute("SELECT created_at, id FROM messages WHERE id=? AND conversation_id=?", (before, conversation_id)).fetchone()
                 if not anchor:
                     fail(404, "Message cursor not found")
-                cond = "AND created_at < ?"
-                args.append(anchor["created_at"])
+                cond = "AND (created_at < ? OR (created_at = ? AND id < ?))"
+                args.extend([anchor["created_at"], anchor["created_at"], anchor["id"]])
+            # Fetch one extra message to determine accurately whether an older page exists.
             rows = cx.execute(f"""SELECT * FROM messages WHERE conversation_id=? {cond}
-                ORDER BY created_at DESC LIMIT 60""", args).fetchall()
-            items = [serialize_message(cx, row) for row in reversed(rows)]
-            return {"messages": items, "has_more": len(rows) == 60}
+                ORDER BY created_at DESC, id DESC LIMIT 61""", args).fetchall()
+            has_more = len(rows) > 60
+            items = [serialize_message(cx, row) for row in reversed(rows[:60])]
+            return {"messages": items, "has_more": has_more}
 
     @app.post("/api/conversations/{conversation_id}/messages", status_code=201)
     async def post_message(conversation_id: str, payload: MessageBody, request: Request):

@@ -104,11 +104,11 @@ def test_input_security(pair):
     assert a.post('/api/conversations/direct',json={'user_id':'nope'}).status_code==404
     assert a.post('/api/conversations/group',json={'name':'ABC','member_ids':['nope']}).status_code==422
     assert a.get('/api/search/messages?q=a').json()['results']==[]
-    assert a.post('/api/auth/register',json={'name':'bad','handle':'bad-handle!','password':'12345678'}).status_code==422
     bad_handle = a.post('/api/auth/register',json={'name':'Valid Name','handle':'bad handle','password':'12345678'})
     assert bad_handle.status_code == 422 and 'Username' in bad_handle.json()['detail']
     bad_name = a.post('/api/auth/register',json={'name':'A ','handle':'valid_name','password':'12345678'})
     assert bad_name.status_code == 422 and 'Display name' in bad_name.json()['detail']
+    assert a.post('/api/auth/register',json={'name':'bad','handle':'bad-handle!','password':'12345678'}).status_code==422
 
 
 def test_group_admin_can_invite_and_non_admin_cannot(pair):
@@ -139,3 +139,47 @@ def test_public_preview_safety_headers_and_message_rate_limit(pair):
         assert result.status_code == 201
     assert a.post(f'/api/conversations/{room}/messages', json={'body':'spam'}).status_code == 429
     assert len(b.get(f'/api/conversations/{room}/messages').json()['messages']) == 30
+
+
+def test_history_pagination_boundary_and_timestamp_ties(pair):
+    a, b, _ = pair
+    register(a, 'alice')
+    bob = register(b, 'bobby')
+    room = direct(a, bob)
+    # Forty-nine old entries plus eleven entries with identical timestamps.
+    # Pagination must not skip any or imply older messages at exactly 60.
+    with a.app.state.db.connection() as cx:
+        for i in range(60):
+            cx.execute("""INSERT INTO messages(id,conversation_id,sender_id,body,created_at)
+                          VALUES(?,?,?,?,?)""", (f'{i:032d}',room,a.get('/api/me').json()['user']['id'],
+                                     f'Message {i}', '2026-01-01T00:00:00.000000+00:00' if i>=49 else f'2025-01-01T00:00:{i:02d}+00:00'))
+    one = a.get(f'/api/conversations/{room}/messages').json()
+    assert len(one['messages']) == 60 and one['has_more'] is False
+    with a.app.state.db.connection() as cx:
+        cx.execute("""INSERT INTO messages(id,conversation_id,sender_id,body,created_at)
+                      VALUES(?,?,?,?,?)""", ('a'*32,room,a.get('/api/me').json()['user']['id'],
+                                 'Newest', '2027-01-01T00:00:00+00:00'))
+    newer = a.get(f'/api/conversations/{room}/messages').json()
+    assert newer['has_more'] is True and len(newer['messages']) == 60
+    before_id = newer["messages"][0]["id"]
+    older = a.get(f'/api/conversations/{room}/messages?before={before_id}').json()
+    ids = [m['id'] for m in older['messages']] + [m['id'] for m in newer['messages']]
+    assert len(ids) == 61 and len(set(ids)) == 61 and older['has_more'] is False
+
+
+def test_validation_and_access_security(pair):
+    alice, bob, other = pair
+    register(alice, 'alice')
+    b = register(bob, 'bobby')
+    outsider = register(other, 'outsider')
+    room = direct(alice, b)
+    assert alice.post('/api/auth/register',json={'handle':'alice','name':'Alice','password':'abcdefgh'}).status_code == 409
+    assert alice.post('/api/auth/register',json={'handle':'a@b','name':'Alice','password':'abcdefgh'}).status_code == 422
+    assert alice.post('/api/auth/register',json={'handle':'valid_1','name':'Alice','password':'short'}).status_code == 422
+    assert other.get(f'/api/conversations/{room}/messages').status_code == 404
+    assert other.post(f'/api/conversations/{room}/messages',json={'body':'Intrusion'}).status_code == 404
+    assert other.get(f'/api/conversations/{room}/messages?before=invalid').status_code == 404
+    assert alice.get(f'/api/conversations/{room}/messages?before=invalid').status_code == 404
+    assert alice.post('/api/conversations/direct',json={'user_id':outsider['id']}).status_code == 200
+    assert alice.post('/api/conversations/direct',json={'user_id':outsider['id']}).status_code == 200
+
