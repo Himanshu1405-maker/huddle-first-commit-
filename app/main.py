@@ -34,6 +34,11 @@ HANDLES = re.compile(r"^[a-z0-9_]{3,22}$")
 EMOJIS = {"❤️", "🔥", "😂", "👏", "👍", "🎉", "💡", "🚀"}
 
 
+def escape_like(value: str) -> str:
+    """Treat search text literally, not as SQL LIKE wildcard patterns."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def now():
     return datetime.now(timezone.utc).isoformat(timespec="microseconds")
 
@@ -413,9 +418,10 @@ def create_app(database_path: str | None = None):
         user = require_user(request)
         search = search.strip().lower()[:60]
         with db.connection() as cx:
+            needle = f"%{escape_like(search)}%"
             found = cx.execute("""SELECT * FROM users WHERE id<>? AND
-                (LOWER(name) LIKE ? OR handle LIKE ?) ORDER BY name LIMIT 40""",
-                (user["id"], f"%{search}%", f"%{search}%")).fetchall()
+                (LOWER(name) LIKE ? ESCAPE '\\' OR handle LIKE ? ESCAPE '\\')
+                ORDER BY name LIMIT 40""", (user["id"], needle, needle)).fetchall()
         return {"users": [{**public_user(u), "online": hub.online(u["id"])} for u in found]}
 
     @app.get("/api/conversations")
@@ -601,7 +607,7 @@ def create_app(database_path: str | None = None):
         if len(q) < 2:
             return {"results": []}
         with db.connection() as cx:
-            args = [user["id"], f"%{q}%"]
+            args = [user["id"], f"%{escape_like(q)}%"]
             extra = ""
             if conversation_id:
                 ensure_membership(cx, conversation_id, user["id"])
@@ -611,7 +617,7 @@ def create_app(database_path: str | None = None):
                 u.name AS sender_name, c.kind,c.name AS group_name
                 FROM messages ms JOIN members mem ON mem.conversation_id=ms.conversation_id
                 JOIN users u ON u.id=ms.sender_id JOIN conversations c ON c.id=ms.conversation_id
-                WHERE mem.user_id=? AND ms.body LIKE ? AND ms.deleted_at IS NULL {extra}
+                WHERE mem.user_id=? AND ms.body LIKE ? ESCAPE '\\' AND ms.deleted_at IS NULL {extra}
                 ORDER BY ms.created_at DESC LIMIT 30""", args).fetchall()
         return {"results": [dict(r) for r in rows]}
 

@@ -183,3 +183,18 @@ def test_validation_and_access_security(pair):
     assert alice.post('/api/conversations/direct',json={'user_id':outsider['id']}).status_code == 200
     assert alice.post('/api/conversations/direct',json={'user_id':outsider['id']}).status_code == 200
 
+
+def test_literal_search_and_user_lookup(pair):
+    alice, bob, _ = pair
+    register(alice, 'alice')
+    b = register(bob, 'user_01', 'User Zero One')
+    room = direct(alice, b)
+    first = alice.post(f'/api/conversations/{room}/messages', json={'body':'plain hello'})
+    second = alice.post(f'/api/conversations/{room}/messages', json={'body':'code__check 100% reliable'})
+    assert first.status_code == 201 and second.status_code == 201
+    assert alice.get('/api/search/messages?q=__').json()['results'][0]['body'] == 'code__check 100% reliable'
+    assert len(alice.get('/api/search/messages?q=__').json()['results']) == 1
+    assert len(alice.get('/api/search/messages?q=100%25').json()['results']) == 1
+    assert len(alice.get('/api/users?search=_').json()['users']) == 1
+    assert len(alice.get('/api/users?search=%25').json()['users']) == 0
+
