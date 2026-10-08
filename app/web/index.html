@@ -35,7 +35,7 @@
             <label for="authName">Your name</label>
             <input id="authName" type="text" maxlength="60" placeholder="e.g. Aarya Sharma" autocomplete="name" />
           </div>
-          <div class="form-field"><label for="authHandle">Username</label><div class="field-icon"><span>@</span><input id="authHandle" type="text" maxlength="22" placeholder="your_handle" autocomplete="username" required /></div></div>
+          <div class="form-field"><label for="authHandle">Username</label><div class="field-icon"><span>@</span><input id="authHandle" type="text" minlength="3" maxlength="22" placeholder="e.g. himanshu_14" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required /></div><small class="small-hint">3–22 letters, numbers or _. No spaces or @ signs.</small></div>
           <div class="form-field"><div class="label-line"><label for="authPassword">Password</label><span class="small-hint" id="passwordHint"></span></div><div class="field-icon"><span id="lockGlyph">✳</span><input id="authPassword" type="password" minlength="8" maxlength="128" placeholder="Enter your password" autocomplete="current-password" required /><button class="field-eye" type="button" id="togglePassword" aria-label="Toggle password visibility">◉</button></div></div>
           <div class="form-error" role="alert" id="authError"></div>
           <button class="btn btn-primary btn-wide" type="submit" id="authSubmit">Sign in <span>→</span></button>
