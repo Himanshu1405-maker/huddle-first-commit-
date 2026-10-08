@@ -105,6 +105,10 @@ def test_input_security(pair):
     assert a.post('/api/conversations/group',json={'name':'ABC','member_ids':['nope']}).status_code==422
     assert a.get('/api/search/messages?q=a').json()['results']==[]
     assert a.post('/api/auth/register',json={'name':'bad','handle':'bad-handle!','password':'12345678'}).status_code==422
+    bad_handle = a.post('/api/auth/register',json={'name':'Valid Name','handle':'bad handle','password':'12345678'})
+    assert bad_handle.status_code == 422 and 'Username' in bad_handle.json()['detail']
+    bad_name = a.post('/api/auth/register',json={'name':'A ','handle':'valid_name','password':'12345678'})
+    assert bad_name.status_code == 422 and 'Display name' in bad_name.json()['detail']
 
 
 def test_group_admin_can_invite_and_non_admin_cannot(pair):
