@@ -241,12 +241,12 @@ def test_email_otp_failed_delivery_prevents_account(tmp_path,monkeypatch):
 def test_ai_permissions_history_and_rate_limit(tmp_path,monkeypatch):
     monkeypatch.setenv('GEMINI_API_KEY','fake-test-key')
     monkeypatch.delenv('HF_TOKEN',raising=False)
-    async def fake_ai(messages):
+    async def fake_ai(messages, context_notes=''):
         return 'Think of a derivative as the instant slope.'
     monkeypatch.setattr('app.main.ask_ai',fake_ai)
     app=create_app(str(tmp_path/'ai.db'))
     with TestClient(app) as a,TestClient(app) as b:
-        assert a.get('/api/config').json()=={'email_otp':False,'ai_chat':True,'ai_image':False,'ai_local':True,'google_login':False,'google_client_id':'','firebase_config':{}}
+        assert a.get('/api/config').json()=={'email_otp':False,'ai_chat':True,'ai_image':False,'ai_local':False,'ai_provider':'gemini','google_login':False,'google_client_id':'','firebase_config':{}}
         assert a.post('/api/ai/chat',json={'prompt':'Teach derivatives'}).status_code==401
         register(a,'learner')
         register(b,'another')
