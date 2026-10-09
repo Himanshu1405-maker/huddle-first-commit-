@@ -28,12 +28,13 @@ SAFE_AUDIO_TYPES = {
     "audio/mpeg": (".mp3",),
     "audio/wav": (".wav",),
 }
+SAFE_VIDEO_TYPES = {"video/mp4": (".mp4",), "video/webm": (".webm",), "video/quicktime": (".mov",)}
 SAFE_DOCUMENT_TYPES = {
     "application/pdf": (".pdf",),
     "text/plain": (".txt", ".md"),
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": (".docx",)
 }
-ALLOW = {**SAFE_IMAGE_TYPES, **SAFE_AUDIO_TYPES, **SAFE_DOCUMENT_TYPES}
+ALLOW = {**SAFE_IMAGE_TYPES, **SAFE_AUDIO_TYPES, **SAFE_VIDEO_TYPES, **SAFE_DOCUMENT_TYPES}
 
 
 class ReportBody(BaseModel):
