@@ -16,3 +16,4 @@ jobs:
       - run: node --check app/web/app.js
       - run: node tests/frontend_smoke.cjs
       - run: node tests/frontend_otp_ai.cjs
+      - run: node tests/google_mobile_ux.cjs

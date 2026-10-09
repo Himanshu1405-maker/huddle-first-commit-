@@ -83,13 +83,51 @@ async function onGoogleCredential(result){
     if(linkMode){toast(response.already_linked?'Google already connected':'Google account linked successfully ✨');return}
     state.otpTicket=null;$('#otpPanel').classList.add('hidden');$('#authForm').classList.remove('hidden');$('.switch-auth').classList.remove('hidden');
     state.me=response.user;await loadConversations();showApp();toast('Welcome to Huddle! ✨');
-  }catch(error){if(linkMode){toast(error.message,true)}else{$('#authError').textContent=error.message;toast(error.message,true)}}
+  }catch(error){if(linkMode){toast(error.message,true)}else{$('#authError').textContent=error.message}}
+}
+// Mobile Google OAuth is often blocked inside embedded app browsers.
+// Provide a user-initiated handoff that keeps tokens and account data out of URLs.
+const HUDDLE_PUBLIC_URL='https://huddle-web-production-76f3.up.railway.app/';
+function prepareGoogleBrowserHelp(){
+  const help=$('#googleBrowserHelp');
+  if(!help)return;
+  const android=/Android/i.test(navigator.userAgent||'');
+  if(android)help.classList.remove('hidden');
+  const launch=$('#openChromeGoogle');
+  if(launch){
+    // Chrome's intent URL can open an external browser from Android Custom Tabs.
+    // A conventional, copyable HTTPS URL is always provided as a fallback.
+    launch.href='intent://huddle-web-production-76f3.up.railway.app/#Intent;scheme=https;package=com.android.chrome;end';
+    if(!android)launch.classList.add('hidden');
+  }
+  $('#copyGoogleLink')?.addEventListener('click',async()=>{
+    try{await navigator.clipboard.writeText(HUDDLE_PUBLIC_URL);toast('Link copied. Paste it in Chrome to sign in.')}catch{
+      const output=$('#googleBrowserLink');
+      output.classList.remove('hidden');output.focus();output.select?.();
+    }
+  });
+}
+function googleSignInError(code){
+  const messages={
+    'auth/unauthorized-domain':'Google sign-in is not authorized for this website. The owner must check Firebase settings.',
+    'auth/popup-blocked':'Google blocked this popup. Open Huddle directly in Chrome using the option below.',
+    'auth/popup-closed-by-user':'The Google window closed before sign-in finished. Try once more from Chrome.',
+    'auth/cancelled-popup-request':'Another sign-in was started. Tap Continue with Google only once.',
+    'auth/network-request-failed':'Google could not connect. Check your network and retry in Chrome.',
+    'auth/operation-not-allowed':'Google login is not enabled in Firebase. Contact the Huddle owner.',
+    'auth/operation-not-supported-in-this-environment':'Your current browser cannot complete Google sign-in. Open Huddle in Chrome.',
+    'auth/web-storage-unsupported':'Browser storage is disabled. Open a regular Chrome tab, not Incognito.',
+    'auth/invalid-api-key':'Firebase settings need to be corrected by the Huddle owner.',
+    'auth/internal-error':'This in-app browser could not complete Google sign-in. Open Huddle in Chrome using the option below.'
+  };
+  return messages[code]||'Google sign-in could not finish ('+code+'). Try opening Huddle directly in Chrome.';
 }
 function reportGoogleIssue(stage,code){
   if(!/^auth\/[a-z0-9-]+$/.test(code))code='auth/unknown';
   fetch('/api/diagnostics/google',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({stage,code})}).catch(()=>{});
 }
 async function initFirebaseSignIn(){
+  prepareGoogleBrowserHelp();
   const container=$('#googleSignInButton');
   $('#googleAuthArea').classList.remove('hidden');
   container.innerHTML='<button type="button" class="btn btn-wide google-firebase-btn" id="firebaseGoogleBtn" disabled>Connecting to Google…</button>';
@@ -114,21 +152,12 @@ async function initFirebaseSignIn(){
         const code=typeof err?.code==='string'&&/^auth\/[a-z0-9-]+$/.test(err.code)?err.code:'auth/unknown';
         reportGoogleIssue('popup',code);
         console.warn('Firebase sign-in failed (code only):',code);
-        const solutions={
-          'auth/unauthorized-domain':'This Huddle website is not authorized in Firebase. Check Authentication → Settings → Authorized domains.',
-          'auth/popup-blocked':'Google sign-in was blocked. Open Huddle directly in Chrome (not inside another app), and allow pop-ups.',
-          'auth/popup-closed-by-user':'The Google sign-in window closed before finishing. Open Huddle directly in Chrome and keep the Google window open until it returns.',
-          'auth/cancelled-popup-request':'Another Google sign-in attempt interrupted this one. Tap the button once and finish the Google window.',
-          'auth/network-request-failed':'Google sign-in could not reach Firebase. Check your connection or try a different network.',
-          'auth/operation-not-allowed':'Google sign-in needs to be enabled in Firebase Authentication → Sign-in method.',
-          'auth/operation-not-supported-in-this-environment':'Your browser cannot open Google sign-in. Open Huddle directly in Chrome (not inside another app).',
-          'auth/web-storage-unsupported':'Your browser is blocking sign-in storage. Try a regular Chrome tab (not Incognito).',
-          'auth/invalid-api-key':'Firebase configuration needs correction by the Huddle administrator.',
-          'auth/invalid-credential':'Google sign-in could not verify the credential. Please select your account again.'
-        };
-        const message=(solutions[code]||'Google sign-in could not finish. Please share this error code: '+code)+' ('+code+')';
-        if(!state.me)$('#authError').textContent=message;
-        toast(message,true);
+        const message=googleSignInError(code);
+        const help=$('#googleBrowserHelp');
+        help?.classList.remove('hidden');
+        const error=$('#authError');
+        if(!state.me && error){error.textContent=message;error.scrollIntoView({block:'nearest',behavior:'auto'});}
+        else toast(message,true);
       }finally{button.disabled=false}
     });
   }catch(err){console.warn('Firebase Google sign-in unavailable',err);container.textContent='Google sign-in is temporarily unavailable.'}

@@ -51,3 +51,15 @@ html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;scroll-behavior
 
 /* Firebase Google sign-in button */
 .google-firebase-btn{margin:0 auto;width:280px;max-width:100%;background:#fff!important;color:#253348!important;border:1px solid #ced6df!important;box-shadow:0 2px 10px rgba(0,0,0,.06);font-weight:750!important}.google-firebase-btn:before{content:"G";font-size:20px;font-weight:900;color:#4285f4;display:inline-block;margin-right:12px}.google-firebase-btn:disabled{opacity:.55;cursor:wait}
+
+/* Clear, nonblocking Google sign-in recovery on mobile browsers. */
+.google-browser-help{margin:14px 0 0;padding:14px;border:1px solid #b9d9ed;border-radius:14px;background:#f2f9fe;color:#254862;font-size:12px;line-height:1.5}
+.google-browser-help strong{display:block;font-size:13px;color:#244767}
+.google-browser-help p{margin:6px 0 10px}
+.google-browser-help small{display:block;margin-top:8px;color:#526f88}
+.google-browser-actions{display:flex;flex-wrap:wrap;gap:8px}
+.google-browser-actions a,.google-browser-actions button{min-height:39px;padding:9px 13px;font-size:12px;border:1px solid #b6cedf;border-radius:10px;background:#fff;color:#225979;font-weight:750;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.google-browser-actions a{background:#137ba0;border-color:#137ba0;color:#fff}
+.google-browser-actions a:focus-visible,.google-browser-actions button:focus-visible{outline:3px solid #72cdd6;outline-offset:2px}
+.google-browser-link{width:100%;margin-top:10px;font-size:11px;padding:9px 8px;border:1px solid #a8ccde;border-radius:8px}
+@media(max-width:600px){.google-browser-help{margin-top:12px}.google-browser-actions{display:grid;grid-template-columns:1fr 1fr}.google-browser-actions a,.google-browser-actions button{padding:10px 6px}}
