@@ -150,7 +150,8 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
     async def upload_attachment(conversation_id: str, request: Request):
         user=require_user(request)
         raw_size=request.headers.get("content-length","")
-        if raw_size.isdigit() and int(raw_size)>MAX_UPLOAD:fail(413,"File is larger than 6 MB")
+        upload_limit=MAX_VIDEO_UPLOAD if request.headers.get("content-type","").startswith("video/") else MAX_UPLOAD
+        if raw_size.isdigit() and int(raw_size)>upload_limit:fail(413,"File exceeds upload limit")
         with db.connection() as cx: ensure_membership(cx,conversation_id,user["id"])
         filename=Path(unquote(request.headers.get("x-huddle-filename","attachment"))).name
         filename="".join(c for c in filename if c.isprintable() and c not in '<>:"/\\|?*')[:95] or "attachment"
