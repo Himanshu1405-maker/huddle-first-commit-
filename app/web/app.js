@@ -16,7 +16,7 @@ $$('[data-icon]').forEach(node => node.innerHTML=icon(node.dataset.icon));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const state={config:{email_otp:false,ai_chat:false,ai_image:false,ai_local:true,google_login:false,google_client_id:'',firebase_config:null},googleLoaded:false,otpTicket:null,aiMode:"text",aiBusy:false,aiOpen:false,aiMessages:[],me:null,conversations:[],active:null,messages:[],ws:null,connected:false,retry:0,filter:'all',isRegister:false,groupSelected:new Set(),modalUsers:[],hasMore:false,loading:false,pending:new Map(),typers:new Map(),typingTimeout:null,emojiFor:null};
 // AI inference runs in a dedicated Web Worker. No API keys, no paid services.
-state.localAI={ready:false,loading:false,worker:null,job:null,active:false,history:[],progress:'',error:'',cacheFiles:0,restored:false};
+state.localAI={ready:false,loading:false,worker:null,job:null,active:false,history:[],progress:'',error:'',cacheFiles:0,restored:false,qualityLoading:false,quality:false};
 const LOCAL_AI_PREF='huddle-ai-installed-v1';
 function localAIPreference(){
   try{return localStorage.getItem(LOCAL_AI_PREF)==='yes';}catch{return false;}
@@ -66,6 +66,15 @@ function localAIWorker(){
       local.loading=false;local.ready=true;local.cacheFiles=Number(data.cachedFiles)||0;
       local.progress=local.cacheFiles>0?'AI ready • model files saved in browser storage.':'AI ready • browser storage may not retain model files.';
       local.error='';saveLocalAIPreference();localAIUpdate();return;
+    }
+    if(data.type==='upgrade_ready'){
+      local.qualityLoading=false;local.quality=true;local.progress='Enhanced local model ready • responses may still contain mistakes.';
+      localAIUpdate();return;
+    }
+    if(data.type==='upgrade_error'){
+      local.qualityLoading=false;local.quality=false;
+      local.progress='Enhanced model not supported here. Standard on-device AI is still ready.';
+      localAIUpdate();return;
     }
     if(data.type==='error'){
       local.debug={reason:data.reason,detail:data.detail};
@@ -308,6 +317,13 @@ $('#otpBack').addEventListener('click',()=>{state.otpTicket=null;$('#otpPanel').
 $('#resendOtp').addEventListener('click',async()=>{const button=$('#resendOtp');button.disabled=true;try{await post('/auth/resend',{ticket:state.otpTicket});toast('A fresh code was sent to your email')}catch(err){$('#otpError').textContent=err.message}finally{button.disabled=false}});
 
 
+$('#aiQualityUpgrade').addEventListener('click',()=>{
+  const local=state.localAI;
+  if(!local.ready||local.qualityLoading||local.quality)return;
+  local.qualityLoading=true;local.progress='Preparing a larger local model. One-time download, ideally on Wi-Fi.';aiStatus();
+  try{localAIWorker().postMessage({type:'upgrade'});}
+  catch{local.qualityLoading=false;local.progress='Could not start enhanced local AI.';aiStatus();}
+});
 $('#aiLocalStart').addEventListener('click',()=>{
   // Storage persistence requires a user gesture. This never grants billing or
   // forces browser storage quotas; the browser may still evict files.
@@ -328,8 +344,21 @@ function askLocalAI(history){
 
 function aiCard(m){
   const mine=m.role==='user',image=m.kind==='image'&&/^[0-9a-f]{32}$/.test(m.image_id||'');
-  return `<article class="ai-line ${mine?'from-user':'from-ai'}"><span class="ai-face">${mine?'YOU':'✦'}</span><div class="ai-bubble">${image?`<img class="ai-generated-img" loading="lazy" src="/api/ai/image/${m.image_id}" alt="AI-generated image from your prompt" /><p>${esc(m.body)}</p><a href="/api/ai/image/${m.image_id}" download="huddle-ai.jpg">Save image ↧</a>`:esc(m.body)}</div></article>`;
+  const poster=m.kind==='poster'&&/^data:image\/png;base64,/.test(m.image_data||'');
+  return `<article class="ai-line ${mine?'from-user':'from-ai'}"><span class="ai-face">${mine?'YOU':'✦'}</span><div class="ai-bubble">${poster?
+   `<img class="ai-generated-img" src="${esc(m.image_data)}" alt="Graphic poster designed in Huddle" /><p>${esc(m.body)}</p><button class="poster-download" data-poster-id="${esc(m.id)}">↓ Save PNG poster</button>`
+   :image?`<img class="ai-generated-img" loading="lazy" src="/api/ai/image/${m.image_id}" alt="AI-generated image" /><p>${esc(m.body)}</p><a href="/api/ai/image/${m.image_id}" download="huddle-ai.jpg">Save image ↧</a>`
+   :esc(m.body)}</div></article>`;
 }
+$('#aiMessages').addEventListener('click',event=>{
+  const btn=event.target.closest('[data-poster-id]');
+  if(!btn)return;
+  const messages=state.localAI.active?state.localAI.history:state.aiMessages;
+  const poster=messages.find(x=>x.id===btn.dataset.posterId && x.kind==='poster');
+  if(!poster)return;
+  const a=document.createElement('a');a.href=poster.image_data;a.download='huddle-studio-poster.png';
+  document.body.appendChild(a);a.click();a.remove();
+});
 function renderAI(){
   const box=$('#aiMessages');
   const messages=state.localAI.active?state.localAI.history:state.aiMessages;
@@ -339,25 +368,29 @@ function renderAI(){
   const scroller=$('#aiScroll');
   requestAnimationFrame(()=>{scroller.scrollTop=scroller.scrollHeight});
 }
-function aiModeAvailable(){return state.aiMode==='image'?Boolean(state.config.ai_image):Boolean(state.config.ai_chat||state.localAI.ready)}
+function aiModeAvailable(){return state.aiMode==='image'?true:Boolean(state.config.ai_chat||state.localAI.ready)}
 function aiStatus(){
   const local=state.localAI,textReady=Boolean(state.config.ai_chat),imageReady=Boolean(state.config.ai_image),available=aiModeAvailable(),isImage=state.aiMode==='image';
   const status=$('#aiAvailability'),notice=$('#aiNotice'),body=$('#aiNoticeText'),button=$('#aiSend'),hint=$('#aiComposerHint'),start=$('#aiLocalStart');
-  status.textContent=textReady?'✦ Online AI connected':local.ready?'✦ Local AI ready':local.loading?'◌ Opening local AI':'◌ Free local AI available';
+  status.textContent=isImage?'✦ Poster Studio ready':textReady?'✦ Online AI connected':local.quality?'✦ Enhanced local AI':local.ready?'✦ Local AI ready':local.loading?'◌ Opening local AI':'◌ Free local AI available';
   status.classList.toggle('is-online',textReady||local.ready);
   notice.classList.toggle('hidden',available);
-  $('#aiNoticeTitle').textContent=isImage?'Image creation is not connected':local.error?'Local AI could not start':local.loading?'Getting your local AI ready':local.ready?'Local AI ready':'Free AI — right on your device';
-  body.textContent=isImage?'Image generation requires a supported model and remains unavailable.':local.error||'Enable a small AI model in your browser — no account, payment card or API key needed. First download is about 120–200 MB, ideally over Wi-Fi. Small models may make mistakes.';
+  $('#aiNoticeTitle').textContent=isImage?'Poster Studio works offline':local.error?'Local AI could not start':local.loading?'Getting your local AI ready':local.ready?'Local AI ready':'Free AI — right on your device';
+  body.textContent=isImage?'Create downloadable graphic posters and wallpapers from a prompt. This is a local design tool, not photorealistic AI image generation.':local.error||'Enable on-device answers, with an optional larger model for better wording. No paid API or card required. Answers may still be inaccurate.';
   start.classList.toggle('hidden',isImage||textReady||local.ready);
   start.disabled=local.loading;
   start.textContent=local.loading?'Opening your saved AI model…':localAIPreference()?'✨ Restore on-device AI':'✨ Enable on-device AI (free)';
   $('#aiLocalProgress').textContent=local.progress||'Your first download is saved where browser storage permits. Following visits reload the model from local storage.';
+  const upgrade=$('#aiQualityUpgrade');
+  upgrade.classList.toggle('hidden',isImage||textReady||!local.ready||local.quality);
+  upgrade.disabled=local.qualityLoading;
+  upgrade.textContent=local.qualityLoading?'Getting better answers ready…':'✧ Improve answers • optional 360 MB download';
   button.disabled=!available||state.aiBusy;
-  button.setAttribute('aria-label',available?(isImage?'Generate image':'Send to Huddle AI'):'AI is not ready yet');
+  button.setAttribute('aria-label',available?(isImage?'Create graphic poster':'Send to Huddle AI'):'AI is not ready yet');
   button.title=available?'Send':'Enable local AI first';
   $('#aiInputRow').classList.toggle('ai-input-offline',!available);
-  hint.textContent=available?'AI may make mistakes. Avoid entering private information.':isImage?'Image creation is unavailable.':'Enable local AI, then choose a prompt or ask a question.';
-  $('#aiPrompt').placeholder=isImage?'Describe a picture you want to create…':'Ask me anything, big or small…';
+  hint.textContent=isImage?'Poster Studio makes graphic designs and PNG wallpapers, not AI-generated photos.':available?'Small language models can make mistakes. Avoid sharing private information.':'Enable local AI to ask questions, or switch to Poster Studio.';
+  $('#aiPrompt').placeholder=isImage?'e.g. sunset mountain poster with a dreamy vibe':'Ask me a question, or tell me what to explain…';
 }
 async function openAI(){
   state.aiOpen=true;state.active=null;
@@ -397,13 +430,19 @@ $('#aiForm').addEventListener('submit',async e=>{
   const prompt=$('#aiPrompt').value.trim();if(!prompt)return;
   const image=state.aiMode==='image';
   const localMode=!image&&!state.config.ai_chat&&state.localAI.ready;
+  // Poster Studio works without text AI or image-provider credentials.
+  if(image&&!state.config.ai_image)state.localAI.active=true;
   state.aiBusy=true;aiStatus();$('#aiPrompt').value='';
-  const messages=localMode?state.localAI.history:state.aiMessages;
-  messages.push({role:'user',kind:'text',body:(image?'Generate an image: ':'')+prompt});
+  const messages=(localMode||(image&&!state.config.ai_image))?state.localAI.history:state.aiMessages;
+  messages.push({role:'user',kind:'text',body:(image?'Design a poster: ':'')+prompt});
   $('#aiTyping').classList.remove('hidden');renderAI();
   let aiFailure=null;
   try{
-    if(localMode){
+    if(image&&!state.config.ai_image){
+      const {createPoster}=await import('/assets/poster-studio.js');
+      const result=await createPoster(prompt);
+      messages.push({id:'poster-'+Date.now(),role:'assistant',kind:'poster',body:result.description,image_data:result.dataUrl});
+    }else if(localMode){
       const context=messages.slice(-7).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.body}));
       const text=await askLocalAI(context);
       messages.push({role:'assistant',kind:'text',body:text});
@@ -414,7 +453,7 @@ $('#aiForm').addEventListener('submit',async e=>{
     renderAI();
   }catch(err){
     messages.pop();$('#aiPrompt').value=prompt;
-    aiFailure=localMode?'Your device could not finish this answer. Please try again.':err.message;
+    aiFailure=image?'Poster Studio could not draw on this browser. Please try Chrome.':localMode?'Your device could not finish this answer. Try a shorter question.':err.message;
     renderAI();
   }finally{
     $('#aiTyping').classList.add('hidden');state.aiBusy=false;aiStatus();

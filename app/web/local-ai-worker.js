@@ -1,9 +1,26 @@
 /* Free on-device Huddle AI: no credentials or paid provider. Runs in a Web Worker. */
 'use strict';
 const MODEL='onnx-community/SmolLM2-135M-Instruct-ONNX-GQA';
+const QUALITY_MODEL='onnx-community/SmolLM2-360M-Instruct-ONNX';
+let qualityGenerator=null;
 let generator=null;
 let loading=null;
 function progress(message){self.postMessage({type:'progress',message});}
+async function improveQuality(){
+  if(qualityGenerator){self.postMessage({type:'upgrade_ready'});return;}
+  if(!generator)await load();
+  progress('Downloading better-quality model (about 360 MB once); saved for later visits…');
+  try{
+    const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
+    env.allowLocalModels=false;env.useBrowserCache=typeof caches!=='undefined';env.cacheKey='transformers-cache';
+    qualityGenerator=await pipeline('text-generation',QUALITY_MODEL,{device:'wasm',dtype:'q8',
+      progress_callback:(x)=>{if(x.status==='progress'&&typeof x.progress==='number')progress('Better answers model: '+Math.round(x.progress)+'% ('+String(x.file||'weights')+')');}});
+    self.postMessage({type:'upgrade_ready'});
+  }catch(error){
+    console.warn('Optional better-quality model unavailable:',String(error?.message||'').slice(0,170));
+    self.postMessage({type:'upgrade_error'});
+  }
+}
 async function load(){
   if(generator)return;
   if(loading)return loading;
@@ -50,6 +67,7 @@ async function load(){
 self.addEventListener('message',async event=>{
   const data=event.data||{};
   if(data.type==='load'){try{await load()}catch{}return;}
+  if(data.type==='upgrade'){await improveQuality();return;}
   if(data.type!=='ask')return;
   try{
     await load();
@@ -57,11 +75,12 @@ self.addEventListener('message',async event=>{
       .map(m=>({role:m.role==='assistant'?'assistant':'user',content:String(m.content||'').slice(0,700)}));
     if(!recent.length)throw Error('empty');
     const messages=[
-      {role:'system',content:'You are Huddle Local AI, a friendly, safe study assistant. Explain concepts clearly with examples. Say when uncertain, avoid making up facts, and be concise. Do not ask for personal data.'},
+      {role:'system',content:'You are Huddle, a warm, reliable learning assistant. Answer the most recent question directly. Be specific and explain in plain words, with a short example when helpful. Do not repeat the question or repeat yourself. If you do not know a fact, say so rather than inventing it. Never claim to access private chats, files, websites or live news. Keep responses age-appropriate. Avoid unnecessary greetings and filler.'},
       ...recent
     ];
-    const tokens=Number.isFinite(Number(data.max_new_tokens)) && data.max_new_tokens ? Math.min(112,Math.max(12,Number(data.max_new_tokens))) : 112;
-    const result=await generator(messages,{max_new_tokens:tokens,do_sample:false,return_full_text:false});
+    const tokens=Number.isFinite(Number(data.max_new_tokens)) && data.max_new_tokens ? Math.min(240,Math.max(12,Number(data.max_new_tokens))) : 195;
+    const active=qualityGenerator||generator;
+    const result=await active(messages,{max_new_tokens:tokens,do_sample:false,return_full_text:false,repetition_penalty:1.15});
     const dataOut=result?.[0]?.generated_text;
     const value=typeof dataOut==='string'?dataOut:Array.isArray(dataOut)?String(dataOut.at(-1)?.content||''):dataOut&&typeof dataOut==='object'?String(dataOut.content||''):'';
     const answer=value.trim().slice(0,2400)||'I could not generate a clear answer. Try a simpler question.';
