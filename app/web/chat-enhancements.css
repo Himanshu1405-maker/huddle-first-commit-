@@ -1,0 +1,103 @@
+/* Huddle premium refresh, non-destructive overrides. */
+
+:root{--sea:#078e8c;--sea-dark:#067e7e;--navy:#102137;--border:#e0e7ef}
+.auth-screen{background:#edf3f7;grid-template-columns:54% 46%}
+.auth-hero{background:radial-gradient(ellipse at 90% 12%,rgba(28,192,173,.21),transparent 38%),radial-gradient(ellipse at 12% 90%,rgba(53,122,185,.25),transparent 46%),linear-gradient(135deg,#0b1628,#172e44 60%,#0e393d);padding:clamp(36px,4vw,65px) 8%}
+.auth-hero:before{border:1px solid rgba(233,255,251,.07);box-shadow:0 0 0 100px rgba(255,255,255,.011)}
+.auth-copy{position:relative;z-index:2}.auth-copy h1{font-size:clamp(41px,4.5vw,74px);line-height:1.09;max-width:730px;letter-spacing:-2.7px}
+.auth-copy h1 em{font-style:normal;color:#7ce6d0}
+.auth-copy p{color:#c6d5e1;font-size:clamp(15px,1.35vw,18px);max-width:515px;line-height:1.75}
+.auth-hero .eyebrow{color:#8ce1d6;letter-spacing:2px}
+.auth-hero .brand-logo{background:#0b9c93;border-radius:12px;box-shadow:0 0 30px rgba(0,212,184,.2)}
+.auth-highlights span{background:rgba(255,255,255,.06);color:#d3e6ed;border:1px solid rgba(255,255,255,.14)}
+.auth-showcase{filter:drop-shadow(0 24px 60px rgba(0,0,0,.18));transform:translateY(2px)}
+.showcase-phone{border-color:rgba(255,255,255,.12)}
+.showcase-float{background:#f2fbfb;color:#1b3d48}
+.auth-panel{background:#f2f5f8}
+.auth-form-shell{border:1px solid #e0e8f0;border-radius:22px;box-shadow:0 28px 84px rgba(17,45,67,.10);background:#fff}
+.auth-panel .welcome-icon{background:#e4f4f0;color:#087e78;box-shadow:none}
+.auth-panel #authTitle{letter-spacing:-1.35px}
+.auth-panel .auth-card-kicker{color:#087f79;letter-spacing:1.7px}
+.auth-panel .btn-primary{background:#087f7e;border-radius:12px}
+.auth-panel .btn-primary:hover{background:#076b6a}
+.auth-panel .field-icon:focus-within{border-color:#28aaa3;box-shadow:0 0 0 3px rgba(24,166,155,.12)}
+
+/* Attachment captions replace old filename-only message bubble, avoiding duplicate file names. */
+.message-row.has-attachment .bubble[hidden]{display:none!important}
+.message-row.has-attachment .bubble:not([hidden]){margin-top:5px;max-width:100%}
+.message-row .media-card{max-width:min(100%,470px)}
+.message-row .media-card a,.message-row .media-card span{overflow-wrap:anywhere}
+.message-actions{display:none!important}
+.bubble[data-huddle-message-id]{cursor:pointer;touch-action:pan-y;-webkit-user-select:text;user-select:text}
+.bubble[data-huddle-message-id]:focus-visible{outline:2px solid #09a59b;outline-offset:2px}
+.h-message-menu{position:fixed;z-index:150;padding:10px;background:#fff;border:1px solid #dce7eb;border-radius:20px;width:min(330px,calc(100vw - 16px));box-shadow:0 25px 65px rgba(11,32,51,.2);animation:h-fade .15s ease-out}
+.h-message-reactions{display:flex;flex-wrap:wrap;gap:1px;justify-content:space-between;padding:4px 0 9px;border-bottom:1px solid #edf1f4}
+.h-message-reactions button{font-size:24px;background:none;border:none;padding:5px;border-radius:10px}
+.h-message-reactions button:hover{background:#e6f5f2;transform:scale(1.13)}
+.h-message-commands{display:grid;gap:3px;padding-top:6px}
+.h-message-commands button{background:none;color:#22364a;text-align:left;border:0;border-radius:9px;padding:11px 13px;font-size:13px;font-weight:700}
+.h-message-commands button:hover{background:#f0f5f7}
+.h-message-commands button.danger{color:#c3485b}
+@keyframes h-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Emoji browser and Huddle's own emoji-based animated stickers. */
+.emoji-picker{display:flex;flex-direction:column;grid-template-columns:none;gap:6px;padding:12px;border-radius:18px;width:min(375px,calc(100vw - 22px));height:min(365px,60vh);bottom:88px;left:clamp(8px,4%,45px);box-shadow:0 18px 65px rgba(21,35,58,.18)}
+.h-emoji-tabs{display:flex;gap:5px;overflow-x:auto;flex:none;padding-bottom:4px}
+.h-emoji-tabs button{white-space:nowrap;font-size:11px;letter-spacing:.1px;font-weight:700;color:#597081;background:#f4f7f9;padding:9px 11px}
+.h-emoji-tabs button.selected{background:#d9f1ee;color:#076a65}
+.h-emoji-search{padding:3px 0}.h-emoji-search input{width:100%;background:#f2f5f7;border:1px solid #e4eaef;border-radius:10px;padding:10px 12px;color:#273b49;outline-color:#078e8c}
+.h-emoji-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;align-content:start;overflow-y:auto;min-height:0;flex:1;padding:4px 0}
+.h-emoji-grid button{font-size:26px;padding:4px;min-height:41px}.h-emoji-grid button:hover{background:#e7f5f1}
+.h-emoji-grid .sticker-option{background:#f2f9fa;border-radius:14px;animation:h-wiggle 2.6s infinite ease-in-out}
+.sticker-note{text-align:center;color:#82929f;font-size:11px;margin:0}
+.h-animated-sticker{font-size:66px!important;background:transparent!important;padding:4px!important;line-height:1.2!important;color:inherit!important;filter:drop-shadow(0 7px 10px rgba(45,42,64,.13));animation:h-sticker-in .5s both,h-sticker-float 2.7s .5s infinite ease-in-out;min-width:70px;text-align:center}
+@keyframes h-sticker-in{from{opacity:0;transform:scale(.3) rotate(-18deg)}70%{transform:scale(1.17) rotate(6deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes h-sticker-float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(4deg)}}
+@keyframes h-wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+
+/* File approval, image crop / markup and caption surface. */
+.h-editor-overlay{position:fixed;inset:0;z-index:170;display:flex;align-items:center;justify-content:center;background:rgba(6,15,28,.86);backdrop-filter:blur(12px);padding:18px}
+.h-editor-panel{background:#fdfefe;color:#192d41;width:min(760px,100%);max-height:min(92dvh,1000px);display:flex;flex-direction:column;border-radius:21px;overflow:hidden;box-shadow:0 35px 90px rgba(0,0,0,.3)}
+.h-editor-head{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:19px 24px;border-bottom:1px solid #e8edf0}
+.h-editor-head small{font-size:10px;letter-spacing:1.8px;color:#108f88;font-weight:800}
+.h-editor-head h2{font-size:20px;letter-spacing:-.6px;margin:6px 0 0}
+.h-editor-close{background:#ecf1f4;border:0;width:38px;height:38px;border-radius:50%;font-size:18px;color:#52677a}
+.h-editor-stage{flex:1;min-height:130px;background:#15202b;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:12px}
+.h-editor-stage canvas,.h-editor-stage video{max-width:100%;max-height:49dvh;border-radius:6px;object-fit:contain;touch-action:none}
+.h-editor-stage canvas{box-shadow:0 8px 25px rgba(0,0,0,.2);cursor:grab}
+.h-editor-stage video{max-height:49dvh}
+.h-editor-tools{display:flex;flex-wrap:wrap;gap:6px;padding:11px 20px;border-bottom:1px solid #e8edf0;align-items:center;max-height:155px;overflow-y:auto}
+.h-editor-tools button{border:1px solid #dce6e9;color:#314e58;background:#f5f9fa;padding:8px 11px;border-radius:10px;font-size:12px;font-weight:700}
+.h-editor-tools button:hover,.h-editor-tools button.is-active{background:#ddf4f0;border-color:#1da99b}
+.h-editor-tools small{font-size:11px;color:#8695a1;width:100%}
+.h-zoom{display:flex;align-items:center;gap:8px;margin-left:5px;font-size:11px;font-weight:700;color:#5a7380}
+.h-zoom input{width:95px;accent-color:#098e86}
+.h-editor-bottom{padding:14px 23px 17px}.h-editor-bottom label{display:block;font-weight:800;font-size:12px}
+.h-editor-bottom label span{font-weight:400;color:#87969e}
+.h-editor-bottom textarea{display:block;resize:vertical;width:100%;border:1px solid #dde7ea;border-radius:12px;padding:11px 13px;margin-top:9px;min-height:58px;max-height:90px;background:#fbfdfe;color:#203848;outline-color:#0b9891}
+.h-editor-footer{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:14px}
+.h-editor-footer>span{font-size:11px;color:#657985;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
+.h-editor-footer>div{display:flex;gap:8px}
+.h-editor-secondary,.h-editor-submit{border:0;border-radius:11px;padding:12px 19px;font-size:12px;font-weight:800}
+.h-editor-secondary{background:#edf2f5;color:#4c6372}
+.h-editor-submit{background:#078f88;color:#fff}
+.h-editor-submit:hover{background:#067b75}
+.h-document-preview{background:#fff;border-radius:18px;padding:36px 22px;display:flex;align-items:center;flex-direction:column;gap:10px;max-width:100%}
+.h-document-preview span{font-size:54px}.h-document-preview strong{max-width:100%;overflow-wrap:anywhere;text-align:center}
+.h-document-preview small,.h-editor-tip{color:#8d9ba5;font-size:12px;line-height:1.5}
+@media(max-width:720px){
+  .auth-panel{background:radial-gradient(circle at 100% 0,rgba(0,177,157,.16),transparent 45%),#eaf1f5}
+  .mobile-brand{color:#17384a}
+  .auth-form-shell{border-radius:19px;box-shadow:0 18px 60px rgba(24,48,69,.12)}
+  .h-editor-overlay{padding:0;align-items:stretch}
+  .h-editor-panel{width:100%;max-height:100dvh;height:100dvh;border-radius:0}
+  .h-editor-head{padding:15px 18px}
+  .h-editor-stage{padding:9px;min-height:0}
+  .h-editor-stage canvas,.h-editor-stage video{max-height:45dvh}
+  .h-editor-tools{max-height:152px;padding:10px 13px}
+  .h-editor-bottom{padding:12px 16px max(16px,env(safe-area-inset-bottom))}
+  .h-editor-footer>span{max-width:32%}
+  .h-editor-secondary,.h-editor-submit{padding:12px 14px}
+  .h-message-menu{max-width:calc(100vw - 16px)}
+}
+@media(prefers-reduced-motion:reduce){.h-animated-sticker,.h-emoji-grid .sticker-option{animation:none!important}}
