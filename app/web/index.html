@@ -35,11 +35,13 @@
             <label for="authName">Your name</label>
             <input id="authName" type="text" maxlength="60" placeholder="e.g. Aarya Sharma" autocomplete="name" />
           </div>
+          <div id="registerEmailField" class="form-field hidden"><label for="authEmail">Email verification</label><input id="authEmail" type="email" maxlength="254" placeholder="you@example.com" autocomplete="email"/><small class="small-hint">We'll send a 6-digit code to verify your email.</small></div>
           <div class="form-field"><label for="authHandle">Username</label><div class="field-icon"><span>@</span><input id="authHandle" type="text" minlength="3" maxlength="22" placeholder="e.g. himanshu_14" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required /></div><small class="small-hint">3–22 letters, numbers or _. No spaces or @ signs.</small></div>
           <div class="form-field"><div class="label-line"><label for="authPassword">Password</label><span class="small-hint" id="passwordHint"></span></div><div class="field-icon"><span id="lockGlyph">✳</span><input id="authPassword" type="password" minlength="8" maxlength="128" placeholder="Enter your password" autocomplete="current-password" required /><button class="field-eye" type="button" id="togglePassword" aria-label="Toggle password visibility">◉</button></div></div>
           <div class="form-error" role="alert" id="authError"></div>
           <button class="btn btn-primary btn-wide" type="submit" id="authSubmit">Sign in <span>→</span></button>
         </form>
+        <section id="otpPanel" class="hidden" aria-label="Verify your email"><div class="verify-icon">✉</div><h3>Check your inbox</h3><p id="otpHint" class="modal-helper">Enter your 6-digit email code. It expires in 10 minutes.</p><form id="otpForm"><label for="otpCode">Verification code</label><input id="otpCode" class="modal-input otp-input" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required placeholder="000000" /><p id="otpError" class="form-error" role="alert"></p><button type="submit" id="otpSubmit" class="btn btn-primary btn-wide">Verify and join →</button></form><button type="button" id="resendOtp" class="secondary-btn">Resend email code</button><button type="button" id="otpBack" class="otp-back">Use a different email</button></section>
         <p class="switch-auth"><span id="authSwitchPrefix">New around here?</span> <button id="switchAuth" type="button">Create an account</button></p>
         <div class="auth-bottom"><span class="shield">♢</span> Private conversations. Real people. No noise.</div>
       </div>
@@ -53,7 +55,7 @@
         <button class="icon-btn only-mobile" id="closeSidebar" title="Close menu" aria-label="Close menu" data-icon="x"></button>
       </div>
       <div class="side-intro"><span class="side-eyebrow">YOUR SPACE</span><h2>Good conversations,<br /><em>great company.</em></h2></div>
-      <div class="side-actions"><button id="newChatBtn" class="btn btn-new"><span data-icon="plus"></span> New conversation <span class="new-chevron">↗</span></button></div>
+      <div class="side-actions"><button id="newChatBtn" class="btn btn-new"><span data-icon="plus"></span> New conversation <span class="new-chevron">↗</span></button><button id="aiSidebarBtn" class="btn ai-sidebar-btn" type="button"><span class="ai-sparkle">✦</span> Huddle AI <span class="ai-new-tag">STUDY & CREATE</span></button></div>
       <div class="searchbox"><span data-icon="search"></span><input id="sidebarSearch" placeholder="Find a conversation" aria-label="Find a conversation" /><span class="search-shortcut">⌕</span></div>
       <nav class="filter-nav" aria-label="Conversation filters"><button class="filter selected" data-filter="all">All <span id="allCount">0</span></button><button class="filter" data-filter="dm">Messages</button><button class="filter" data-filter="group">Circles</button></nav>
       <div class="conversation-list" id="conversationList" aria-label="Your conversations"></div>
@@ -74,6 +76,11 @@
         <div class="chat-banner" id="chatBanner"></div>
         <div class="message-scroller" id="messageScroller"><button class="load-more hidden" id="loadMoreBtn">↑ Load earlier messages</button><div class="messages" id="messages"></div><div class="typing-container" id="typingIndicator"></div></div>
         <div class="composer-area"><div class="composer-tip" id="composerTip"></div><div class="composer"><button class="composer-emoji" id="emojiBtn" aria-label="Insert emoji" title="Insert emoji">☺</button><textarea rows="1" maxlength="4000" id="messageInput" placeholder="Write a message…" aria-label="Type your message"></textarea><span class="composer-count" id="composerCount"></span><button class="send-btn" id="sendBtn" title="Send message" aria-label="Send message"><span data-icon="arrow-up"></span></button></div><div class="composer-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift + Enter</kbd> for a new line <span>Be kind out there <b>✳</b></span></div><div class="emoji-picker hidden" id="emojiPicker"><button>✨</button><button>🚀</button><button>🔥</button><button>❤️</button><button>😂</button><button>🎉</button><button>👍</button><button>💡</button><button>👋</button><button>😊</button></div></div>
+      </section>
+      <section id="aiView" class="ai-view hidden" aria-label="Huddle AI assistant">
+        <div class="ai-hero"><div class="ai-logo">✦</div><h2>Huddle AI <span>beta</span></h2><p>Ask questions, understand concepts, brainstorm ideas, or create images.</p><small id="aiAvailability">Checking AI availability…</small></div>
+        <div id="aiScroll" class="ai-scroll"><div id="aiMessages" class="ai-messages"></div><div class="ai-suggestions" id="aiSuggestions"><button type="button" data-ai-prompt="Explain derivatives in simple words with an example">📚 Explain a concept</button><button type="button" data-ai-prompt="Help me brainstorm three original hackathon ideas">💡 Brainstorm ideas</button><button type="button" data-ai-prompt="Make a friendly revision plan for an exam">📝 Study help</button></div></div>
+        <form id="aiForm" class="ai-composer"><div class="ai-mode"><button type="button" class="ai-mode-option selected" data-ai-mode="text">✎ Ask anything</button><button type="button" class="ai-mode-option" data-ai-mode="image">▧ Create image</button></div><div class="ai-input-row"><textarea id="aiPrompt" rows="1" maxlength="2500" placeholder="Ask a question…" aria-label="Your message to Huddle AI"></textarea><button type="submit" id="aiSend" aria-label="Send to AI">↑</button></div><small>AI can make mistakes. Do not share private conversations or sensitive details.</small></form>
       </section>
     </main>
   </div>

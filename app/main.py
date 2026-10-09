@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import hmac
+import time
 import os
 import re
 import secrets
@@ -24,6 +26,7 @@ from fastapi import Cookie, FastAPI, HTTPException, Request, Response, WebSocket
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from .extras import mail_ready, text_ready, image_ready, send_verification_email, ask_ai, generate_ai_image
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
@@ -55,6 +58,20 @@ class RegisterBody(BaseModel):
     name: str = Field(min_length=2, max_length=60)
     handle: str = Field(min_length=3, max_length=22)
     password: str = Field(min_length=8, max_length=128)
+    email: str | None = Field(default=None, max_length=254)
+
+
+class VerifyBody(BaseModel):
+    ticket: str = Field(min_length=32, max_length=40)
+    code: str = Field(pattern=r"^[0-9]{6}$")
+
+
+class TicketBody(BaseModel):
+    ticket: str = Field(min_length=32, max_length=40)
+
+
+class AIRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=2500)
 
 
 class LoginBody(BaseModel):
@@ -157,6 +174,27 @@ class Database:
                 emoji TEXT NOT NULL, PRIMARY KEY(message_id,user_id,emoji)
             );
             """)
+            db.executescript("""
+            CREATE TABLE IF NOT EXISTS verified_emails (
+                user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                email TEXT NOT NULL UNIQUE, verified_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS pending_signups (
+                ticket TEXT PRIMARY KEY, email TEXT NOT NULL, handle TEXT NOT NULL,
+                name TEXT NOT NULL, password_hash TEXT NOT NULL,
+                code_hash TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL, sent_at INTEGER NOT NULL, expires_at INTEGER NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_pending_email ON pending_signups(email);
+            CREATE TABLE IF NOT EXISTS ai_messages (
+                id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                role TEXT NOT NULL CHECK(role IN ('user','assistant')),
+                kind TEXT NOT NULL CHECK(kind IN ('text','image')),
+                body TEXT NOT NULL, image_id TEXT, created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_ai_user_time ON ai_messages(user_id,created_at);
+            """)
+            db.execute("DELETE FROM pending_signups WHERE expires_at < ?", (int(time.time()),))
             db.execute("DELETE FROM sessions WHERE expires_at < ?", (now(),))
 
 
@@ -205,6 +243,27 @@ def create_app(database_path: str | None = None):
     login_attempts: dict[str, deque] = defaultdict(deque)
     registration_attempts: dict[str, deque] = defaultdict(deque)
     message_attempts: dict[str, deque] = defaultdict(deque)
+    ai_attempts: dict[str, deque] = defaultdict(deque)
+    image_attempts: dict[str, deque] = defaultdict(deque)
+    email_attempts: dict[str, deque] = defaultdict(deque)
+
+    def normalize_email(email: str) -> str:
+        email = (email or "").strip().lower()
+        if len(email) > 254 or not re.fullmatch(r"[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+", email):
+            fail(422, "Enter a valid email address")
+        return email
+
+    def otp_digest(ticket: str, code: str) -> str:
+        return hashlib.sha256((ticket + ":" + code).encode()).hexdigest()
+
+
+    def client_ip(request: Request) -> str:
+        # Railway sets X-Real-IP at its edge. Avoid trusting a forged header in local mode.
+        if os.getenv("RAILWAY_ENVIRONMENT"):
+            address = request.headers.get("x-real-ip", "")
+            if re.fullmatch(r"[0-9a-fA-F:.]{3,64}", address):
+                return address
+        return request.client.host if request.client else "unknown"
 
     def enforce_rate_limit(store: dict, key: str, max_events: int, window_seconds: int):
         """Low-overhead abuse protection for the deliberately single-worker pilot."""
@@ -342,16 +401,42 @@ def create_app(database_path: str | None = None):
     async def index():
         return FileResponse(WEB / "index.html")
 
+    @app.get("/api/config")
+    async def public_config():
+        return {"email_otp": mail_ready(), "ai_chat": text_ready(), "ai_image": image_ready()}
+
     @app.post("/api/auth/register", status_code=201)
     async def register(payload: RegisterBody, response: Response, request: Request):
         enforce_rate_limit(registration_attempts,
-                           request.client.host if request.client else "unknown", 30, 900)
+                           client_ip(request), 30, 900)
         handle = payload.handle.strip().lower()
         name = payload.name.strip()
         if not HANDLES.fullmatch(handle):
             fail(422, "Username must use 3–22 letters (a-z), digits (0-9), or underscores (_), without spaces or @ signs.")
         if len(name) < 2:
             fail(422, "Display name must have at least 2 characters.")
+        if mail_ready():
+            if not payload.email:
+                fail(422, "Email address is required for verification")
+            email = normalize_email(payload.email)
+            enforce_rate_limit(email_attempts, "signup:" + email, 4, 3600)
+            ticket, code, ts = new_id(), f"{secrets.randbelow(1000000):06d}", int(time.time())
+            with db.connection() as cx:
+                if cx.execute("SELECT 1 FROM users WHERE handle=?", (handle,)).fetchone():
+                    fail(409, "That username is already taken")
+                if cx.execute("SELECT 1 FROM verified_emails WHERE email=?", (email,)).fetchone():
+                    fail(409, "This email is already registered")
+                cx.execute("DELETE FROM pending_signups WHERE email=? OR handle=?", (email, handle))
+                cx.execute("""INSERT INTO pending_signups(ticket,email,handle,name,password_hash,code_hash,created_at,sent_at,expires_at)
+                    VALUES(?,?,?,?,?,?,?,?,?)""", (ticket,email,handle,name,PH.hash(payload.password),otp_digest(ticket,code),ts,ts,ts+600))
+            try:
+                await send_verification_email(email, code)
+            except Exception:
+                with db.connection() as cx:
+                    cx.execute("DELETE FROM pending_signups WHERE ticket=?", (ticket,))
+                fail(503, "Verification email could not be sent. Try again later")
+            response.status_code = 202
+            return {"requires_verification": True, "ticket":ticket, "email_hint":email[:2]+"***@"+email.split("@")[-1]}
         uid = new_id()
         try:
             with db.connection() as cx:
@@ -363,9 +448,60 @@ def create_app(database_path: str | None = None):
         with db.connection() as cx:
             return {"user": public_user(cx.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone())}
 
+    @app.post("/api/auth/verify")
+    async def verify_otp(payload: VerifyBody, response: Response, request: Request):
+        enforce_rate_limit(email_attempts, "verify-ip:" + (client_ip(request)), 25, 900)
+        with db.connection() as cx:
+            row = cx.execute("SELECT * FROM pending_signups WHERE ticket=?", (payload.ticket,)).fetchone()
+            if not row or row["expires_at"] < int(time.time()):
+                fail(410, "Verification code expired. Please register again")
+            if row["attempts"] >= 5:
+                fail(429, "Too many incorrect codes. Register again")
+            correct = hmac.compare_digest(row["code_hash"], otp_digest(payload.ticket, payload.code))
+            if not correct:
+                cx.execute("UPDATE pending_signups SET attempts=attempts+1 WHERE ticket=?", (payload.ticket,))
+        if not correct:
+            fail(422, "Incorrect verification code")
+        with db.connection() as cx:
+            # Re-check after the failed-attempt counter is committed, even for concurrent requests.
+            row = cx.execute("SELECT * FROM pending_signups WHERE ticket=?", (payload.ticket,)).fetchone()
+            if not row or row["expires_at"]<int(time.time()) or row["attempts"]>=5:
+                fail(410,"Verification has expired or too many attempts")
+            uid = new_id()
+            try:
+                cx.execute("INSERT INTO users(id,handle,name,password_hash,created_at) VALUES(?,?,?,?,?)",
+                           (uid,row["handle"],row["name"],row["password_hash"],now()))
+                cx.execute("INSERT INTO verified_emails(user_id,email,verified_at) VALUES(?,?,?)",(uid,row["email"],now()))
+            except sqlite3.IntegrityError:
+                fail(409, "Account or email already registered. Please sign in or use another address")
+            cx.execute("DELETE FROM pending_signups WHERE ticket=?", (payload.ticket,))
+        create_session(response,uid)
+        with db.connection() as cx:
+            return {"user":public_user(cx.execute("SELECT * FROM users WHERE id=?",(uid,)).fetchone())}
+
+    @app.post("/api/auth/resend")
+    async def resend_otp(payload: TicketBody, request: Request):
+        if not mail_ready():
+            fail(503, "Email verification is not configured")
+        enforce_rate_limit(email_attempts, "resend-ip:" + (client_ip(request)), 15, 3600)
+        ts, code = int(time.time()),f"{secrets.randbelow(1000000):06d}"
+        with db.connection() as cx:
+            row = cx.execute("SELECT * FROM pending_signups WHERE ticket=?",(payload.ticket,)).fetchone()
+            if not row or row["expires_at"]<ts:
+                fail(410, "Code expired. Register again")
+            if ts-row["sent_at"]<60:
+                fail(429, "Wait 60 seconds before requesting another code")
+            cx.execute("UPDATE pending_signups SET code_hash=?,sent_at=?,expires_at=?,attempts=0 WHERE ticket=?",
+                       (otp_digest(payload.ticket,code),ts,ts+600,payload.ticket))
+        try:
+            await send_verification_email(row["email"],code)
+        except Exception:
+            fail(503, "Email service unavailable. Try again later")
+        return {"ok":True}
+
     @app.post("/api/auth/login")
     async def login(payload: LoginBody, response: Response, request: Request):
-        ip = request.client.host if request.client else "unknown"
+        ip = client_ip(request)
         attempts = login_attempts[ip]
         timestamp = datetime.now(timezone.utc).timestamp()
         while attempts and attempts[0] < timestamp - 300:
@@ -620,6 +756,75 @@ def create_app(database_path: str | None = None):
                 WHERE mem.user_id=? AND ms.body LIKE ? ESCAPE '\\' AND ms.deleted_at IS NULL {extra}
                 ORDER BY ms.created_at DESC LIMIT 30""", args).fetchall()
         return {"results": [dict(r) for r in rows]}
+
+    @app.get("/api/ai/history")
+    async def ai_history(request: Request):
+        user = require_user(request)
+        with db.connection() as cx:
+            rows = cx.execute("SELECT id,role,kind,body,image_id,created_at FROM ai_messages WHERE user_id=? ORDER BY created_at DESC,id DESC LIMIT 60", (user["id"],)).fetchall()
+        return {"messages": [dict(r) for r in reversed(rows)], "enabled":text_ready(), "images_enabled":image_ready()}
+
+    def ai_save(user_id, role, kind, body, image_id=None):
+        mid = new_id()
+        with db.connection() as cx:
+            cx.execute("INSERT INTO ai_messages(id,user_id,role,kind,body,image_id,created_at) VALUES(?,?,?,?,?,?,?)", (mid,user_id,role,kind,body,image_id,now()))
+            cx.execute("""DELETE FROM ai_messages WHERE user_id=? AND id NOT IN
+              (SELECT id FROM ai_messages WHERE user_id=? ORDER BY created_at DESC,id DESC LIMIT 150)""",(user_id,user_id))
+        return {"id":mid,"role":role,"kind":kind,"body":body,"image_id":image_id}
+
+    @app.post("/api/ai/chat")
+    async def ai_chat(payload: AIRequest, request: Request):
+        user = require_user(request)
+        if not text_ready():
+            fail(503, "AI chat is not configured yet. The site owner needs to connect a text AI provider")
+        enforce_rate_limit(ai_attempts,user["id"],20,3600)
+        prompt = payload.prompt.strip()
+        if len(prompt)<2: fail(422,"Please write a longer question")
+        with db.connection() as cx:
+            history = list(reversed([dict(r) for r in cx.execute("SELECT role,body FROM ai_messages WHERE user_id=? AND kind='text' ORDER BY created_at DESC,id DESC LIMIT 10", (user["id"],)).fetchall()]))
+        try:
+            answer = await ask_ai(history + [{"role":"user","body":prompt}])
+        except Exception:
+            fail(503, "AI is currently unavailable or its free limit has been reached")
+        ai_save(user["id"],"user","text",prompt)
+        reply = ai_save(user["id"],"assistant","text",answer)
+        return {"reply":reply}
+
+    @app.post("/api/ai/image")
+    async def ai_image(payload: AIRequest, request: Request):
+        user = require_user(request)
+        if not image_ready():
+            fail(503, "Image generation is unavailable until an image provider is configured")
+        enforce_rate_limit(image_attempts,user["id"],2,86400)
+        with db.connection() as cx:
+            today=now()[:10]
+            if cx.execute("SELECT COUNT(*) FROM ai_messages WHERE user_id=? AND kind='image' AND created_at>=?",(user["id"],today)).fetchone()[0]>=2:
+                fail(429,"Daily image limit reached to protect free credits")
+        prompt = payload.prompt.strip()
+        if len(prompt)<5:fail(422,"Describe the image in a little more detail")
+        try:
+            data = await generate_ai_image(prompt)
+        except Exception:
+            fail(503,"Image provider unavailable or free credits exhausted")
+        if not data or len(data)>4_000_000:fail(503,"Image provider returned an unsupported result")
+        image_id=new_id()
+        image_dir=Path(os.getenv("HUDDLE_DB", "/data/huddle.db")).resolve().parent / "ai_images"
+        image_dir.mkdir(parents=True,exist_ok=True)
+        (image_dir / (image_id+".jpg")).write_bytes(data)
+        ai_save(user["id"],"user","text","Generate an image: "+prompt)
+        reply=ai_save(user["id"],"assistant","image",prompt,image_id)
+        return {"reply":reply}
+
+    @app.get("/api/ai/image/{image_id}")
+    async def ai_get_image(image_id: str, request: Request):
+        user=require_user(request)
+        if not re.fullmatch(r"[a-f0-9]{32}",image_id):fail(404,"Image not found")
+        with db.connection() as cx:
+            row=cx.execute("SELECT 1 FROM ai_messages WHERE user_id=? AND image_id=?",(user["id"],image_id)).fetchone()
+        if not row:fail(404,"Image not found")
+        path=Path(os.getenv("HUDDLE_DB", "/data/huddle.db")).resolve().parent / "ai_images" / (image_id+".jpg")
+        if not path.exists():fail(404,"Image not found")
+        return FileResponse(path,media_type="image/jpeg",headers={"Cache-Control":"private, max-age=3600"})
 
     @app.websocket("/ws")
     async def websocket_endpoint(ws: WebSocket):

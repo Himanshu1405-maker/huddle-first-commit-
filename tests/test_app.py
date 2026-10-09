@@ -198,3 +198,64 @@ def test_literal_search_and_user_lookup(pair):
     assert len(alice.get('/api/users?search=_').json()['users']) == 1
     assert len(alice.get('/api/users?search=%25').json()['users']) == 0
 
+
+
+def test_email_otp_registration_resend_and_lockout(tmp_path, monkeypatch):
+    """New users get no session until a real provider has sent and they enter the OTP."""
+    monkeypatch.setenv('BREVO_API_KEY', 'unit-test-not-a-real-key')
+    monkeypatch.setenv('MAIL_FROM', 'sender@example.com')
+    sent=[]
+    async def fake_email(email,code):
+        sent.append((email,code))
+    monkeypatch.setattr('app.main.send_verification_email',fake_email)
+    app=create_app(str(tmp_path/'otp.db'))
+    with TestClient(app) as client:
+        assert client.get('/api/config').json()['email_otp'] is True
+        request={'name':'Alice Test','handle':'alice_otp','password':'StrongPassword123!','email':'alice@example.com'}
+        resp=client.post('/api/auth/register',json=request)
+        assert resp.status_code==202,resp.text
+        ticket=resp.json()['ticket']
+        assert client.get('/api/me').status_code==401
+        assert len(sent)==1 and len(sent[0][1])==6
+        assert client.post('/api/auth/verify',json={'ticket':ticket,'code':'99999'}).status_code==422
+        wrong='000000' if sent[0][1]!='000000' else '111111'
+        assert client.post('/api/auth/verify',json={'ticket':ticket,'code':wrong}).status_code==422
+        assert client.post('/api/auth/verify',json={'ticket':ticket,'code':sent[0][1]}).status_code==200
+        assert client.get('/api/me').json()['user']['handle']=='alice_otp'
+        assert client.post('/api/auth/register',json=request).status_code==409
+        assert client.post('/api/auth/verify',json={'ticket':ticket,'code':sent[0][1]}).status_code==410
+
+
+def test_email_otp_failed_delivery_prevents_account(tmp_path,monkeypatch):
+    monkeypatch.setenv('BREVO_API_KEY','fake')
+    monkeypatch.setenv('MAIL_FROM','sender@example.com')
+    async def fail_email(email,code): raise RuntimeError('provider down')
+    monkeypatch.setattr('app.main.send_verification_email',fail_email)
+    app=create_app(str(tmp_path/'down.db'))
+    with TestClient(app) as client:
+        payload={'name':'Alice Name','handle':'my_handle','password':'abcdefgh123!','email':'alice@example.com'}
+        assert client.post('/api/auth/register',json=payload).status_code==503
+        assert client.get('/api/me').status_code==401
+
+
+def test_ai_permissions_history_and_rate_limit(tmp_path,monkeypatch):
+    monkeypatch.setenv('GEMINI_API_KEY','fake-test-key')
+    monkeypatch.delenv('HF_TOKEN',raising=False)
+    async def fake_ai(messages):
+        return 'Think of a derivative as the instant slope.'
+    monkeypatch.setattr('app.main.ask_ai',fake_ai)
+    app=create_app(str(tmp_path/'ai.db'))
+    with TestClient(app) as a,TestClient(app) as b:
+        assert a.get('/api/config').json()=={'email_otp':False,'ai_chat':True,'ai_image':False}
+        assert a.post('/api/ai/chat',json={'prompt':'Teach derivatives'}).status_code==401
+        register(a,'learner')
+        register(b,'another')
+        resp=a.post('/api/ai/chat',json={'prompt':'Teach derivatives'})
+        assert resp.status_code==200,resp.text
+        assert resp.json()['reply']['role']=='assistant'
+        assert len(a.get('/api/ai/history').json()['messages'])==2
+        assert b.get('/api/ai/history').json()['messages']==[]
+        assert a.post('/api/ai/image',json={'prompt':'Blue mountains'}).status_code==503
+        for i in range(19):
+            assert a.post('/api/ai/chat',json={'prompt':f'Question number {i}'}).status_code==200
+        assert a.post('/api/ai/chat',json={'prompt':'An extra question'}).status_code==429

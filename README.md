@@ -204,3 +204,30 @@ A second iteration could add file uploads with type validation/scanning, notific
 Both starter scripts use sample data and should be used only on your own laptop.
 
 For an organizer-facing submission summary and final links checklist, see [`docs/SUBMISSION_CHECKLIST.md`](docs/SUBMISSION_CHECKLIST.md).
+
+## Huddle 2.0 · Email OTP, Huddle AI, mobile UX
+
+This release preserves existing accounts and chat history. It adds an email-verification flow for **new** registrations, a private AI assistant area, optional AI-image generation, and smoother mobile scrolling and navigation. Existing accounts have no email on record and remain usable without verification. Verification is not retroactively applied to them.
+
+### Enable real OTP email delivery (free provider, owner setup)
+
+1. Sign up for a Brevo account on the **Free** plan (currently limited to 300 emails/day). Verify a sender email/domain in Brevo and enable transactional email sending.
+2. Generate a transactional email API key. In **Railway > huddle-web > Variables**, set `BREVO_API_KEY` to the key and `MAIL_FROM` to the *verified* sender address. Do **not** put secrets into GitHub, the frontend, screenshots, or a chat conversation.
+3. Restart/redeploy the service so it picks up both environment variables. Open `/api/config`; `email_otp` must be `true`. New registrations now request an email address and enter a six-digit OTP before their accounts are created.
+4. OTP codes expire after 10 minutes, allow at most 5 wrong attempts and at most one resend per minute. Codes are hashed in persistent SQLite; they are never logged, committed, or exposed to the frontend except in the actual email. No user session is created until verification.
+5. If the provider is NOT configured, the old signup works to avoid unexpectedly locking out users. In that case OTP verification is **not active**. Do not advertise verified accounts unless `/api/config` confirms that the sender is configured and delivery is proven with a real test email.
+
+### Enable Huddle AI
+
+- For Q&A / tutoring, create a Gemini Developer API key for an account with free-tier API access and add `GEMINI_API_KEY` to Railway Variables. `GEMINI_MODEL` defaults to `gemini-2.5-flash-lite` (change to another available free text model when necessary). Requests are made from the **server**, with no key exposed in the browser. Questions and responses appear in the private Huddle AI tab and persist separately per user.
+- For text-to-image, get a Hugging Face Inference Providers token with the needed permissions and credits. Add `HF_TOKEN`, then set `AI_IMAGES_ENABLED=1` **only if you have confirmed its available credits/charges**. The app calls a supported image provider via `huggingface_hub`; created images are stored on the persistent volume and can be opened only by their owner. The default model is `black-forest-labs/FLUX.1-schnell`. Verify current availability in the provider dashboard. Image generation is limited to two images/user/day. **The free allowance is very small; image generation is not unlimited or guaranteed to be free.**
+- New AI functions are displayed in the side navigation, but if no provider is configured they honestly say so rather than pretending to generate text or images.
+- The AI sends only the text explicitly entered in the Huddle AI tab. It **does not** read private conversations, other members' messages, or message history by default. Avoid entering sensitive information. Provider data-handling terms apply.
+
+### Mobile performance and privacy
+
+The UI uses smaller containment zones, less scroll restoration, native touch momentum, mobile-safe view heights, a responsive AI panel, and reduced-motion support. The AI and OTP endpoints enforce authorization/quotas. The app is still a single-process/SQLite hackathon pilot, not production infrastructure for large-scale public use. Mobile scrolling needs real-device validation; browser automation may be blocked in limited test environments.
+
+### Verify release
+
+Run `python -m pytest -q` and `node tests/frontend_smoke.cjs && node tests/frontend_otp_ai.cjs && node --check app/web/app.js`. For real WebSocket traffic run `python tests/socket_network_smoke.py`. For email OTP, connect an actual verified sender first and test a new account. For AI, supply provider keys to Railway, verify that `/api/config` reports enabled providers, and test with small prompts while monitoring credits. The tests mock provider calls; they **do not** establish that unconfigured external services deliver messages or generate images.
