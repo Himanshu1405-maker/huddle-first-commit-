@@ -1,0 +1,53 @@
+name: Huddle Local AI Browser Check
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/local-ai-browser-check.yml']
+jobs:
+  chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - run: python -m pip install selenium==4.38.0
+      - name: Check on-device AI model start in real Chrome
+        shell: bash
+        run: |
+          python - <<'PY'
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.common.by import By
+          import time
+          base='https://huddle-web-production-76f3.up.railway.app/'
+          o=Options()
+          for arg in ['--headless=new','--no-sandbox','--disable-dev-shm-usage','--window-size=1120,900']:
+              o.add_argument(arg)
+          o.set_capability('goog:loggingPrefs',{'browser':'ALL'})
+          browser=webdriver.Chrome(options=o)
+          browser.set_page_load_timeout(45)
+          try:
+              browser.get(base)
+              time.sleep(7)
+              browser.execute_script("state.aiOpen=true; document.querySelector('#aiView').classList.remove('hidden'); aiStatus();")
+              btn=browser.find_element(By.ID,'aiLocalStart')
+              print('LOCAL_AI_BUTTON_VISIBLE='+str(btn.is_displayed()),flush=True)
+              btn.click()
+              time.sleep(5)
+              result=browser.execute_script("return {active:state.localAI.active,loading:state.localAI.loading,ready:state.localAI.ready,progress:state.localAI.progress,error:state.localAI.error};")
+              print('LOCAL_AI_INITIAL='+str(result),flush=True)
+              for i in range(16):
+                  if result.get('ready') or result.get('error'):break
+                  time.sleep(10)
+                  result=browser.execute_script("return {loading:state.localAI.loading,ready:state.localAI.ready,progress:state.localAI.progress,error:state.localAI.error};")
+                  if i%3==0:print('LOCAL_AI_PROGRESS='+str(result),flush=True)
+              print('LOCAL_AI_FINAL='+str(result),flush=True)
+              logs=browser.get_log('browser')
+              for item in logs:
+                  msg=item.get('message','').lower()
+                  if 'content security policy' in msg or 'violates the following' in msg:
+                      print('LOCAL_AI_CSP_WARNING=True',flush=True)
+              assert not result.get('error'), 'The worker failed to load model'
+              if not result.get('ready'):print('LOCAL_AI_MODEL_STILL_LOADING=True',flush=True)
+              else:print('LOCAL_AI_MODEL_LOADED=True',flush=True)
+          finally:
+              browser.quit()
+          PY
