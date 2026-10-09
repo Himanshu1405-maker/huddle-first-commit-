@@ -3,22 +3,39 @@
 'use strict';
 
 const HUDDLE_EMOJI_GROUPS={
-  'Smileys':'😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🫢 🤫 🤔 🫡 🤐 🤨 😐 😑 😶 😏 😒 🙄 😬 😮‍💨 😴 🥱 😷 🤒 🤕 🥳 😎 🤓 🥹 😢 😭 😤 😡 🤯 😱 🫠'.split(' '),
-  'Gestures':'👍 👎 👏 🙌 👐 🤲 🤝 🙏 💪 👊 ✊ 🤛 🤜 ✌️ 🤞 🫰 🤟 🤘 👌 🤏 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐️ 🖖 👋 🫶 💅'.split(' '),
-  'Love':'❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💖 💗 💓 💞 💕 💘 💝 💟 ❣️ 💔 ❤️‍🔥 💌 🌹 🪷 🌸 🌷'.split(' '),
-  'Nature':'🌼 🌻 🍀 🌿 🌱 🌳 🌴 🍁 🍂 🌊 🌍 🌎 ⭐ 🌟 ✨ 🌙 ☀️ 🌈 ☁️ ❄️ 🔥 💧 🐶 🐱 🐼 🦋 🐝 🦄'.split(' '),
-  'Food':'🍕 🍔 🍟 🍣 🍜 🍝 🥗 🥪 🥐 🍩 🍪 🎂 🍰 🍓 🍉 🍊 🍋 🍒 🍎 🍇 ☕ 🧋 🥛'.split(' '),
-  'Activity':'⚽ 🏀 🏏 🏸 🎮 🎲 🎧 🎤 🎸 🎨 🎬 📷 💻 📱 📚 📝 💡 🚀 ✈️ 🚲 🏆 🥇 🎯 🎉 🎊 🎁 ✅ 💯 🤩'.split(' ')
+ 'Recent':[],
+ 'Faces':'😀 😃 😄 😁 😆 😅 😂 🤣 🥲 🥹 😊 😇 🙂 🙃 🫠 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🥸 🤩 🥳 🫩 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😮‍💨 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫢 🤭 🫣 🤫 🤥 😶 😶‍🌫️ 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 😵‍💫 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 👹 👺 🤡 👻 💀 ☠️ 👽 🤖 🎃'.split(' '),
+ 'People':'👋 🤚 🖐️ ✋ 🖖 🫱 🫲 🫳 🫴 🫷 🫸 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ 🫵 👍 👎 ✊ 👊 🤛 🤜 👏 🙌 🫶 👐 🤲 🤝 🙏 ✍️ 💅 🤳 💪 🦾 🦵 🦿 🦶 👂 🦻 👃 🧠 🫀 🫁 🦷 👀 👁️ 👅 👄 🫦 👶 🧒 👦 👧 🧑 👱 👨 👩 🧔 👴 👵 🙍 🙎 🙅 🙆 💁 🙋 🧏 🙇 🤦 🤷 👨‍🍳 👩‍🚀 👨‍🎓 👩‍🎓 👨‍💻 🕺 💃 🧘 🏃 🚶 🧑‍🤝‍🧑 👪 👨‍👩‍👧'.split(' '),
+ 'Hearts':'❤️ 🩷 🧡 💛 💚 💙 🩵 💜 🤎 🖤 🩶 🤍 💔 ❤️‍🔥 ❤️‍🩹 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 💌 💋 💐 🌹 🌷 🌸 🌺 🪷 🪻 🌻 🌼 🌿 🍀'.split(' '),
+ 'Animals':'🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐻‍❄️ 🐨 🐯 🦁 🐮 🐷 🐽 🐸 🐵 🙈 🙉 🙊 🐒 🐔 🐧 🐦 🐤 🐣 🐥 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🫎 🐝 🐛 🦋 🐌 🐞 🐜 🦟 🦗 🕷️ 🕸️ 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🦭 🐊 🐅 🐆 🦓 🦍 🦧 🐘 🦏 🦛 🐪 🐫 🦒 🦘 🦬 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🦙 🐐 🦌 🐕 🐈 🦜 🦚 🦩 🦢 🦥 🦦 🦨 🦔'.split(' '),
+ 'Nature':'🌍 🌎 🌏 🌐 🗺️ 🧭 🌋 🏔️ ⛰️ 🏕️ 🏖️ 🏜️ 🏝️ 🌅 🌄 🌇 🌆 🌃 🌉 🌁 🌌 🌠 🎇 🎆 🌈 ☀️ 🌤️ ⛅ 🌥️ ☁️ 🌦️ 🌧️ ⛈️ 🌩️ 🌨️ ❄️ ☃️ ⛄ 🌬️ 💨 🌪️ 🌫️ 🌊 💧 💦 ☔ ⚡ 🔥 🌙 🌛 🌜 🌕 🌖 🌗 🌘 🌑 🌒 🌓 🌔 ⭐ 🌟 ✨ 🌲 🌳 🌴 🌵 🌱 🌾 🍁 🍂 🍃 🪴 🍄 🪨'.split(' '),
+ 'Food':'🍎 🍏 🍊 🍋 🍋‍🟩 🍌 🍉 🍇 🍓 🫐 🍈 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥬 🥒 🌶️ 🫑 🌽 🥕 🫒 🧄 🧅 🥔 🍠 🫘 🥜 🌰 🍞 🥐 🥖 🫓 🥨 🥯 🥞 🧇 🧀 🍖 🍗 🥩 🍔 🍟 🍕 🌭 🥪 🌮 🌯 🫔 🥙 🧆 🥚 🍳 🥘 🍲 🥣 🥗 🍿 🧈 🧂 🥫 🍱 🍘 🍙 🍚 🍛 🍜 🍝 🍠 🍢 🍣 🍤 🍥 🥮 🍡 🥟 🥠 🥡 🦪 🍦 🍧 🍨 🍩 🍪 🎂 🍰 🧁 🥧 🍫 🍬 🍭 🍮 🍯 🥛 🍼 ☕ 🫖 🍵 🧃 🧋 🥤 🧊'.split(' '),
+ 'Travel':'🚗 🚕 🚙 🚌 🚎 🏎️ 🚓 🚑 🚒 🚐 🛻 🚚 🚛 🚜 🏍️ 🛵 🚲 🛴 🛹 🛼 🚏 🛣️ 🛤️ 🛞 ⛽ 🚨 🚥 🚦 🛑 🚧 ⚓ ⛵ 🛶 🚤 🛥️ 🛳️ ⛴️ 🚢 ✈️ 🛩️ 🛫 🛬 🪂 💺 🚁 🚀 🛰️ 🚉 🚆 🚇 🚄 🚅 🚈 🚝 🚞 🚋 🚃 🚟 🚠 🚡 🛺 🧳 🗽 🗼 🏰 🏯 🏟️ 🎡 🎢 🎠 🏙️ 🏘️ 🏠 🏡 🏢 🏥 🏦 🏨 🏪 🏫 🏬 🏣 🏤 ⛪ 🕌 🛕'.split(' '),
+ 'Fun':'⚽ 🏀 🏈 ⚾ 🥎 🎾 🏐 🏉 🥏 🎱 🪀 🏓 🏸 🏒 🏑 🥍 🏏 🥅 ⛳ 🪁 🏹 🎣 🤿 🥊 🥋 🎽 🛷 ⛸️ 🥌 🎿 🏂 🪂 🏋️ 🤸 ⛹️ 🤾 🏌️ 🏇 🧗 🚵 🚴 🏊 🤽 🚣 🧘 🎪 🤹 🎭 🩰 🎨 🎬 🎤 🎧 🎼 🎹 🥁 🪘 🎷 🎺 🪗 🎸 🪕 🎻 🎲 ♟️ 🎯 🎳 🎮 🕹️ 🧩 🎰 🎉 🎊 🎈 🎁 🎀 🎗️ 🏆 🥇 🥈 🥉 🏅 🎖️ 🪄'.split(' '),
+ 'Objects':'📱 📲 ☎️ 📞 📟 📠 🔋 🪫 🔌 💻 🖥️ 🖨️ ⌨️ 🖱️ 🖲️ 💽 💾 💿 📀 🧮 🎥 🎞️ 📽️ 📷 📸 📹 📼 🔍 🔎 🕯️ 💡 🔦 🏮 🪔 📔 📕 📖 📗 📘 📙 📚 📓 📃 📜 📄 📰 🗞️ 📑 🔖 🏷️ 💰 🪙 💵 💶 💷 💸 💳 🧾 ✉️ 📧 📨 📩 📤 📥 📦 📫 📪 📬 📭 📮 🗳️ ✏️ ✒️ 🖋️ 🖊️ 🖌️ 🖍️ 📝 💼 📁 📂 🗂️ 📅 📆 🗒️ 📇 📈 📉 📊 📋 📌 📍 📎 🖇️ 📏 📐 ✂️ 🔒 🔓 🔐 🔑 🗝️ 🔨 🪛 🔧 ⚙️ 🪚 🧲 🪜 🧰 🧪 🔬 🔭 📡 💊 🩺 🩹 🩻 🪥 🧴 🧼 🧽 🧹 🛒 🛍️'.split(' '),
+ 'Symbols':'✅ ❌ ❎ ✔️ ☑️ ✖️ ➕ ➖ ➗ ➰ ➿ 〽️ ✳️ ✴️ ❇️ ‼️ ⁉️ ❓ ❔ ❕ ❗ 〰️ 💯 🔅 🔆 🔱 ⚜️ 🔰 🔸 🔹 🔶 🔷 🔺 🔻 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟤 🔴 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜ ▶️ ⏸️ ⏹️ ⏺️ ⏭️ ⏮️ 🔀 🔁 🔂 🔄 🔃 📶 📳 📴 📵 📣 📢 🔔 🔕 🔈 🔉 🔊 🔇 💤 ♻️ 🔘 🔲 🔳 🆕 🆗 🆙 🆒 🆓 🆔 🆚 🅰️ 🅱️ 🆎 🆑 🅾️ 🆘 ⛔ 🚫 ⚠️ 🚸 💠 ♨️ ♾️ ⚕️ ☮️ ☯️ ☸️ ✝️ ☪️ ✡️ 🔯 🕉️'.split(' '),
+ 'Flags':'🏳️ 🏴 🏁 🚩 🎌 🏳️‍🌈 🇮🇳 🇺🇸 🇬🇧 🇨🇦 🇦🇺 🇫🇷 🇩🇪 🇮🇹 🇪🇸 🇵🇹 🇧🇷 🇦🇷 🇲🇽 🇯🇵 🇰🇷 🇨🇳 🇸🇬 🇦🇪 🇸🇦 🇳🇵 🇧🇩 🇱🇰 🇵🇰 🇿🇦 🇪🇬 🇳🇬 🇰🇪 🇳🇿 🇹🇭 🇻🇳 🇮🇩 🇵🇭 🇲🇾 🇷🇺 🇺🇦 🇹🇷 🇬🇷 🇨🇭 🇸🇪 🇳🇴 🇩🇰 🇫🇮 🇮🇸 🇳🇱 🇧🇪 🇵🇱'.split(' ')
 };
 const HUDDLE_STICKERS=['🥳','🚀','💖','🔥','🎉','✨','😎','🫶','😂','🙌','💯','🌈','🤩','💪','👏','💜','🌟','🎂','🦄','👀','🌻','🎸'];
 const STICKER_PREFIX='[[huddle-sticker:';
-let emojiTab='Smileys';
+let emojiTab='Faces';
+function addRecentEmoji(value){
+ try{
+  const key='huddle.recent-emoji.v2';
+  const prior=JSON.parse(localStorage.getItem(key)||'[]');
+  HUDDLE_EMOJI_GROUPS.Recent=[value,...prior.filter(v=>v!==value)].slice(0,42);
+  localStorage.setItem(key,JSON.stringify(HUDDLE_EMOJI_GROUPS.Recent));
+ }catch{}
+}
+try{const items=JSON.parse(localStorage.getItem('huddle.recent-emoji.v2')||'[]');if(Array.isArray(items))HUDDLE_EMOJI_GROUPS.Recent=items.filter(x=>typeof x==='string').slice(0,42)}catch{}
 
 function drawEmojiPicker(query=''){
   const picker=$('#emojiPicker');
   if(!picker)return;
   const tabs=[...Object.keys(HUDDLE_EMOJI_GROUPS),'Stickers'];
-  const values=emojiTab==='Stickers'?HUDDLE_STICKERS:(HUDDLE_EMOJI_GROUPS[emojiTab]||[]);
+  const values=query && emojiTab!=='Stickers'
+    ? [...new Set(Object.values(HUDDLE_EMOJI_GROUPS).flat())]
+    : emojiTab==='Stickers'?HUDDLE_STICKERS:(HUDDLE_EMOJI_GROUPS[emojiTab]||[]);
   // Text search by associated common keywords, with the emoji itself also searchable.
   const synonyms={'❤️':'heart love','😂':'laugh happy','🥰':'love heart','🥳':'celebrate party','🎉':'celebrate party','👍':'thumbs yes','🔥':'fire','🙏':'thanks please','😢':'sad crying','🚀':'rocket','💖':'heart','🌈':'rainbow','😊':'smile','😎':'cool','🤔':'thinking','📚':'study','💪':'strong','✨':'sparkle','🫶':'love'};
   const items=query?values.filter(emoji=>emoji.includes(query)||((synonyms[emoji]||'').includes(query.toLowerCase()))):values;
@@ -35,8 +52,8 @@ function handleEmojiPickerClick(e){
   if(!btn)return;
   if(btn.dataset.emojiTab){emojiTab=btn.dataset.emojiTab;drawEmojiPicker();return}
   const emoji=btn.dataset.emoji;
-  if(emoji){const input=$('#messageInput');input.setRangeText(emoji,input.selectionStart,input.selectionEnd,'end');resizeComposer();input.focus();return;}
-  if(btn.dataset.sticker){sendSticker(btn.dataset.sticker);}
+  if(emoji){addRecentEmoji(emoji);const input=$('#messageInput');input.setRangeText(emoji,input.selectionStart,input.selectionEnd,'end');resizeComposer();input.focus();return;}
+  if(btn.dataset.sticker){addRecentEmoji(btn.dataset.sticker);sendSticker(btn.dataset.sticker);}
 }
 async function sendSticker(emoji){
   if(!state.active||!HUDDLE_STICKERS.includes(emoji))return;

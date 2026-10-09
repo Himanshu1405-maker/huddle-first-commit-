@@ -21,3 +21,8 @@ assert(main.includes('https://api.puter.com'));
 assert(!cloud.includes('.onnx'));
 assert(!cloud.includes('transformers'));
 console.log('PUTER_FALLBACK_PASS: opt-in, strong hosted model, consent, personal AI history and zero on-device models');
+
+assert(cloud.includes('async function generatePuterImage(prompt)'));
+assert(cloud.includes('window.puter.ai.txt2img(detailed'));
+assert(cloud.includes("model:'gemini-3.1-flash-image'"));
+assert(app.includes("m.kind==='generated-image'"));
