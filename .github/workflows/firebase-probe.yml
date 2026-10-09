@@ -1,0 +1,42 @@
+name: Firebase provider configuration probe
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/firebase-probe.yml'
+jobs:
+  firebase-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Fetch publicly visible Firebase provider metadata (no user tokens)
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,urllib.request,urllib.error
+          api_key='AIzaSyAqLlbOiDzOzuG6xIJqQq-_n8ee6qSrlX8'
+          base='https://identitytoolkit.googleapis.com/v1/projects?key='+api_key
+          try:
+              with urllib.request.urlopen(base,timeout=20) as r:
+                  data=json.load(r)
+              print('FIREBASE_PROBE_HTTP=200')
+              print('FIREBASE_PROJECT='+str(data.get('projectId','missing')))
+              print('FIREBASE_AUTHORIZED_HUDDLE='+str('huddle-web-production-76f3.up.railway.app' in data.get('authorizedDomains',[])))
+              p=data.get('idpConfig',[])
+              print('FIREBASE_PROVIDER_IDS='+','.join(x.get('providerId','') for x in p))
+              for x in p:
+                  if x.get('providerId')=='google.com':
+                      cid=x.get('clientId','')
+                      print('GOOGLE_PROVIDER_ENABLED='+str(x.get('enabled',True)))
+                      print('GOOGLE_OAUTH_CLIENT_ID_PRESENT='+str(bool(cid)))
+                      print('GOOGLE_OAUTH_CLIENT_ID_LENGTH='+str(len(cid)))
+                      print('GOOGLE_PROVIDER_FIELDS='+','.join(sorted(x.keys())))
+          except urllib.error.HTTPError as e:
+              print('FIREBASE_PROBE_HTTP='+str(e.code))
+              try:
+                  d=json.loads(e.read(1800))
+                  print('FIREBASE_PROBE_API_ERROR='+str(d.get('error',{}).get('status','unknown')))
+              except Exception:pass
+          except Exception as e:
+              print('FIREBASE_PROBE_EXCEPTION='+type(e).__name__)
+          PY
