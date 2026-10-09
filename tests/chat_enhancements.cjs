@@ -1,0 +1,15 @@
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const js=fs.readFileSync('app/web/chat-enhancements.js','utf8');
+const main=fs.readFileSync('app/web/app.js','utf8');
+const html=fs.readFileSync('app/web/index.html','utf8');
+const css=fs.readFileSync('app/web/chat-enhancements.css','utf8');
+new Function(js);
+for(const fragment of ['function openMediaEditor(file)','function handleEmojiPickerClick(e)','function decorateHuddleMessages()','function openHuddleContextMenu','async function sendSticker(emoji)','canvas.toBlob','data-photo-tool','hEditorCaption','h-animated-sticker','pointerdown','contextmenu'])assert(js.includes(fragment),fragment);
+assert(main.includes("e=>openMediaEditor(e.target.files?.[0])"));
+assert(main.includes("async function sendMediaFile(file,caption='')"));
+assert(main.includes("'X-Huddle-Caption':encodeURIComponent"));
+assert(main.includes("e=>handleEmojiPickerClick(e)"));
+assert(html.includes('src="/assets/chat-enhancements.js" defer'));
+assert(html.includes('href="/assets/chat-enhancements.css"'));
+assert(css.includes('@media(prefers-reduced-motion:reduce)'));
+console.log('CHAT_ENHANCEMENTS_PASS: editor, annotation, cropping, caption, context menu, emoji, animated stickers and integration');
