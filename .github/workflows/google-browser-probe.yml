@@ -44,7 +44,14 @@ jobs:
               for item in logs:
                   msg=item.get('message','').lower()
                   if 'origin is not allowed' in msg: print('GOOGLE_CLIENT_ORIGIN_REJECTED=True')
-                  elif 'content security policy' in msg or 'violates the following' in msg: print('BROWSER_CSP_BLOCKED=True')
+                  elif 'content security policy' in msg or 'violates the following' in msg:
+                      import re
+                      print('BROWSER_CSP_BLOCKED=True')
+                      domains=sorted(set(re.findall(r'https?://[a-z0-9.-]+',msg)))
+                      print('BROWSER_CSP_DOMAINS='+','.join(domains[:12]))
+                      match=re.search(r"directive [\\x27\\x22]([^\\x27\\x22]+)",msg)
+                      if match: print('BROWSER_CSP_DIRECTIVE='+match.group(1)[:120])
+                      print('BROWSER_CSP_IS_GOOGLE='+str(any('google' in d or 'gstatic' in d for d in domains)))
                   elif 'google' in msg and ('client id' in msg or 'gsi_logger' in msg): print('GOOGLE_SCRIPT_WARNING=True')
               print('GOOGLE_BROWSER_PROBE_DONE')
           finally:
