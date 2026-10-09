@@ -40,3 +40,31 @@ jobs:
           except Exception as e:
               print('FIREBASE_PROBE_EXCEPTION='+type(e).__name__)
           PY
+          # Try the standard public Google sign-in authorization-URL endpoint.
+          # Only report HTTP status and whether Firebase has a usable OAuth client.
+          python - <<'PY'
+          import json,urllib.request,urllib.error
+          from urllib.parse import urlparse,parse_qs
+          api='https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=AIzaSyAqLlbOiDzOzuG6xIJqQq-_n8ee6qSrlX8'
+          body=json.dumps({'providerId':'google.com','continueUri':'https://huddle-b47f3.firebaseapp.com/__/auth/handler'}).encode()
+          try:
+              req=urllib.request.Request(api, data=body,method='POST',headers={'Content-Type':'application/json'})
+              with urllib.request.urlopen(req,timeout=20) as resp:
+                  out=json.load(resp)
+              uri=out.get('authUri','')
+              parsed=urlparse(uri)
+              client=parse_qs(parsed.query).get('client_id',[''])[0]
+              print('GOOGLE_AUTH_URI_STATUS=200')
+              print('GOOGLE_AUTH_URI_HOST='+parsed.hostname if parsed.hostname else 'GOOGLE_AUTH_URI_HOST=none')
+              print('GOOGLE_CLIENT_PRESENT='+str(client.endswith('.apps.googleusercontent.com')))
+              print('GOOGLE_CLIENT_LENGTH='+str(len(client)))
+              print('GOOGLE_AUTH_RESPONSE_FIELDS='+','.join(sorted(out.keys())))
+          except urllib.error.HTTPError as e:
+              data=e.read(800)
+              try: msg=json.loads(data).get('error',{}).get('message','unknown')
+              except Exception: msg='HTTP_ERROR'
+              print('GOOGLE_AUTH_URI_STATUS='+str(e.code))
+              print('GOOGLE_AUTH_ERROR='+str(msg).split(':')[0][:60])
+          except Exception as e: print('GOOGLE_AUTH_EXCEPTION='+type(e).__name__)
+          PY
+
