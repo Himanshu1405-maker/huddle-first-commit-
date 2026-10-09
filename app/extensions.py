@@ -52,11 +52,10 @@ class ReviewReportBody(BaseModel):
 
 def validate_media(data: bytes, filename: str, media_type: str):
     """Exact allowlist + format checks; this is *validation*, not antivirus."""
-    if not data or len(data) > MAX_UPLOAD:
-        raise ValueError("Files must be between 1 byte and 6 MB")
     media_type = media_type.split(";")[0].strip().lower()
     if media_type == "audio/x-wav": media_type = "audio/wav"
     if media_type == "audio/x-m4a": media_type = "audio/mp4"
+    if media_type == "video/x-m4v": media_type = "video/mp4"
     if media_type in ("text/markdown", "text/x-markdown"): media_type = "text/plain"
     if media_type in ("application/octet-stream",""):
         # Browsers sometimes omit the MIME for non-executable safe formats.
@@ -65,10 +64,12 @@ def validate_media(data: bytes, filename: str, media_type: str):
             ".webp":"image/webp",".pdf":"application/pdf",".txt":"text/plain",
             ".md":"text/plain",".docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             ".mp3":"audio/mpeg",".wav":"audio/wav",".ogg":"audio/ogg",
-            ".webm":"audio/webm",".m4a":"audio/mp4"
+            ".webm":"audio/webm",".m4a":"audio/mp4",".mp4":"video/mp4",".mov":"video/quicktime"
         }.get(Path(filename).suffix.lower(), "application/octet-stream")
     if media_type not in ALLOW:
-        raise ValueError("Only PNG/JPG/WebP images, voice notes, PDF/TXT and DOCX files are supported")
+        raise ValueError("Only images, short videos, voice notes, PDF/TXT and DOCX files are supported")
+    limit = MAX_VIDEO_UPLOAD if media_type in SAFE_VIDEO_TYPES else MAX_UPLOAD
+    if not data or len(data)>limit: raise ValueError("Video limit: 20 MB; other files: 6 MB")
     ext = Path(filename).suffix.lower()
     if ext not in ALLOW[media_type]:
         raise ValueError("File extension does not match its declared type")
