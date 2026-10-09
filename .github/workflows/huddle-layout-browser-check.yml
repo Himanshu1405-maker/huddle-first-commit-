@@ -1,0 +1,67 @@
+name: Huddle Responsive Layout Browser Check
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/huddle-layout-browser-check.yml']
+jobs:
+  responsive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - run: python -m pip install selenium==4.38.0
+      - name: Test real 390px mobile and 1280px desktop layouts
+        run: |
+          python - <<'PY'
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          base='https://huddle-web-production-76f3.up.railway.app/'
+          o=Options()
+          for arg in ['--headless=new','--no-sandbox','--disable-dev-shm-usage','--window-size=1280,900']:o.add_argument(arg)
+          b=webdriver.Chrome(options=o)
+          try:
+            for mobile in [True,False]:
+              width,height=(390,844) if mobile else (1280,900)
+              b.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{'width':width,'height':height,'deviceScaleFactor':2 if mobile else 1,'mobile':mobile})
+              b.get(base)
+              time.sleep(6)
+              result=b.execute_script("""
+                if(typeof aiStatus!=='function')throw Error('App JavaScript did not load');
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('appScreen').classList.remove('hidden');
+                document.getElementById('sidebar').classList.add('open');
+                document.getElementById('conversationList').innerHTML='<button class="conv-item"><span class="avatar">AB</span><span class="conv-details"><span class="conv-name-row"><span class="conv-name">Study circle</span><span class="conv-time">Today</span></span><span class="conv-preview-row"><span class="conv-preview">See you in class</span></span></span></button>';
+                const w=(x)=>document.querySelector(x).getBoundingClientRect().width;
+                const h=(x)=>document.querySelector(x).getBoundingClientRect().height;
+                const px=(x)=>parseFloat(getComputedStyle(document.querySelector(x)).fontSize);
+                return {vw:innerWidth,sidebarWidth:w('#sidebar'),chatRowHeight:h('.conv-item'),avatarWidth:w('.conv-item .avatar'),searchSize:px('#sidebarSearch'),chatNameSize:px('.conv-name'),menuHeight:h('#newChatBtn'),bodyWidth:document.documentElement.scrollWidth};
+              """)
+              print(('MOBILE' if mobile else 'DESKTOP')+'_INBOX='+str(result),flush=True)
+              assert result['chatRowHeight']>=75
+              assert result['avatarWidth']>=49
+              assert result['searchSize']>=15 and result['chatNameSize']>=15
+              assert result['bodyWidth']<=result['vw']+3
+              assert result['sidebarWidth']<=result['vw']+2
+              if mobile:assert result['sidebarWidth']>=350
+              else:assert result['sidebarWidth']>=355
+              more=b.execute_script("""
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('welcomeChat').classList.add('hidden');
+                document.getElementById('aiView').classList.remove('hidden');
+                aiStatus();
+                const h=(x)=>document.querySelector(x).getBoundingClientRect().height;
+                const px=(x)=>parseFloat(getComputedStyle(document.querySelector(x)).fontSize);
+                const result={aiCardHeight:h('.ai-suggestions button'),aiCardLabel:px('.ai-card-text strong'),composerSize:px('#aiPrompt')};
+                document.getElementById('modalOverlay').classList.remove('hidden');
+                document.getElementById('modalContent').innerHTML='<input class="modal-input"/><button class="person-row"><span class="avatar">KP</span><span class="text">Example student</span></button>';
+                result.modalInputSize=px('.modal-input');
+                result.personRowHeight=h('.person-row');
+                return result;
+              """)
+              print(('MOBILE' if mobile else 'DESKTOP')+'_AI_AND_FIND='+str(more),flush=True)
+              assert more['aiCardHeight']>=106 and more['aiCardLabel']>=13
+              assert more['composerSize']>=15 and more['modalInputSize']>=16
+              assert more['personRowHeight']>=70
+            print('HUDDLE_MOBILE_DESKTOP_LAYOUT_PASS',flush=True)
+          finally:b.quit()
+          PY
