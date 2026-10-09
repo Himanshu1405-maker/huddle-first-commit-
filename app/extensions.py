@@ -118,6 +118,10 @@ def validate_media(data: bytes, filename: str, media_type: str):
         raise ValueError("Invalid MP4/M4A audio")
     if media_type == "video/mp4" and data[4:8] != b"ftyp":
         raise ValueError("Invalid MP4 header")
+    if media_type == "video/webm" and not data.startswith(bytes((0x1a, 0x45, 0xdf, 0xa3))):
+        raise ValueError("Invalid WebM video")
+    if media_type == "video/quicktime" and data[4:8] != b"ftyp":
+        raise ValueError("Invalid MOV header")
     if media_type in SAFE_VIDEO_TYPES and len(data) < 16:
         raise ValueError("Video file is too small")
     return media_type
@@ -208,9 +212,34 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         # PDF, DOCX and text always download, not inline in the Huddle origin.
         safe_name=re.sub(r'[^a-zA-Z0-9._ -]','_',item["filename"]).replace('"','_')
         disposition=("inline" if inline else "attachment")+f'; filename="{safe_name}"'
+        headers={"Content-Disposition":disposition,"Cache-Control":"private, no-store",
+                 "X-Content-Type-Options":"nosniff",
+                 "Content-Security-Policy":"sandbox" if not inline else "default-src 'none'"}
+        # Support byte-range media requests for video/audio seeking and playback.
+        if mime.startswith(("video/","audio/")):
+            headers["Accept-Ranges"]="bytes"
+            requested=request.headers.get("range")
+            if requested is not None:
+                match=re.fullmatch(r"bytes=(\d*)-(\d*)", requested.strip())
+                size=len(blob)
+                if match and (match.group(1) or match.group(2)):
+                    first,last=match.groups()
+                    if first:
+                        start=int(first)
+                        end=int(last) if last else size-1
+                    else:
+                        count=int(last)
+                        start=max(0,size-count)
+                        end=size-1
+                    if start<size and end>=start and (first or int(last)>0):
+                        end=min(end,size-1)
+                        headers["Content-Range"]=f"bytes {start}-{end}/{size}"
+                        return Response(blob[start:end+1],status_code=206,
+                                        media_type=mime,headers=headers)
+                headers["Content-Range"]=f"bytes */{size}"
+                return Response(status_code=416,headers=headers)
         return Response(blob, media_type=mime if inline else "application/octet-stream",
-                        headers={"Content-Disposition":disposition,"Cache-Control":"private, no-store",
-                                 "X-Content-Type-Options":"nosniff","Content-Security-Policy":"sandbox" if not inline else "default-src 'none'"})
+                        headers=headers)
 
     @app.post("/api/messages/{message_id}/report", status_code=201)
     async def report_message(message_id: str, payload: ReportBody, request: Request):
