@@ -82,6 +82,7 @@ class GoogleCredentialBody(BaseModel):
 class GoogleDiagnosticBody(BaseModel):
     stage: str = Field(min_length=2, max_length=32)
     code: str = Field(min_length=3, max_length=80)
+    reason: str = Field(default="unknown", min_length=3, max_length=36)
 
 
 class LoginBody(BaseModel):
@@ -542,10 +543,12 @@ def create_app(database_path: str | None = None):
         # Accept only standardized error codes; never log identities, tokens or emails.
         enforce_rate_limit(google_diagnostic_attempts, client_ip(request), 8, 600)
         if (not re.fullmatch(r"[a-z0-9_-]{2,32}", payload.stage)
-            or not re.fullmatch(r"[a-z0-9/_-]{3,80}", payload.code)):
+            or not re.fullmatch(r"auth/[a-z0-9-]{3,74}", payload.code)
+            or not re.fullmatch(r"[a-z_]{3,36}", payload.reason)):
             fail(422, "Invalid diagnostic event")
         logging.getLogger("uvicorn.error").warning(
-            "Huddle Google sign-in stage=%s error_code=%s", payload.stage, payload.code)
+            "Huddle Google sign-in stage=%s error_code=%s reason=%s",
+            payload.stage, payload.code, payload.reason)
         return {"ok": True}
 
     @app.post("/api/auth/google")

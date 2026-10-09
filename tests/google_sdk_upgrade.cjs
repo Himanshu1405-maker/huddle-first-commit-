@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const js=fs.readFileSync('app/web/app.js','utf8');
+const backend=fs.readFileSync('app/main.py','utf8');
+assert.equal((js.match(/firebasejs\/12\.19\.0\//g)||[]).length,2);
+assert(!js.includes('getIdToken(true)'), 'Avoid unnecessary forced token refresh');
+assert(js.includes('firebaseConnectGoogle(true,linkButton)'), 'Existing Huddle users must be able to link Google');
+assert(js.includes("const token=await result.user.getIdToken()"));
+assert(js.includes('firebaseErrorReason(error)'), 'Safe Firebase diagnostic classification missing');
+assert(js.includes("'auth/internal-error':'Google and Firebase"), 'Do not assume Chrome in-app browser');
+assert(backend.includes('reason=%s'), 'Sanitized Firebase diagnostic classification missing');
+console.log('GOOGLE_AUTH_UPGRADE_PASS: SDK, token, linking, diagnostics and honest user guidance');

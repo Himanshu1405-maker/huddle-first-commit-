@@ -58,7 +58,12 @@ function setStatus(value){state.connected=value==='online';$('#wsStatus').classN
 function connectWS(){if(!state.me)return;if(state.ws&&(state.ws.readyState===0||state.ws.readyState===1))return;const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');state.ws=ws;setStatus('connecting');ws.addEventListener('open',()=>{state.retry=0;setStatus('online');loadConversations().catch(()=>{});if(state.active){const cid=state.active.id;openConversation(cid)}});ws.addEventListener('message',e=>{try{onSocketMessage(JSON.parse(e.data))}catch(err){console.warn(err)}});ws.addEventListener('close',(ev)=>{if(state.ws!==ws)return;if(ev.code===4401){signOutLocal();return}state.connected=false;setStatus('offline');if(!state.me)return;const wait=Math.min(16000,800*Math.pow(1.65,state.retry++));setTimeout(()=>{if(state.me&&state.ws===ws)connectWS()},wait)});ws.addEventListener('error',()=>ws.close())}
 setInterval(()=>{if(state.connected&&state.ws?.readyState===1)state.ws.send(JSON.stringify({type:'ping'}))},25000);
 function setModalHeading(eyebrow,title){$('#modalEyebrow').textContent=eyebrow;$('#modalTitle').innerHTML=title+'<span class="accent">.</span>'}
-function openModal(type){$('#modalOverlay').classList.remove('hidden');const el=$('#modalContent');if(type==='new'){setModalHeading('NEW','Start something good');state.groupSelected=new Set();el.innerHTML=`<div class="modal-tabs"><button class="modal-tab active" data-new-tab="dm">One-to-one</button><button class="modal-tab" data-new-tab="group">Create a circle</button></div><div id="newModalBody"></div>`;$$('[data-new-tab]').forEach(b=>b.addEventListener('click',()=>{$$('[data-new-tab]').forEach(x=>x.classList.toggle('active',x===b));renderNewModal(b.dataset.newTab)}));renderNewModal('dm')}else if(type==='search'){setModalHeading('FIND','Search messages');el.innerHTML=`<p class="modal-helper">Find something said in any of your conversations.</p><input class="modal-input" id="messageSearchInput" placeholder="Search your messages…" autofocus /><div id="searchResults"></div>`;let timer;$('#messageSearchInput').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(runMessageSearch,250)});$('#messageSearchInput').focus()}else if(type==='profile'){setModalHeading('ACCOUNT','Your profile');el.innerHTML=`<p class="modal-helper">Show your people who you are.</p><label class="modal-label">Display name</label><input id="profileName" class="modal-input" maxlength="60" value="${esc(state.me.name)}" /><label class="modal-label">Bio</label><textarea id="profileBio" maxlength="160" class="modal-textarea" placeholder="Something about you…">${esc(state.me.bio||'')}</textarea><button id="saveProfile" class="btn btn-primary modal-action">Save changes →</button>${state.config.google_login?'<div class="google-link-section"><label class="modal-label">GOOGLE ACCOUNT</label><p class="modal-helper">Link Google to sign in faster next time.</p><div id="googleLinkButton" class="google-signin-wrap"></div></div>':''}<button id="signOutBtn" class="secondary-btn">Sign out of Huddle</button>`;if(state.googleLoaded)renderGoogleButton($('#googleLinkButton'));$('#saveProfile').addEventListener('click',async()=>{try{const res=await patch('/me',{name:$('#profileName').value,bio:$('#profileBio').value});state.me=res.user;$('#selfName').textContent=state.me.name;$('#selfAvatar').innerHTML=avatar(state.me.name,state.me.id);closeModal();toast('Profile updated ✨')}catch(err){toast(err.message,true)}});$('#signOutBtn').addEventListener('click',async()=>{try{await post('/auth/logout',{})}catch{}closeModal();signOutLocal()})}else if(type==='info'){const c=state.active;if(!c){closeModal();return}setModalHeading('ABOUT','Conversation details');el.innerHTML=`<div style="display:flex;align-items:center;gap:15px;margin-bottom:22px">${avatar(c.name,c.id,c.kind)}<div><strong style="font-size:15px">${esc(c.name)}</strong><p class="modal-helper" style="margin:4px 0">${esc(c.description||'A little place to connect.')}</p></div></div><label class="modal-label">MEMBERS (${c.members.length})</label><div class="member-list">${c.members.map(m=>`<div class="member-card">${avatar(m.name,m.id,'dm',m.online)}<span><strong>${esc(m.name)}${m.id===state.me.id?' (you)':''}</strong><small>@${esc(m.handle)} · ${m.online?'Online':'Offline'}</small></span>${m.role==='admin'?'<em>ADMIN</em>':''}</div>`).join('')}</div>${c.kind==='group'&&c.members.find(m=>m.id===state.me.id)?.role==='admin'?'<button id="inviteBtn" class="secondary-btn">+ Invite more people</button>':''}`;if($('#inviteBtn'))$('#inviteBtn').addEventListener('click',()=>openModal('invite'))}else if(type==='invite'){setModalHeading('INVITE','Grow your circle');const cid=state.active?.id;if(!cid){closeModal();return}el.innerHTML=`<p class="modal-helper">Invite people to <strong>${esc(state.active.name)}</strong>. Only circle administrators can invite members.</p><input id="inviteSearch" class="modal-input" placeholder="Search people to invite…"/><div class="modal-list" id="inviteResults"></div><button class="btn btn-primary modal-action" id="sendInvites">Add selected people →</button>`;state.groupSelected=new Set();let timer;async function drawInvite(){try{const {users}=await api('/users?search='+encodeURIComponent($('#inviteSearch').value));const eligible=users.filter(u=>!state.active.members.some(m=>m.id===u.id));$('#inviteResults').innerHTML=eligible.length?eligible.map(u=>`<button class="person-row ${state.groupSelected.has(u.id)?'chosen':''}" data-invite="${esc(u.id)}">${avatar(u.name,u.id)}<span class="text"><strong>${esc(u.name)}</strong><small>@${esc(u.handle)}</small></span><span class="selected-mark">${state.groupSelected.has(u.id)?'✓':'+'}</span></button>`).join(''):'<div class="modal-empty">No new people found</div>';$$('[data-invite]').forEach(btn=>btn.addEventListener('click',()=>{const uid=btn.dataset.invite;if(state.groupSelected.has(uid))state.groupSelected.delete(uid);else state.groupSelected.add(uid);btn.classList.toggle('chosen');btn.querySelector('.selected-mark').textContent=state.groupSelected.has(uid)?'✓':'+'}))}catch(e){toast(e.message,true)}}$('#inviteSearch').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(drawInvite,200)});$('#sendInvites').addEventListener('click',async()=>{if(!state.groupSelected.size){toast('Select at least one person',true);return}try{const result=await post(`/conversations/${cid}/members`,{member_ids:[...state.groupSelected]});closeModal();await loadConversations();toast(result.added+' person(s) invited ✨')}catch(e){toast(e.message,true)}});drawInvite()}else if(type==='react'){setModalHeading('REACT','Share a reaction');el.innerHTML='<p class="modal-helper">A little emoji can say a lot.</p><div class="emoji-reactions">'+['❤️','🔥','😂','👏','👍','🎉','💡','🚀'].map(e=>`<button data-big-reaction="${e}" style="font-size:26px;border:1px solid #e7ecf0;border-radius:10px;background:#fafcfd;padding:9px;margin:4px">${e}</button>`).join('')+'</div>';$$('[data-big-reaction]').forEach(b=>b.addEventListener('click',async()=>{await applyReaction(state.emojiFor,b.dataset.bigReaction);closeModal()}))}}
+function openModal(type){$('#modalOverlay').classList.remove('hidden');const el=$('#modalContent');if(type==='new'){setModalHeading('NEW','Start something good');state.groupSelected=new Set();el.innerHTML=`<div class="modal-tabs"><button class="modal-tab active" data-new-tab="dm">One-to-one</button><button class="modal-tab" data-new-tab="group">Create a circle</button></div><div id="newModalBody"></div>`;$$('[data-new-tab]').forEach(b=>b.addEventListener('click',()=>{$$('[data-new-tab]').forEach(x=>x.classList.toggle('active',x===b));renderNewModal(b.dataset.newTab)}));renderNewModal('dm')}else if(type==='search'){setModalHeading('FIND','Search messages');el.innerHTML=`<p class="modal-helper">Find something said in any of your conversations.</p><input class="modal-input" id="messageSearchInput" placeholder="Search your messages…" autofocus /><div id="searchResults"></div>`;let timer;$('#messageSearchInput').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(runMessageSearch,250)});$('#messageSearchInput').focus()}else if(type==='profile'){setModalHeading('ACCOUNT','Your profile');el.innerHTML=`<p class="modal-helper">Show your people who you are.</p><label class="modal-label">Display name</label><input id="profileName" class="modal-input" maxlength="60" value="${esc(state.me.name)}" /><label class="modal-label">Bio</label><textarea id="profileBio" maxlength="160" class="modal-textarea" placeholder="Something about you…">${esc(state.me.bio||'')}</textarea><button id="saveProfile" class="btn btn-primary modal-action">Save changes →</button>${state.config.google_login?'<div class="google-link-section"><label class="modal-label">GOOGLE ACCOUNT</label><p class="modal-helper">Link Google to sign in faster next time.</p><div id="googleLinkButton" class="google-signin-wrap"></div></div>':''}<button id="signOutBtn" class="secondary-btn">Sign out of Huddle</button>`;if(state.config.firebase_config?.projectId && state.firebaseConnectGoogle){
+      const box=$('#googleLinkButton');
+      box.innerHTML='<button type="button" class="btn google-firebase-btn" id="linkFirebaseGoogle">Link Google account</button>';
+      const linkButton=$('#linkFirebaseGoogle');
+      linkButton.addEventListener('click',()=>state.firebaseConnectGoogle(true,linkButton));
+    }else if(state.googleLoaded)renderGoogleButton($('#googleLinkButton'));$('#saveProfile').addEventListener('click',async()=>{try{const res=await patch('/me',{name:$('#profileName').value,bio:$('#profileBio').value});state.me=res.user;$('#selfName').textContent=state.me.name;$('#selfAvatar').innerHTML=avatar(state.me.name,state.me.id);closeModal();toast('Profile updated ✨')}catch(err){toast(err.message,true)}});$('#signOutBtn').addEventListener('click',async()=>{try{await post('/auth/logout',{})}catch{}closeModal();signOutLocal()})}else if(type==='info'){const c=state.active;if(!c){closeModal();return}setModalHeading('ABOUT','Conversation details');el.innerHTML=`<div style="display:flex;align-items:center;gap:15px;margin-bottom:22px">${avatar(c.name,c.id,c.kind)}<div><strong style="font-size:15px">${esc(c.name)}</strong><p class="modal-helper" style="margin:4px 0">${esc(c.description||'A little place to connect.')}</p></div></div><label class="modal-label">MEMBERS (${c.members.length})</label><div class="member-list">${c.members.map(m=>`<div class="member-card">${avatar(m.name,m.id,'dm',m.online)}<span><strong>${esc(m.name)}${m.id===state.me.id?' (you)':''}</strong><small>@${esc(m.handle)} · ${m.online?'Online':'Offline'}</small></span>${m.role==='admin'?'<em>ADMIN</em>':''}</div>`).join('')}</div>${c.kind==='group'&&c.members.find(m=>m.id===state.me.id)?.role==='admin'?'<button id="inviteBtn" class="secondary-btn">+ Invite more people</button>':''}`;if($('#inviteBtn'))$('#inviteBtn').addEventListener('click',()=>openModal('invite'))}else if(type==='invite'){setModalHeading('INVITE','Grow your circle');const cid=state.active?.id;if(!cid){closeModal();return}el.innerHTML=`<p class="modal-helper">Invite people to <strong>${esc(state.active.name)}</strong>. Only circle administrators can invite members.</p><input id="inviteSearch" class="modal-input" placeholder="Search people to invite…"/><div class="modal-list" id="inviteResults"></div><button class="btn btn-primary modal-action" id="sendInvites">Add selected people →</button>`;state.groupSelected=new Set();let timer;async function drawInvite(){try{const {users}=await api('/users?search='+encodeURIComponent($('#inviteSearch').value));const eligible=users.filter(u=>!state.active.members.some(m=>m.id===u.id));$('#inviteResults').innerHTML=eligible.length?eligible.map(u=>`<button class="person-row ${state.groupSelected.has(u.id)?'chosen':''}" data-invite="${esc(u.id)}">${avatar(u.name,u.id)}<span class="text"><strong>${esc(u.name)}</strong><small>@${esc(u.handle)}</small></span><span class="selected-mark">${state.groupSelected.has(u.id)?'✓':'+'}</span></button>`).join(''):'<div class="modal-empty">No new people found</div>';$$('[data-invite]').forEach(btn=>btn.addEventListener('click',()=>{const uid=btn.dataset.invite;if(state.groupSelected.has(uid))state.groupSelected.delete(uid);else state.groupSelected.add(uid);btn.classList.toggle('chosen');btn.querySelector('.selected-mark').textContent=state.groupSelected.has(uid)?'✓':'+'}))}catch(e){toast(e.message,true)}}$('#inviteSearch').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(drawInvite,200)});$('#sendInvites').addEventListener('click',async()=>{if(!state.groupSelected.size){toast('Select at least one person',true);return}try{const result=await post(`/conversations/${cid}/members`,{member_ids:[...state.groupSelected]});closeModal();await loadConversations();toast(result.added+' person(s) invited ✨')}catch(e){toast(e.message,true)}});drawInvite()}else if(type==='react'){setModalHeading('REACT','Share a reaction');el.innerHTML='<p class="modal-helper">A little emoji can say a lot.</p><div class="emoji-reactions">'+['❤️','🔥','😂','👏','👍','🎉','💡','🚀'].map(e=>`<button data-big-reaction="${e}" style="font-size:26px;border:1px solid #e7ecf0;border-radius:10px;background:#fafcfd;padding:9px;margin:4px">${e}</button>`).join('')+'</div>';$$('[data-big-reaction]').forEach(b=>b.addEventListener('click',async()=>{await applyReaction(state.emojiFor,b.dataset.bigReaction);closeModal()}))}}
 function closeModal(){$('#modalOverlay').classList.add('hidden');$('#modalContent').innerHTML=''}
 $('#closeModal').addEventListener('click',closeModal);$('#modalOverlay').addEventListener('click',e=>{if(e.target===$('#modalOverlay'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();$('#emojiPicker').classList.add('hidden')}});
 async function renderNewModal(tab){const el=$('#newModalBody');el.innerHTML=`${tab==='group'?'<label class="modal-label">Circle name</label><input class="modal-input" maxlength="64" id="groupName" placeholder="e.g. Hackathon dream team" /><label class="modal-label">What\'s this circle about?</label><input class="modal-input" maxlength="200" id="groupDescription" placeholder="Ideas, projects, and everything between" />':''}<p class="modal-helper">${tab==='dm'?'Say hello to someone on campus.':'Invite the people you want in your circle.'}</p><input class="modal-input" id="userSearch" placeholder="Search people by name or username…"/><div class="modal-list" id="newUsersList"><div class="modal-empty">Finding people…</div></div>${tab==='group'?'<button id="createGroupBtn" class="btn btn-primary modal-action">Create your circle ↗</button>':''}`;let timer;$('#userSearch').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>fetchModalUsers(tab),220)});if(tab==='group')$('#createGroupBtn').addEventListener('click',async()=>{const name=$('#groupName').value.trim();if(name.length<3){toast('Add a circle name (3+ characters)',true);return}if(!state.groupSelected.size){toast('Invite at least one person',true);return}try{const result=await post('/conversations/group',{name,description:$('#groupDescription').value,member_ids:[...state.groupSelected]});closeModal();await loadConversations();openConversation(result.conversation.id);toast('Your circle is ready ✳')}catch(err){toast(err.message,true)}});await fetchModalUsers(tab)}
@@ -76,14 +81,14 @@ function renderGoogleButton(container){
   window.google.accounts.id.renderButton(container,{type:'standard',theme:'outline',size:'large',text:'continue_with',shape:'pill',width:280,logo_alignment:'left'});
 }
 async function onGoogleCredential(result){
-  if(!result?.credential)return;
+  if(!result?.credential)return false;
   const linkMode=Boolean(state.me);
   try{
     const response=await api(linkMode?'/auth/google/link':'/auth/google',{method:'POST',headers:{'X-Huddle-Client':'web'},body:JSON.stringify({credential:result.credential})});
-    if(linkMode){toast(response.already_linked?'Google already connected':'Google account linked successfully ✨');return}
+    if(linkMode){toast(response.already_linked?'Google already connected':'Google account linked successfully ✨');return true}
     state.otpTicket=null;$('#otpPanel').classList.add('hidden');$('#authForm').classList.remove('hidden');$('.switch-auth').classList.remove('hidden');
-    state.me=response.user;await loadConversations();showApp();toast('Welcome to Huddle! ✨');
-  }catch(error){if(linkMode){toast(error.message,true)}else{$('#authError').textContent=error.message}}
+    state.me=response.user;await loadConversations();showApp();toast('Welcome to Huddle! ✨');return true;
+  }catch(error){if(linkMode){toast(error.message,true)}else{$('#authError').textContent=error.message}return false}
 }
 // Mobile Google OAuth is often blocked inside embedded app browsers.
 // Provide a user-initiated handoff that keeps tokens and account data out of URLs.
@@ -107,24 +112,38 @@ function prepareGoogleBrowserHelp(){
     }
   });
 }
-function googleSignInError(code){
+function googleSignInError(code,reason='unknown'){
   const messages={
-    'auth/unauthorized-domain':'Google sign-in is not authorized for this website. The owner must check Firebase settings.',
-    'auth/popup-blocked':'Google blocked this popup. Open Huddle directly in Chrome using the option below.',
-    'auth/popup-closed-by-user':'The Google window closed before sign-in finished. Try once more from Chrome.',
-    'auth/cancelled-popup-request':'Another sign-in was started. Tap Continue with Google only once.',
-    'auth/network-request-failed':'Google could not connect. Check your network and retry in Chrome.',
-    'auth/operation-not-allowed':'Google login is not enabled in Firebase. Contact the Huddle owner.',
-    'auth/operation-not-supported-in-this-environment':'Your current browser cannot complete Google sign-in. Open Huddle in Chrome.',
-    'auth/web-storage-unsupported':'Browser storage is disabled. Open a regular Chrome tab, not Incognito.',
-    'auth/invalid-api-key':'Firebase settings need to be corrected by the Huddle owner.',
-    'auth/internal-error':'This in-app browser could not complete Google sign-in. Open Huddle in Chrome using the option below.'
+    'auth/unauthorized-domain':'This website is not authorized in Firebase. Contact the Huddle administrator.',
+    'auth/popup-blocked':'Your browser blocked Google sign-in. Allow the popup and try again.',
+    'auth/popup-closed-by-user':'The Google sign-in window closed before completion.',
+    'auth/cancelled-popup-request':'Another sign-in attempt interrupted this one. Tap only once.',
+    'auth/network-request-failed':'Google could not connect. Check your internet connection.',
+    'auth/operation-not-allowed':'The Google provider is disabled in Firebase.',
+    'auth/operation-not-supported-in-this-environment':'This browser cannot complete Google sign-in. Try Chrome.',
+    'auth/web-storage-unsupported':'Enable browser storage and leave private browsing mode.',
+    'auth/invalid-api-key':'The Firebase project API configuration is invalid.',
+    'auth/internal-error':'Google and Firebase could not complete sign-in. This is an authentication-provider problem, not your Huddle password.'
   };
-  return messages[code]||'Google sign-in could not finish ('+code+'). Try opening Huddle directly in Chrome.';
+  const result=messages[code]||'Google sign-in could not complete.';
+  return result+(reason!=='unknown'?' (reason: '+reason+')':' (code: '+code+')');
 }
-function reportGoogleIssue(stage,code){
+// Log ONLY a standardized Firebase code and sanitized reason, never a provider URL,
+// OAuth state, ID token, email address, or provider error message.
+function firebaseErrorReason(error){
+  const message=String(error?.message||'').slice(0,1600);
+  if(/INVALID_OAUTH_CLIENT_ID|invalid.oauth.client/i.test(message))return 'invalid_oauth_client';
+  if(/INVALID_IDP_RESPONSE|invalid.idp.response/i.test(message))return 'invalid_idp_response';
+  if(/CONFIGURATION_NOT_FOUND/i.test(message))return 'configuration_missing';
+  if(/API_KEY_INVALID|API_KEY_NOT_VALID/i.test(message))return 'invalid_api_key';
+  if(/OPERATION_NOT_ALLOWED/i.test(message))return 'provider_disabled';
+  if(/popup.blocked/i.test(message))return 'popup_blocked';
+  return 'unknown';
+}
+function reportGoogleIssue(stage,code,reason='unknown'){
   if(!/^auth\/[a-z0-9-]+$/.test(code))code='auth/unknown';
-  fetch('/api/diagnostics/google',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({stage,code})}).catch(()=>{});
+  if(!/^[a-z_]{3,36}$/.test(reason))reason='unknown';
+  fetch('/api/diagnostics/google',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({stage,code,reason})}).catch(()=>{});
 }
 async function initFirebaseSignIn(){
   prepareGoogleBrowserHelp();
@@ -133,34 +152,47 @@ async function initFirebaseSignIn(){
   container.innerHTML='<button type="button" class="btn btn-wide google-firebase-btn" id="firebaseGoogleBtn" disabled>Connecting to Google…</button>';
   const button=$('#firebaseGoogleBtn');
   try{
+    // Use a maintained SDK release. 10.14.1 was more than two years old.
     const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signOut}]=await Promise.all([
-      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
-      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js')
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js')
     ]);
     const auth=getAuth(initializeApp(state.config.firebase_config));
     const provider=new GoogleAuthProvider();
+    const useGoogle=async(linkMode=false,entry=button)=>{
+      if(entry.disabled)return;
+      entry.disabled=true;
+      let stage='popup';
+      try{
+        // Popup is started directly from a user click, before any awaits.
+        const result=await signInWithPopup(auth,provider);
+        stage='token';
+        // Sign-in already created a valid token; forcing another refresh may
+        // fail unnecessarily on constrained mobile networks.
+        const token=await result.user.getIdToken();
+        stage='server';
+        await onGoogleCredential({credential:token});
+      }catch(error){
+        const code=typeof error?.code==='string'&&/^auth\/[a-z0-9-]+$/.test(error.code)?error.code:'auth/unknown';
+        const reason=firebaseErrorReason(error);
+        reportGoogleIssue(stage,code,reason);
+        console.warn('Huddle Google sign-in failure:',stage,code,reason);
+        const message=googleSignInError(code,reason);
+        if(!state.me){$('#authError').textContent=message;$('#authError').scrollIntoView({block:'nearest'});}
+        else toast(message,true);
+      }finally{
+        try{await signOut(auth)}catch{};
+        entry.disabled=false;
+      }
+    };
+    state.firebaseConnectGoogle=useGoogle;
     button.disabled=false;
     button.textContent='Continue with Google';
-    button.addEventListener('click',async()=>{
-      button.disabled=true;
-      try{
-        const result=await signInWithPopup(auth,provider);
-        await onGoogleCredential({credential:await result.user.getIdToken(true)});
-        await signOut(auth);
-      }catch(err){
-        // Never send Firebase tokens, identities or full provider messages to logs.
-        const code=typeof err?.code==='string'&&/^auth\/[a-z0-9-]+$/.test(err.code)?err.code:'auth/unknown';
-        reportGoogleIssue('popup',code);
-        console.warn('Firebase sign-in failed (code only):',code);
-        const message=googleSignInError(code);
-        const help=$('#googleBrowserHelp');
-        help?.classList.remove('hidden');
-        const error=$('#authError');
-        if(!state.me && error){error.textContent=message;error.scrollIntoView({block:'nearest',behavior:'auto'});}
-        else toast(message,true);
-      }finally{button.disabled=false}
-    });
-  }catch(err){console.warn('Firebase Google sign-in unavailable',err);container.textContent='Google sign-in is temporarily unavailable.'}
+    button.addEventListener('click',()=>useGoogle(false,button));
+  }catch(error){
+    console.warn('Firebase Google SDK failed to initialize');
+    container.textContent='Google sign-in is temporarily unavailable. Password login still works.';
+  }
 }
 function initGoogleSignIn(){
   if(state.config.firebase_config?.projectId){initFirebaseSignIn();return}

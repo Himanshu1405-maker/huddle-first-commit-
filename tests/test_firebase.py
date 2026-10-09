@@ -62,3 +62,17 @@ def test_browser_diagnostics_are_safe_and_rate_limited(tmp_path,monkeypatch,capl
         assert client.post('/api/diagnostics/google',json={'stage':'popup','code':'token=secret'}).status_code==422
         assert client.post('/api/diagnostics/google',json={'stage':'popup','code':'auth/unknown','email':'private@example.com'}).status_code==200
         assert 'private@example.com' not in caplog.text
+
+
+def test_google_diagnostics_reject_raw_provider_text(tmp_path, monkeypatch, caplog):
+    with TestClient(create_app(str(tmp_path / 'diag.db'))) as client:
+        good={'stage':'popup','code':'auth/internal-error','reason':'invalid_oauth_client'}
+        assert client.post('/api/diagnostics/google',json=good).status_code == 200
+        assert 'reason=invalid_oauth_client' in caplog.text
+        for bad in [
+            {'stage':'popup','code':'auth/internal-error','reason':'email@example.com'},
+            {'stage':'popup','code':'auth/internal-error?code=ABC','reason':'unknown'},
+            {'stage':'popup','code':'auth/internal-error','reason':'state=abc'},
+        ]:
+            assert client.post('/api/diagnostics/google',json=bad).status_code == 422
+        assert 'email@example.com' not in caplog.text
