@@ -73,3 +73,31 @@ async def generate_ai_image(prompt: str) -> bytes:
         img.convert("RGB").save(out, format="JPEG", quality=84, optimize=True)
         return out.getvalue()
     return await asyncio.to_thread(_work)
+
+
+def google_ready() -> bool:
+    """Web OAuth client ID is safe to expose; no client secret is needed for GSI popup."""
+    return bool(os.getenv("GOOGLE_CLIENT_ID", "").strip())
+
+
+def verify_google_credential(credential: str) -> dict:
+    """Cryptographically verify the JWT with Google's public signing keys.
+
+    Do not accept a browser-supplied email, name, or subject independently.
+    """
+    if not google_ready():
+        raise ValueError("Google sign-in is not configured")
+    from google.auth.transport.requests import Request
+    from google.oauth2 import id_token
+    claims = id_token.verify_oauth2_token(credential, Request(), os.environ["GOOGLE_CLIENT_ID"].strip())
+    if claims.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+        raise ValueError("Invalid token issuer")
+    if not claims.get("email_verified") or not claims.get("email") or not claims.get("sub"):
+        raise ValueError("A verified Google email is required")
+    if len(str(claims["sub"])) > 255:
+        raise ValueError("Invalid account identifier")
+    return {
+        "sub": str(claims["sub"]),
+        "email": str(claims["email"]).strip().lower(),
+        "name": str(claims.get("name") or claims["email"].split("@")[0])[:60],
+    }

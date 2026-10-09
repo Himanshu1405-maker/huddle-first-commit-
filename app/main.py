@@ -26,7 +26,7 @@ from fastapi import Cookie, FastAPI, HTTPException, Request, Response, WebSocket
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from .extras import mail_ready, text_ready, image_ready, send_verification_email, ask_ai, generate_ai_image
+from .extras import mail_ready, text_ready, image_ready, google_ready, verify_google_credential, send_verification_email, ask_ai, generate_ai_image
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
@@ -72,6 +72,10 @@ class TicketBody(BaseModel):
 
 class AIRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=2500)
+
+
+class GoogleCredentialBody(BaseModel):
+    credential: str = Field(min_length=30, max_length=9000)
 
 
 class LoginBody(BaseModel):
@@ -186,6 +190,11 @@ class Database:
                 created_at INTEGER NOT NULL, sent_at INTEGER NOT NULL, expires_at INTEGER NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_pending_email ON pending_signups(email);
+            CREATE TABLE IF NOT EXISTS google_accounts (
+                google_sub TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+                email TEXT NOT NULL, linked_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS ai_messages (
                 id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 role TEXT NOT NULL CHECK(role IN ('user','assistant')),
@@ -383,13 +392,17 @@ def create_app(database_path: str | None = None):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
         response.headers["Cache-Control"] = "no-store"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
-            "script-src 'self'; style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data:; connect-src 'self' ws: wss:"
+            "script-src 'self' https://accounts.google.com/gsi/client; "
+            "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; "
+            "frame-src https://accounts.google.com/gsi/; "
+            "img-src 'self' data: https://accounts.google.com https://*.googleusercontent.com https://*.gstatic.com; "
+            "connect-src 'self' ws: wss: https://accounts.google.com/gsi/"
         )
         return response
 
@@ -403,7 +416,9 @@ def create_app(database_path: str | None = None):
 
     @app.get("/api/config")
     async def public_config():
-        return {"email_otp": mail_ready(), "ai_chat": text_ready(), "ai_image": image_ready()}
+        return {"email_otp": mail_ready(), "ai_chat": text_ready(), "ai_image": image_ready(),
+                "google_login": google_ready(),
+                "google_client_id": os.environ.get("GOOGLE_CLIENT_ID", "").strip() if google_ready() else ""}
 
     @app.post("/api/auth/register", status_code=201)
     async def register(payload: RegisterBody, response: Response, request: Request):
@@ -498,6 +513,77 @@ def create_app(database_path: str | None = None):
         except Exception:
             fail(503, "Email service unavailable. Try again later")
         return {"ok":True}
+
+    def google_identity(credential: str, request: Request):
+        if not google_ready():
+            fail(503, "Google sign-in is not configured yet")
+        # Popup credential stays in our own first-party JavaScript. Cross-origin
+        # forms cannot set this custom header; do not accept a GIS redirect POST.
+        if request.headers.get("x-huddle-client") != "web":
+            fail(403, "Google sign-in requires the Huddle website")
+        enforce_rate_limit(login_attempts, "google:" + client_ip(request), 25, 900)
+        try:
+            info = verify_google_credential(credential)
+        except Exception:
+            fail(401, "Google couldn't verify this sign-in. Please try again")
+        return info
+
+    @app.post("/api/auth/google")
+    async def google_login(payload: GoogleCredentialBody, response: Response, request: Request):
+        identity = google_identity(payload.credential, request)
+        with db.connection() as cx:
+            linked = cx.execute("SELECT user_id FROM google_accounts WHERE google_sub=?", (identity["sub"],)).fetchone()
+            if linked:
+                user = cx.execute("SELECT * FROM users WHERE id=?", (linked["user_id"],)).fetchone()
+                if user is None:
+                    fail(409, "Linked user is unavailable")
+            else:
+                # Never take over an existing local account merely because its email
+                # resembles the claim. Existing members can link from their profile.
+                owner = cx.execute("SELECT user_id FROM verified_emails WHERE email=?", (identity["email"],)).fetchone()
+                if owner:
+                    fail(409, "This email already belongs to a Huddle account. Sign in with your password and link Google under Profile.")
+                handle_base = re.sub(r"[^a-z0-9_]", "_", identity["email"].split("@")[0])[:16].strip("_")
+                if len(handle_base) < 3:
+                    handle_base = "google_user"
+                handle = handle_base
+                while cx.execute("SELECT 1 FROM users WHERE handle=?", (handle,)).fetchone():
+                    handle = handle_base + "_" + secrets.token_hex(3)
+                uid = new_id()
+                cx.execute("INSERT INTO users(id,handle,name,password_hash,created_at) VALUES(?,?,?,?,?)",
+                           (uid,handle,identity["name"],PH.hash(secrets.token_urlsafe(48)),now()))
+                cx.execute("INSERT INTO verified_emails(user_id,email,verified_at) VALUES(?,?,?)", (uid,identity["email"],now()))
+                cx.execute("INSERT INTO google_accounts(google_sub,user_id,email,linked_at) VALUES(?,?,?,?)",
+                           (identity["sub"],uid,identity["email"],now()))
+                user = cx.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+        create_session(response, user["id"])
+        return {"user":public_user(user)}
+
+    @app.post("/api/auth/google/link")
+    async def google_link(payload: GoogleCredentialBody, request: Request):
+        user = require_user(request)
+        identity = google_identity(payload.credential, request)
+        with db.connection() as cx:
+            existing = cx.execute("SELECT user_id FROM google_accounts WHERE google_sub=?", (identity["sub"],)).fetchone()
+            if existing:
+                if existing["user_id"] == user["id"]:
+                    return {"ok":True,"already_linked":True}
+                fail(409, "That Google account is already linked to another Huddle account")
+            already = cx.execute("SELECT google_sub FROM google_accounts WHERE user_id=?", (user["id"],)).fetchone()
+            if already:
+                fail(409, "Your Huddle account already has a linked Google account")
+            owner = cx.execute("SELECT user_id FROM verified_emails WHERE email=?", (identity["email"],)).fetchone()
+            if owner and owner["user_id"] != user["id"]:
+                fail(409, "That email belongs to another account")
+            cx.execute("INSERT INTO google_accounts(google_sub,user_id,email,linked_at) VALUES(?,?,?,?)",
+                       (identity["sub"],user["id"],identity["email"],now()))
+            if not owner:
+                # If the user already had a verified email, do not overwrite it.
+                existing_email = cx.execute("SELECT email FROM verified_emails WHERE user_id=?", (user["id"],)).fetchone()
+                if not existing_email:
+                    cx.execute("INSERT INTO verified_emails(user_id,email,verified_at) VALUES(?,?,?)",
+                               (user["id"],identity["email"],now()))
+        return {"ok":True,"already_linked":False}
 
     @app.post("/api/auth/login")
     async def login(payload: LoginBody, response: Response, request: Request):

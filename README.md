@@ -68,7 +68,7 @@ Demo users (all share the password `DemoPass123!`):
 
 ### Feature honesty
 
-Files, images, audio calls, end-to-end encrypted messages, and LLM agents are **not** implemented. The hackathon PDF lists these as optional examples, not mandatory requirements. This implementation prioritizes the reliable communication foundation plus several useful optional features. The connection is encrypted in transit **when deployed under HTTPS/WSS**, but message content is stored in regular SQLite and **is not end-to-end encrypted**.
+File attachments, voice/video calls, and end-to-end encrypted messages are **not** implemented. Huddle AI chat and image generation integrations are implemented but require external provider credentials and available credits to activate. The hackathon PDF lists these as optional examples, not mandatory requirements. This implementation prioritizes the reliable communication foundation plus several useful optional features. The connection is encrypted in transit **when deployed under HTTPS/WSS**, but message content is stored in regular SQLite and **is not end-to-end encrypted**.
 
 ## 3. Architecture
 
@@ -205,6 +205,20 @@ Both starter scripts use sample data and should be used only on your own laptop.
 
 For an organizer-facing submission summary and final links checklist, see [`docs/SUBMISSION_CHECKLIST.md`](docs/SUBMISSION_CHECKLIST.md).
 
+## Huddle 2.1 · Google sign-in (OAuth)
+
+Google login uses **Google Identity Services** and secure server-side verification of ID tokens (signed public keys, audience, issuer, verified email and stable Google subject). No Google client secret is required for the popup-based button. Existing Huddle accounts are **never silently matched or taken over via email**; users can sign into their current account with password and link Google from **Profile**. Google-only accounts have a random unguessable stored password hash, so they cannot use password login unless a separate recovery flow is implemented.
+
+Setup (free OAuth credentials):
+
+1. Go to [Google Auth Platform / Clients](https://console.cloud.google.com/auth/clients) and create a **Web application** OAuth 2.0 client ID, after configuring the consent screen and app audience as required. For public users, use an External app. Configure testing or publish your app as appropriate.
+2. Add **Authorized JavaScript origin** `https://huddle-web-production-76f3.up.railway.app` (no trailing slash). The popup-based GIS callback is handled in first-party JavaScript and does not require a redirect URI.
+3. Copy the **client ID only** (format `...apps.googleusercontent.com`) into **Railway → Huddle → huddle-web → Variables** as `GOOGLE_CLIENT_ID`. A client ID is public configuration, **not** a secret; nevertheless avoid posting credentials other than this ID in chat. Never share a Google password, OAuth client secret or Google/Brevo/Gemini API key.
+4. Redeploy/restart and open `/api/config` to confirm `google_login: true`; the branded Google button appears on both login and signup. The button is hidden when not configured so nobody encounters a fake sign-in feature.
+5. Test a new Google account, sign out, sign in again, and test linking an existing password account in Profile. Do not attempt to merge accounts by matching unverified email addresses.
+
+**Verification note:** Automated tests mock cryptographic verification only to test business logic; genuine Google OAuth cannot be fully tested until an OAuth client ID and authorized origin have been set in Google Cloud.
+
 ## Huddle 2.0 · Email OTP, Huddle AI, mobile UX
 
 This release preserves existing accounts and chat history. It adds an email-verification flow for **new** registrations, a private AI assistant area, optional AI-image generation, and smoother mobile scrolling and navigation. Existing accounts have no email on record and remain usable without verification. Verification is not retroactively applied to them.
@@ -231,3 +245,15 @@ The UI uses smaller containment zones, less scroll restoration, native touch mom
 ### Verify release
 
 Run `python -m pytest -q` and `node tests/frontend_smoke.cjs && node tests/frontend_otp_ai.cjs && node --check app/web/app.js`. For real WebSocket traffic run `python tests/socket_network_smoke.py`. For email OTP, connect an actual verified sender first and test a new account. For AI, supply provider keys to Railway, verify that `/api/config` reports enabled providers, and test with small prompts while monitoring credits. The tests mock provider calls; they **do not** establish that unconfigured external services deliver messages or generate images.
+
+
+### Provider setup checklist (owner action needed before launch)
+
+| Integration | Required Railway variables | Verification | Cost control |
+|---|---|---|---|
+| Google login | `GOOGLE_CLIENT_ID` | OAuth client with the exact Huddle URL as an authorized JS origin, Google Identity Services popup verified | Google login itself does not need a paid API |
+| Email OTP | `BREVO_API_KEY`, `MAIL_FROM` | Verified sender in Brevo, real test email delivered, code accepted | Free tier and send quotas; watch activity |
+| AI tutor | `GEMINI_API_KEY` | Generate an API key in Google AI Studio, test one prompt, inspect rate limits | Confirm project on free tier, do not enable paid billing |
+| AI images | `HF_TOKEN`, `AI_IMAGES_ENABLED=1` | Credit availability and working inference model | Keep disabled until sufficient free credits are confirmed |
+
+Do not set placeholders for API keys: `google_login`, `email_otp` and `ai_chat` in `/api/config` are **availability flags based on variables**, not evidence that external credentials are valid. A real sign-in, OTP delivery and AI test are required before public claims. Existing accounts, messages and database content are retained when deploying code updates.

@@ -246,7 +246,7 @@ def test_ai_permissions_history_and_rate_limit(tmp_path,monkeypatch):
     monkeypatch.setattr('app.main.ask_ai',fake_ai)
     app=create_app(str(tmp_path/'ai.db'))
     with TestClient(app) as a,TestClient(app) as b:
-        assert a.get('/api/config').json()=={'email_otp':False,'ai_chat':True,'ai_image':False}
+        assert a.get('/api/config').json()=={'email_otp':False,'ai_chat':True,'ai_image':False,'google_login':False,'google_client_id':''}
         assert a.post('/api/ai/chat',json={'prompt':'Teach derivatives'}).status_code==401
         register(a,'learner')
         register(b,'another')
@@ -259,3 +259,74 @@ def test_ai_permissions_history_and_rate_limit(tmp_path,monkeypatch):
         for i in range(19):
             assert a.post('/api/ai/chat',json={'prompt':f'Question number {i}'}).status_code==200
         assert a.post('/api/ai/chat',json={'prompt':'An extra question'}).status_code==429
+
+
+# Google account verification is mocked here; real ID-token signatures and the
+# Google OAuth consent screen require a configured real Google OAuth web client.
+def test_google_disabled_rejects_fake_credentials_and_hides_button(tmp_path, monkeypatch):
+    monkeypatch.delenv('GOOGLE_CLIENT_ID', raising=False)
+    app = create_app(str(tmp_path / 'g-off.db'))
+    with TestClient(app) as visitor:
+        config = visitor.get('/api/config').json()
+        assert config['google_login'] is False
+        assert config['google_client_id'] == ''
+        assert visitor.post('/api/auth/google',json={'credential':'x'*90},headers={'X-Huddle-Client':'web'}).status_code == 503
+
+
+def test_google_new_account_signin_and_random_password(tmp_path, monkeypatch):
+    monkeypatch.setenv('GOOGLE_CLIENT_ID','1234567890-test-application.apps.googleusercontent.com')
+    identity={'sub':'subject-123','email':'test.person@gmail.com','name':'Test Person'}
+    monkeypatch.setattr('app.main.verify_google_credential', lambda token: identity if token == 'credential-valid-'*5 else (_ for _ in ()).throw(ValueError('Invalid token')))
+    app=create_app(str(tmp_path/'g-on.db'))
+    with TestClient(app) as visitor:
+        c=visitor.get('/api/config').json()
+        assert c['google_login'] and c['google_client_id'].startswith('1234567890-')
+        assert visitor.post('/api/auth/google',json={'credential':'credential-valid-'*5}).status_code == 403
+        assert visitor.post('/api/auth/google',json={'credential':'bad-token-'*5},headers={'X-Huddle-Client':'web'}).status_code == 401
+        created=visitor.post('/api/auth/google',json={'credential':'credential-valid-'*5},headers={'X-Huddle-Client':'web'})
+        assert created.status_code == 200, created.text
+        u=created.json()['user']
+        assert u['handle']=='test_person'
+        assert visitor.get('/api/me').json()['user']['id']==u['id']
+        assert visitor.post('/api/auth/logout').status_code == 200
+        again=visitor.post('/api/auth/google',json={'credential':'credential-valid-'*5},headers={'X-Huddle-Client':'web'})
+        assert again.json()['user']['id']==u['id']
+        assert visitor.post('/api/auth/login',json={'handle':u['handle'],'password':'credential-valid-'*5}).status_code == 401
+        with app.state.db.connection() as cx:
+            assert cx.execute('SELECT COUNT(*) FROM users').fetchone()[0]==1
+            assert cx.execute('SELECT email FROM verified_emails WHERE user_id=?',(u['id'],)).fetchone()[0]=='test.person@gmail.com'
+
+
+def test_google_avoids_existing_verified_email_takeover(tmp_path,monkeypatch):
+    monkeypatch.setenv('GOOGLE_CLIENT_ID','1234567890-test-application.apps.googleusercontent.com')
+    monkeypatch.setattr('app.main.verify_google_credential', lambda credential:{'sub':'sub-ABC','email':'alice@example.com','name':'Alice Google'})
+    app=create_app(str(tmp_path/'g-link.db'))
+    with TestClient(app) as alice,TestClient(app) as stranger:
+        original=register(alice,'alice')
+        with app.state.db.connection() as cx:
+            cx.execute('INSERT INTO verified_emails(user_id,email,verified_at) VALUES(?,?,?)',(original['id'],'alice@example.com','2026-10-01T01:01:01Z'))
+        rejected=stranger.post('/api/auth/google',json={'credential':'fake-google-credential-valid-length'},headers={'X-Huddle-Client':'web'})
+        assert rejected.status_code==409
+        assert stranger.get('/api/me').status_code==401
+        linked=alice.post('/api/auth/google/link',json={'credential':'fake-google-credential-valid-length'},headers={'X-Huddle-Client':'web'})
+        assert linked.status_code==200,linked.text
+        assert linked.json()['already_linked']==False
+        assert alice.post('/api/auth/google/link',json={'credential':'fake-google-credential-valid-length'},headers={'X-Huddle-Client':'web'}).json()['already_linked']
+        assert alice.post('/api/auth/logout').status_code==200
+        relogin=stranger.post('/api/auth/google',json={'credential':'fake-google-credential-valid-length'},headers={'X-Huddle-Client':'web'})
+        assert relogin.status_code==200
+        assert relogin.json()['user']['id']==original['id']
+
+
+def test_google_link_requires_session_and_unique_subject(tmp_path,monkeypatch):
+    monkeypatch.setenv('GOOGLE_CLIENT_ID','1234567890-test-application.apps.googleusercontent.com')
+    monkeypatch.setattr('app.main.verify_google_credential', lambda credential:{'sub':'google-person','email':'google@example.com','name':'Google Person'})
+    app=create_app(str(tmp_path/'g-unique.db'))
+    with TestClient(app) as a,TestClient(app) as b:
+        x=register(a,'sam')
+        y=register(b,'jane')
+        assert b.post('/api/auth/logout').status_code==200
+        assert b.post('/api/auth/google/link',json={'credential':'long-google-credential-test-with-minimum-length'},headers={'X-Huddle-Client':'web'}).status_code==401
+        assert a.post('/api/auth/google/link',json={'credential':'long-google-credential-test-with-minimum-length'},headers={'X-Huddle-Client':'web'}).status_code==200
+        assert b.post('/api/auth/login',json={'handle':'jane','password':'SecurePass123!'}).status_code==200
+        assert b.post('/api/auth/google/link',json={'credential':'long-google-credential-test-with-minimum-length'},headers={'X-Huddle-Client':'web'}).status_code==409

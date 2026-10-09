@@ -40,3 +40,11 @@ html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;scroll-behavior
 .ai-input-row{display:flex;align-items:center;gap:9px;border:1px solid #dce5ed;background:#fbfdff;border-radius:14px;padding:8px 9px 8px 13px}.ai-input-row textarea{border:0;outline:0;resize:none;flex:1;min-width:0;background:transparent;font-size:13px;line-height:1.4;max-height:130px}.ai-input-row button{height:38px;width:38px;flex-shrink:0;border:0;border-radius:11px;background:#0d9e98;color:#fff;font-size:23px}.ai-composer small{font-size:10px;color:#9aa6b3;text-align:center}
 @media(max-width:720px){.app-screen{height:100dvh;min-height:0}.message-scroller,.ai-scroll{scrollbar-gutter:auto}.sidebar{height:100%;box-shadow:none}.sidebar.open{box-shadow:8px 0 40px rgba(10,22,42,.12)}.ai-hero{padding:13px 12px 12px}.ai-hero p{font-size:11px}.ai-scroll{padding:14px 12px}.ai-composer{padding:10px 12px max(12px,env(safe-area-inset-bottom))}.ai-line{max-width:98%}.ai-bubble{font-size:12px}.ai-suggestions{flex-direction:column}.ai-suggestions button{text-align:left}.message-row .message-stack{max-width:85%}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* Consistent, touch-friendly Google Identity Services sign-in surfaces. */
+.google-auth-area{margin:16px 0 0;min-height:80px}.google-auth-area.hidden{display:none!important}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:14px 0 16px;color:#8693a7;font-size:12px;text-align:center}
+.auth-divider::before,.auth-divider::after{content:"";height:1px;flex:1;background:#e6eaf0}
+.google-signin-wrap{display:flex;align-items:center;justify-content:center;min-height:42px;max-width:100%;overflow:hidden}
+.google-help{text-align:center;color:#8995a5;font-size:10px;margin:9px 0 0;line-height:1.5}
+.google-link-section{border-top:1px solid #e7ecf0;padding:18px 0 8px;margin-top:10px}

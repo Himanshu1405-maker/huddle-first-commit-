@@ -1,10 +1,13 @@
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const html=fs.readFileSync('app/web/index.html','utf8');
 const js=fs.readFileSync('app/web/app.js','utf8');
-for(const id of ['otpPanel','otpCode','otpForm','registerEmailField','aiView','aiSidebarBtn','aiForm','aiMessages']){
+for(const id of ['otpPanel','otpCode','otpForm','registerEmailField','aiView','aiSidebarBtn','aiForm','aiMessages','googleAuthArea','googleSignInButton']){
  assert(html.includes(`id="${id}"`),`Missing UI control: ${id}`);
 }
-for(const route of ['/auth/verify','/auth/resend','/ai/chat','/ai/image','/ai/history']){
+for(const route of ['/auth/verify','/auth/resend','/ai/chat','/ai/image','/ai/history','/auth/google','/auth/google/link']){
  assert(js.includes(route),`Missing UI connection: ${route}`);
 }
 console.log('FRONTEND_FEATURE_WIRING_PASS');
+
+assert(js.includes("accounts.id.initialize"),"Google Identity Services not initialized");
+assert(js.includes("renderGoogleButton"),"Google button missing");
