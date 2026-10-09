@@ -17,7 +17,19 @@ function initials(name){return String(name||'?').trim().split(/\s+/).slice(0,2).
 function avatar(name,id,kind='dm',online=false){const hash=[...(id||name||'')].reduce((a,c)=>a+c.charCodeAt(0),0)%6;return `<span class="avatar ${kind==='group'?'group-avatar':`avatar-${hash}`}">${kind==='group'?'✳':esc(initials(name))}${online?'<i class="presence-dot"></i>':''}</span>`}
 function prettyTime(date){if(!date)return '';const d=new Date(date),today=new Date();if(d.toDateString()===today.toDateString())return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});return d.toLocaleDateString([],{month:'short',day:'numeric'})}
 function dayLabel(date){const d=new Date(date),t=new Date();if(d.toDateString()===t.toDateString())return 'TODAY';t.setDate(t.getDate()-1);if(d.toDateString()===t.toDateString())return 'YESTERDAY';return d.toLocaleDateString([],{month:'long',day:'numeric',year:'numeric'}).toUpperCase()}
-function toast(message,isError=false){const el=document.createElement('div');el.className='toast'+(isError?' error':'');el.textContent=message;$('#toastArea').append(el);setTimeout(()=>el.remove(),3800)}
+function toast(message,isError=false){
+  // A single, deduplicated toast: don't cover the chat composer with a stack.
+  const area=$('#toastArea');if(!area)return;
+  const previous=area.querySelector('.toast');
+  if(previous&&previous.textContent===message)return;
+  area.querySelectorAll('.toast').forEach(node=>node.remove());
+  const el=document.createElement('div');
+  el.className='toast'+(isError?' error':'');
+  el.setAttribute('role',isError?'alert':'status');
+  el.textContent=message;
+  area.append(el);
+  setTimeout(()=>el.remove(),3700);
+}
 async function api(path,opts={}){let res;try{res=await fetch('/api'+path,{credentials:'same-origin',...opts,headers:{'Content-Type':'application/json',...(opts.headers||{})}})}catch{throw new Error('Cannot reach the server. Check your connection.')}let json=await res.json().catch(()=>({}));if(!res.ok){if(res.status===401&&state.me&&!path.startsWith('/auth/'))signOutLocal();const detail=typeof json.detail==='string'?json.detail:Array.isArray(json.detail)?json.detail.map(e=>{const field=(e.loc||[]).filter(x=>typeof x==='string').pop();return (field?field.replaceAll('_',' ') + ': ':'')+(e.msg||'Invalid value')}).join('; '):'Request failed';throw new Error(detail)}return json}
 function post(path,data){return api(path,{method:'POST',body:JSON.stringify(data)})}
 function patch(path,data){return api(path,{method:'PATCH',body:JSON.stringify(data)})}
@@ -216,14 +228,87 @@ $('#otpForm').addEventListener('submit',async e=>{e.preventDefault();$('#otpErro
 $('#otpBack').addEventListener('click',()=>{state.otpTicket=null;$('#otpPanel').classList.add('hidden');$('#authForm').classList.remove('hidden');$('.switch-auth').classList.remove('hidden');if(state.config.google_login)$('#googleAuthArea').classList.remove('hidden');$('#authEmail').focus()});
 $('#resendOtp').addEventListener('click',async()=>{const button=$('#resendOtp');button.disabled=true;try{await post('/auth/resend',{ticket:state.otpTicket});toast('A fresh code was sent to your email')}catch(err){$('#otpError').textContent=err.message}finally{button.disabled=false}});
 
-function aiCard(m){const mine=m.role==='user',image=m.kind==='image'&&/^[0-9a-f]{32}$/.test(m.image_id||'');return `<article class="ai-line ${mine?'from-user':'from-ai'}"><span class="ai-face">${mine?'YOU':'✦'}</span><div class="ai-bubble">${image?`<img class="ai-generated-img" loading="lazy" src="/api/ai/image/${m.image_id}" alt="AI-generated image from your prompt" /><p>${esc(m.body)}</p><a href="/api/ai/image/${m.image_id}" download="huddle-ai.jpg">Save image ↧</a>`:esc(m.body)}</div></article>`}
-function renderAI(){const box=$('#aiMessages');box.innerHTML=state.aiMessages.map(aiCard).join('');$('#aiSuggestions').classList.toggle('hidden',state.aiMessages.length>0);$('#aiScroll').scrollTop=$('#aiScroll').scrollHeight}
-function aiStatus(){let label=[];if(state.config.ai_chat)label.push('Answers available');else label.push('Answers require an AI provider');if(state.config.ai_image)label.push('Image creation available');else label.push('Images require image credits');$('#aiAvailability').textContent=label.join(' · ')}
-async function openAI(){state.aiOpen=true;state.active=null;$('#welcomeChat').classList.add('hidden');$('#conversationView').classList.add('hidden');$('#aiView').classList.remove('hidden');mobileDrawer(false);renderSidebar();$('#headerIdentity').innerHTML='<span class="header-placeholder">✦ HUDDLE AI</span>';aiStatus();try{const result=await api('/ai/history');state.aiMessages=result.messages;renderAI()}catch(err){toast(err.message,true)}}
+function aiCard(m){
+  const mine=m.role==='user',image=m.kind==='image'&&/^[0-9a-f]{32}$/.test(m.image_id||'');
+  return `<article class="ai-line ${mine?'from-user':'from-ai'}"><span class="ai-face">${mine?'YOU':'✦'}</span><div class="ai-bubble">${image?`<img class="ai-generated-img" loading="lazy" src="/api/ai/image/${m.image_id}" alt="AI-generated image from your prompt" /><p>${esc(m.body)}</p><a href="/api/ai/image/${m.image_id}" download="huddle-ai.jpg">Save image ↧</a>`:esc(m.body)}</div></article>`;
+}
+function renderAI(){
+  const box=$('#aiMessages');
+  box.innerHTML=state.aiMessages.map(aiCard).join('');
+  $('#aiSuggestions').classList.toggle('hidden',state.aiMessages.length>0);
+  $('#aiView').classList.toggle('ai-has-history',state.aiMessages.length>0);
+  const scroller=$('#aiScroll');
+  requestAnimationFrame(()=>{scroller.scrollTop=scroller.scrollHeight});
+}
+function aiModeAvailable(){return state.aiMode==='image'?Boolean(state.config.ai_image):Boolean(state.config.ai_chat)}
+function aiStatus(){
+  const textReady=Boolean(state.config.ai_chat),imageReady=Boolean(state.config.ai_image);
+  const available=aiModeAvailable(),isImage=state.aiMode==='image';
+  const status=$('#aiAvailability'),notice=$('#aiNotice'),body=$('#aiNoticeText'),button=$('#aiSend'),hint=$('#aiComposerHint');
+  status.textContent=textReady?'✦ Text AI connected':'◌ AI connection pending';
+  status.classList.toggle('is-online',textReady);
+  notice.classList.toggle('hidden',available);
+  body.textContent=isImage
+    ? 'Image generation is not connected yet. You can explore the interface, but no image will be created until an image provider is enabled.'
+    : 'Your AI assistant is getting ready! Answers need a free-tier model connected by the Huddle owner. Regular chats are working normally.';
+  button.disabled=!available||state.aiBusy;
+  button.setAttribute('aria-label',available?(isImage?'Generate image':'Send to Huddle AI'):'AI feature not connected yet');
+  button.title=available?'Send':'This AI feature is not connected yet';
+  $('#aiInputRow').classList.toggle('ai-input-offline',!available);
+  hint.textContent=available?'AI can make mistakes. Avoid sharing sensitive information.':'Try a prompt idea above. Sending unlocks once AI is connected.';
+  $('#aiPrompt').placeholder=isImage?'Describe a picture you want to create…':'Ask me anything, big or small…';
+}
+async function openAI(){
+  state.aiOpen=true;state.active=null;
+  $('#welcomeChat').classList.add('hidden');$('#conversationView').classList.add('hidden');
+  $('#aiView').classList.remove('hidden');mobileDrawer(false);renderSidebar();
+  $('#headerIdentity').innerHTML='<span class="header-placeholder">✦ HUDDLE AI</span>';
+  aiStatus();
+  try{const result=await api('/ai/history');state.aiMessages=result.messages;renderAI()}
+  catch(err){
+    // A temporary history failure should not spam errors over the AI screen.
+    state.aiMessages=[];renderAI();
+    console.warn('Could not load Huddle AI history');
+  }
+}
 $('#aiSidebarBtn').addEventListener('click',openAI);
-$$('[data-ai-prompt]').forEach(button=>button.addEventListener('click',()=>{$('#aiPrompt').value=button.dataset.aiPrompt;$('#aiPrompt').focus()}));
-$$('[data-ai-mode]').forEach(button=>button.addEventListener('click',()=>{state.aiMode=button.dataset.aiMode;$$('[data-ai-mode]').forEach(el=>el.classList.toggle('selected',el===button));$('#aiPrompt').placeholder=state.aiMode==='image'?'Describe the image to create…':'Ask a question…'}));
-$('#aiForm').addEventListener('submit',async e=>{e.preventDefault();if(state.aiBusy)return;const prompt=$('#aiPrompt').value.trim();if(!prompt)return;const image=state.aiMode==='image';if(!(image?state.config.ai_image:state.config.ai_chat)){toast(image?'Image generation needs an image provider configured by the owner.':'AI answers need a text provider configured by the owner.',true);return}state.aiBusy=true;$('#aiSend').disabled=true;$('#aiPrompt').value='';state.aiMessages.push({role:'user',kind:'text',body:(image?'Generate an image: ':'')+prompt});renderAI();try{const result=await post(image?'/ai/image':'/ai/chat',{prompt});state.aiMessages.push(result.reply);renderAI()}catch(err){state.aiMessages.pop();toast(err.message,true);$('#aiPrompt').value=prompt;renderAI()}finally{state.aiBusy=false;$('#aiSend').disabled=false}});
-$('#aiPrompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#aiForm').requestSubmit()}});
+$('[data-ai-prompt]').forEach(button=>button.addEventListener('click',()=>{
+  $('#aiPrompt').value=button.dataset.aiPrompt;
+  $('#aiPrompt').focus();
+  $('#aiPrompt').scrollIntoView({block:'nearest',behavior:'auto'});
+}));
+$('[data-ai-mode]').forEach(button=>button.addEventListener('click',()=>{
+  state.aiMode=button.dataset.aiMode;
+  $('[data-ai-mode]').forEach(el=>el.classList.toggle('selected',el===button));
+  aiStatus();
+}));
+$('#aiForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(state.aiBusy)return;
+  if(!aiModeAvailable()){aiStatus();return}
+  const prompt=$('#aiPrompt').value.trim();if(!prompt)return;
+  const image=state.aiMode==='image';
+  state.aiBusy=true;aiStatus();
+  $('#aiPrompt').value='';
+  state.aiMessages.push({role:'user',kind:'text',body:(image?'Generate an image: ':'')+prompt});
+  $('#aiTyping').classList.remove('hidden');
+  renderAI();
+  try{
+    const result=await post(image?'/ai/image':'/ai/chat',{prompt});
+    state.aiMessages.push(result.reply);renderAI();
+  }catch(err){
+    state.aiMessages.pop();
+    $('#aiPrompt').value=prompt;
+    $('#aiNoticeText').textContent='AI could not answer this request: '+err.message;
+    $('#aiNotice').classList.remove('hidden');
+    renderAI();
+  }finally{
+    $('#aiTyping').classList.add('hidden');
+    state.aiBusy=false;aiStatus();
+  }
+});
+$('#aiPrompt').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(aiModeAvailable())$('#aiForm').requestSubmit();}
+});
 
 init();

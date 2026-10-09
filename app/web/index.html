@@ -90,9 +90,32 @@
         <div class="composer-area"><div class="composer-tip" id="composerTip"></div><div class="composer"><button class="composer-emoji" id="emojiBtn" aria-label="Insert emoji" title="Insert emoji">☺</button><textarea rows="1" maxlength="4000" id="messageInput" placeholder="Write a message…" aria-label="Type your message"></textarea><span class="composer-count" id="composerCount"></span><button class="send-btn" id="sendBtn" title="Send message" aria-label="Send message"><span data-icon="arrow-up"></span></button></div><div class="composer-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift + Enter</kbd> for a new line <span>Be kind out there <b>✳</b></span></div><div class="emoji-picker hidden" id="emojiPicker"><button>✨</button><button>🚀</button><button>🔥</button><button>❤️</button><button>😂</button><button>🎉</button><button>👍</button><button>💡</button><button>👋</button><button>😊</button></div></div>
       </section>
       <section id="aiView" class="ai-view hidden" aria-label="Huddle AI assistant">
-        <div class="ai-hero"><div class="ai-logo">✦</div><h2>Huddle AI <span>beta</span></h2><p>Ask questions, understand concepts, brainstorm ideas, or create images.</p><small id="aiAvailability">Checking AI availability…</small></div>
-        <div id="aiScroll" class="ai-scroll"><div id="aiMessages" class="ai-messages"></div><div class="ai-suggestions" id="aiSuggestions"><button type="button" data-ai-prompt="Explain derivatives in simple words with an example">📚 Explain a concept</button><button type="button" data-ai-prompt="Help me brainstorm three original hackathon ideas">💡 Brainstorm ideas</button><button type="button" data-ai-prompt="Make a friendly revision plan for an exam">📝 Study help</button></div></div>
-        <form id="aiForm" class="ai-composer"><div class="ai-mode"><button type="button" class="ai-mode-option selected" data-ai-mode="text">✎ Ask anything</button><button type="button" class="ai-mode-option" data-ai-mode="image">▧ Create image</button></div><div class="ai-input-row"><textarea id="aiPrompt" rows="1" maxlength="2500" placeholder="Ask a question…" aria-label="Your message to Huddle AI"></textarea><button type="submit" id="aiSend" aria-label="Send to AI">↑</button></div><small>AI can make mistakes. Do not share private conversations or sensitive details.</small></form>
+        <div class="ai-hero">
+          <div class="ai-hero-glow ai-glow-one" aria-hidden="true"></div><div class="ai-hero-glow ai-glow-two" aria-hidden="true"></div>
+          <div class="ai-eyebrow"><span class="ai-eyebrow-dot">✷</span> YOUR CREATIVE CORNER <span class="ai-hero-counter">BETA / 01</span></div>
+          <div class="ai-hero-row">
+            <div class="ai-logo" aria-hidden="true"><span>✦</span></div>
+            <div class="ai-hero-copy"><h2>Hey, curious mind<span class="ai-title-spark">✳</span></h2><p>Learn something new. Dream bigger. Make cool stuff.</p></div>
+          </div>
+          <div class="ai-hero-foot"><span class="ai-hero-chip">✴ Huddle AI</span><span class="ai-hero-chip">⚡ Think + create</span><span id="aiAvailability" class="ai-live-status">Checking connection…</span></div>
+        </div>
+        <div id="aiNotice" class="ai-notice hidden" role="status" aria-live="polite">
+          <span class="ai-notice-icon" aria-hidden="true">⚡</span>
+          <div><strong>Almost there — AI is being connected</strong><p id="aiNoticeText">Huddle AI needs a free-tier model connected before it can answer.</p></div>
+          <span class="ai-notice-chip">SETUP</span>
+        </div>
+        <div id="aiScroll" class="ai-scroll">
+          <div id="aiMessages" class="ai-messages"></div>
+          <div class="ai-suggestions" id="aiSuggestions">
+            <div class="ai-suggest-heading"><span>NOT SURE WHERE TO START?</span><h3>Pick a little spark <span>✦</span></h3></div>
+            <button type="button" data-ai-prompt="Explain derivatives in simple words with an example"><span class="ai-card-emoji">🧠</span><span class="ai-card-text"><strong>Break it down</strong><small>Understand the tricky stuff</small></span><span class="ai-card-arrow">↗</span></button>
+            <button type="button" data-ai-prompt="Help me brainstorm three original hackathon ideas"><span class="ai-card-emoji">💡</span><span class="ai-card-text"><strong>Big idea energy</strong><small>Brainstorm something bold</small></span><span class="ai-card-arrow">↗</span></button>
+            <button type="button" data-ai-prompt="Make a friendly revision plan for an exam"><span class="ai-card-emoji">📚</span><span class="ai-card-text"><strong>Study sidekick</strong><small>Make a plan that sticks</small></span><span class="ai-card-arrow">↗</span></button>
+            <button type="button" data-ai-prompt="Help me write a kind, clear message to my project teammates"><span class="ai-card-emoji">✍️</span><span class="ai-card-text"><strong>Words that work</strong><small>Write with more confidence</small></span><span class="ai-card-arrow">↗</span></button>
+          </div>
+          <div id="aiTyping" class="ai-typing hidden" aria-live="polite"><span aria-hidden="true">✦</span> Thinking <span class="ai-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+        </div>
+        <form id="aiForm" class="ai-composer"><div class="ai-mode"><button type="button" class="ai-mode-option selected" data-ai-mode="text">✎ Ask anything</button><button type="button" class="ai-mode-option" data-ai-mode="image">▧ Create image</button></div><div class="ai-input-row" id="aiInputRow"><textarea id="aiPrompt" rows="1" maxlength="2500" placeholder="Ask me anything, big or small…" aria-label="Your message to Huddle AI"></textarea><button type="submit" id="aiSend" aria-label="Send to AI">↑</button></div><small id="aiComposerHint">AI can make mistakes. Avoid sharing sensitive information.</small></form>
       </section>
     </main>
   </div>
