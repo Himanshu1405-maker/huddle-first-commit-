@@ -23,3 +23,4 @@ jobs:
       - run: node --check app/web/local-ai-worker.js
       - run: node tests/local_ai.cjs
       - run: node tests/local_cache.cjs
+      - run: node tests/chat_layout.cjs
