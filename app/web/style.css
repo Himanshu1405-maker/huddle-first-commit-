@@ -547,3 +547,8 @@ html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;scroll-behavior
 .report-card-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
 .report-card-actions button{background:#eef7f5;border:1px solid #d5e9e3;color:#167b70;border-radius:9px;min-height:37px;padding:7px 9px;font-size:12px;font-weight:800}
 .report-card-actions button:last-child{color:#ad354d;background:#fff0f3;border-color:#f8d2d8}
+
+/* Mobile-friendly video messages */
+.media-card.video-media{padding:8px;max-width:min(100%,390px);gap:7px}
+.video-media video{display:block;width:100%;height:auto;max-height:340px;object-fit:contain;background:#141b28;border-radius:10px}
+.video-media a{display:block;padding:6px;color:#25858f;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
