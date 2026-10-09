@@ -96,8 +96,11 @@ const HUDDLE_PUBLIC_URL='https://huddle-web-production-76f3.up.railway.app/';
 function prepareGoogleBrowserHelp(){
   const help=$('#googleBrowserHelp');
   if(!help)return;
-  const android=/Android/i.test(navigator.userAgent||'');
-  if(android)help.classList.remove('hidden');
+  const ua=navigator.userAgent||'';
+  const android=/Android/i.test(ua);
+  // Normal Android Chrome isn't an embedded browser.
+  const embedded=/;\s*wv\)|FBAN\/|FBAV\/|Instagram|ChatGPT|Line\/|MicroMessenger|GSA\//i.test(ua);
+  if(embedded)help.classList.remove('hidden');
   const launch=$('#openChromeGoogle');
   if(launch){
     // Chrome's intent URL can open an external browser from Android Custom Tabs.
@@ -178,6 +181,7 @@ async function initFirebaseSignIn(){
         reportGoogleIssue(stage,code,reason);
         console.warn('Huddle Google sign-in failure:',stage,code,reason);
         const message=googleSignInError(code,reason);
+        if(code==='auth/popup-blocked'||code==='auth/operation-not-supported-in-this-environment')$('#googleBrowserHelp')?.classList.remove('hidden');
         if(!state.me){$('#authError').textContent=message;$('#authError').scrollIntoView({block:'nearest'});}
         else toast(message,true);
       }finally{
