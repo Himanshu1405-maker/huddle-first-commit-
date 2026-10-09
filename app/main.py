@@ -27,7 +27,7 @@ from fastapi import Cookie, FastAPI, HTTPException, Request, Response, WebSocket
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from .extras import mail_ready, text_ready, image_ready, google_ready, verify_google_credential, firebase_ready, firebase_web_config, verify_firebase_credential, send_verification_email, ask_ai, generate_ai_image
+from .extras import mail_ready, text_ready, ai_provider, image_ready, google_ready, verify_google_credential, firebase_ready, firebase_web_config, verify_firebase_credential, send_verification_email, ask_ai, generate_ai_image
 from .security import encrypt_text, decrypt_text
 from .extensions import install_extensions
 
@@ -75,6 +75,8 @@ class TicketBody(BaseModel):
 
 class AIRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=2500)
+    use_context: bool = False
+    conversation_id: str | None = Field(default=None, max_length=64)
 
 
 class GoogleCredentialBody(BaseModel):
@@ -437,7 +439,8 @@ def create_app(database_path: str | None = None):
 
     @app.get("/api/config")
     async def public_config():
-        return {"email_otp": mail_ready(), "ai_chat": text_ready(), "ai_image": image_ready(), "ai_local": True,
+        return {"email_otp": mail_ready(), "ai_chat": text_ready(), "ai_image": image_ready(), "ai_local": False,
+                "ai_provider": ai_provider(),
                 "google_login": google_ready() or firebase_ready(),
                 "google_client_id": os.environ.get("GOOGLE_CLIENT_ID", "").strip() if google_ready() else "",
                 "firebase_config": firebase_web_config()}
@@ -894,7 +897,8 @@ def create_app(database_path: str | None = None):
         user = require_user(request)
         with db.connection() as cx:
             rows = cx.execute("SELECT id,role,kind,body,image_id,created_at FROM ai_messages WHERE user_id=? ORDER BY created_at DESC,id DESC LIMIT 60", (user["id"],)).fetchall()
-        return {"messages": [dict(r) for r in reversed(rows)], "enabled":text_ready(), "images_enabled":image_ready()}
+        return {"messages": [dict(r) for r in reversed(rows)], "enabled":text_ready(),
+                "provider":ai_provider(), "images_enabled":image_ready()}
 
     def ai_save(user_id, role, kind, body, image_id=None):
         mid = new_id()
@@ -908,19 +912,46 @@ def create_app(database_path: str | None = None):
     async def ai_chat(payload: AIRequest, request: Request):
         user = require_user(request)
         if not text_ready():
-            fail(503, "AI chat is not configured yet. The site owner needs to connect a text AI provider")
-        enforce_rate_limit(ai_attempts,user["id"],20,3600)
+            fail(503, "Cloud AI is not connected. The site administrator must set a provider API key in Railway.")
         prompt = payload.prompt.strip()
-        if len(prompt)<2: fail(422,"Please write a longer question")
+        if len(prompt) < 2:
+            fail(422, "Please write a longer question")
+        context_notes = ""
+        # Only retrieve another conversation when the signed-in user explicitly opts in.
+        # The membership check happens before calling a third-party AI provider.
+        if payload.use_context:
+            if not payload.conversation_id:
+                fail(422, "Select a conversation to provide optional context")
+            with db.connection() as cx:
+                ensure_membership(cx, payload.conversation_id, user["id"])
+                notes = cx.execute(
+                    """SELECT m.body,u.name FROM messages m JOIN users u ON u.id=m.sender_id
+                       WHERE m.conversation_id=? AND m.deleted_at IS NULL
+                       ORDER BY m.created_at DESC,m.id DESC LIMIT 14""",
+                    (payload.conversation_id,)
+                ).fetchall()
+            fragments = []
+            for row in reversed(notes):
+                message = decrypt_text(row["body"]).strip()
+                if not message or message.startswith(("📎", "🖼️", "🎤", "🎬", "[[huddle-sticker:")):
+                    continue
+                fragments.append(row["name"][:60] + ": " + message[:220])
+            context_notes = "\n".join(fragments)[-3000:]
+        enforce_rate_limit(ai_attempts, user["id"], 20, 3600)
         with db.connection() as cx:
-            history = list(reversed([dict(r) for r in cx.execute("SELECT role,body FROM ai_messages WHERE user_id=? AND kind='text' ORDER BY created_at DESC,id DESC LIMIT 10", (user["id"],)).fetchall()]))
+            history = list(reversed([dict(r) for r in cx.execute(
+                "SELECT role,body FROM ai_messages WHERE user_id=? AND kind='text' "
+                "ORDER BY created_at DESC,id DESC LIMIT 14",
+                (user["id"],)
+            ).fetchall()]))
         try:
-            answer = await ask_ai(history + [{"role":"user","body":prompt}])
+            answer = await ask_ai(history + [{"role": "user", "body": prompt}],
+                                  context_notes=context_notes)
         except Exception:
-            fail(503, "AI is currently unavailable or its free limit has been reached")
-        ai_save(user["id"],"user","text",prompt)
-        reply = ai_save(user["id"],"assistant","text",answer)
-        return {"reply":reply}
+            fail(503, "The AI provider could not answer right now. Please try again later.")
+        ai_save(user["id"], "user", "text", prompt)
+        reply = ai_save(user["id"], "assistant", "text", answer)
+        return {"reply": reply}
 
     @app.post("/api/ai/image")
     async def ai_image(payload: AIRequest, request: Request):
