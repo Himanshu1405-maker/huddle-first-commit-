@@ -85,6 +85,10 @@ async function onGoogleCredential(result){
     state.me=response.user;await loadConversations();showApp();toast('Welcome to Huddle! ✨');
   }catch(error){if(linkMode){toast(error.message,true)}else{$('#authError').textContent=error.message;toast(error.message,true)}}
 }
+function reportGoogleIssue(stage,code){
+  if(!/^auth\/[a-z0-9-]+$/.test(code))code='auth/unknown';
+  fetch('/api/diagnostics/google',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({stage,code})}).catch(()=>{});
+}
 async function initFirebaseSignIn(){
   const container=$('#googleSignInButton');
   $('#googleAuthArea').classList.remove('hidden');
@@ -106,7 +110,23 @@ async function initFirebaseSignIn(){
         await onGoogleCredential({credential:await result.user.getIdToken(true)});
         await signOut(auth);
       }catch(err){
-        const message=err.code==='auth/unauthorized-domain'?'The website domain must be added under Firebase Authentication → Settings → Authorized domains.':err.code==='auth/popup-blocked'?'Please open Huddle in Chrome and allow the Google sign-in window.':'Google sign-in did not finish. Please try again.';
+        // Never send Firebase tokens, identities or full provider messages to logs.
+        const code=typeof err?.code==='string'&&/^auth\/[a-z0-9-]+$/.test(err.code)?err.code:'auth/unknown';
+        reportGoogleIssue('popup',code);
+        console.warn('Firebase sign-in failed (code only):',code);
+        const solutions={
+          'auth/unauthorized-domain':'This Huddle website is not authorized in Firebase. Check Authentication → Settings → Authorized domains.',
+          'auth/popup-blocked':'Google sign-in was blocked. Open Huddle directly in Chrome (not inside another app), and allow pop-ups.',
+          'auth/popup-closed-by-user':'The Google sign-in window closed before finishing. Open Huddle directly in Chrome and keep the Google window open until it returns.',
+          'auth/cancelled-popup-request':'Another Google sign-in attempt interrupted this one. Tap the button once and finish the Google window.',
+          'auth/network-request-failed':'Google sign-in could not reach Firebase. Check your connection or try a different network.',
+          'auth/operation-not-allowed':'Google sign-in needs to be enabled in Firebase Authentication → Sign-in method.',
+          'auth/operation-not-supported-in-this-environment':'Your browser cannot open Google sign-in. Open Huddle directly in Chrome (not inside another app).',
+          'auth/web-storage-unsupported':'Your browser is blocking sign-in storage. Try a regular Chrome tab (not Incognito).',
+          'auth/invalid-api-key':'Firebase configuration needs correction by the Huddle administrator.',
+          'auth/invalid-credential':'Google sign-in could not verify the credential. Please select your account again.'
+        };
+        const message=(solutions[code]||'Google sign-in could not finish. Please share this error code: '+code)+' ('+code+')';
         if(!state.me)$('#authError').textContent=message;
         toast(message,true);
       }finally{button.disabled=false}

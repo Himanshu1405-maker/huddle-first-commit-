@@ -52,3 +52,13 @@ def test_reject_invalid_project_and_unverified_email(tmp_path,monkeypatch):
             {'users':[{'localId':'UID123','email':'person@example.com',
                        'emailVerified':False,'providerUserInfo':[{'providerId':'google.com'}]}]})
         assert client.post('/api/auth/google',json={'credential':make_token()},headers=headers).status_code==401
+
+
+def test_browser_diagnostics_are_safe_and_rate_limited(tmp_path,monkeypatch,caplog):
+    for key in FB: monkeypatch.delenv(key,raising=False)
+    with TestClient(create_app(str(tmp_path/'diagnostics.db'))) as client:
+        assert client.post('/api/diagnostics/google',json={'stage':'popup','code':'auth/popup-closed-by-user'}).status_code==200
+        assert 'error_code=auth/popup-closed-by-user' in caplog.text
+        assert client.post('/api/diagnostics/google',json={'stage':'popup','code':'token=secret'}).status_code==422
+        assert client.post('/api/diagnostics/google',json={'stage':'popup','code':'auth/unknown','email':'private@example.com'}).status_code==200
+        assert 'private@example.com' not in caplog.text

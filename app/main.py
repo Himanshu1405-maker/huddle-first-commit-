@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import hmac
 import time
 import os
@@ -76,6 +77,11 @@ class AIRequest(BaseModel):
 
 class GoogleCredentialBody(BaseModel):
     credential: str = Field(min_length=30, max_length=9000)
+
+
+class GoogleDiagnosticBody(BaseModel):
+    stage: str = Field(min_length=2, max_length=32)
+    code: str = Field(min_length=3, max_length=80)
 
 
 class LoginBody(BaseModel):
@@ -250,6 +256,7 @@ def create_app(database_path: str | None = None):
     app.state.hub = hub
     app.mount("/assets", StaticFiles(directory=str(WEB)), name="assets")
     login_attempts: dict[str, deque] = defaultdict(deque)
+    google_diagnostic_attempts: dict[str, deque] = defaultdict(deque)
     registration_attempts: dict[str, deque] = defaultdict(deque)
     message_attempts: dict[str, deque] = defaultdict(deque)
     ai_attempts: dict[str, deque] = defaultdict(deque)
@@ -529,6 +536,17 @@ def create_app(database_path: str | None = None):
         except Exception:
             fail(401, "Google couldn't verify this sign-in. Please try again")
         return info
+
+    @app.post("/api/diagnostics/google")
+    async def google_diagnostics(payload: GoogleDiagnosticBody, request: Request):
+        # Accept only standardized error codes; never log identities, tokens or emails.
+        enforce_rate_limit(google_diagnostic_attempts, client_ip(request), 8, 600)
+        if (not re.fullmatch(r"[a-z0-9_-]{2,32}", payload.stage)
+            or not re.fullmatch(r"[a-z0-9/_-]{3,80}", payload.code)):
+            fail(422, "Invalid diagnostic event")
+        logging.getLogger("uvicorn.error").warning(
+            "Huddle Google sign-in stage=%s error_code=%s", payload.stage, payload.code)
+        return {"ok": True}
 
     @app.post("/api/auth/google")
     async def google_login(payload: GoogleCredentialBody, response: Response, request: Request):
