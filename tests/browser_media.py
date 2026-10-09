@@ -204,6 +204,10 @@ def main():
             WebDriverWait(a, 10).until(lambda browser:
                 browser.find_element(By.ID, "aiPuterConnect").is_displayed())
             assert not a.execute_script("return !!document.querySelector('script[src=\"https://js.puter.com/v2/\"]')")
+            a.find_element(By.ID, "aiPuterConnect").click()
+            WebDriverWait(a, 20).until(lambda browser: browser.execute_script(
+                "return state.puter.scriptReady || !!state.puter.error"))
+            assert a.execute_script("return state.puter.scriptReady"), a.execute_script("return state.puter.error")
             a.execute_script("""
               window.puter={
                 auth:{isSignedIn:()=>true,signIn:()=>Promise.resolve(true)},
