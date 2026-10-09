@@ -60,7 +60,7 @@ function renderInboxHome(){
     return '<button type="button" class="inbox-chat" data-home-conversation="'+esc(c.id)+'">'+avatar(c.name,c.id,c.kind,online)+
        '<span class="inbox-chat-detail"><span class="inbox-chat-top"><strong>'+esc(c.name)+'</strong><time>'+esc(prettyTime(c.last_message?.created_at||c.updated_at))+'</time></span><span class="inbox-chat-bottom"><span>'+esc(preview)+'</span>'+(c.unread?'<b class="inbox-unread">'+Math.min(99,c.unread)+'</b>':'')+'</span></span></button>';
  }).join(''):'<div class="inbox-zero"><span aria-hidden="true">💬</span><strong>'+ (term?'No matching chats':'No conversations yet')+'</strong><p>'+(term?'Try a different name or search term.':'Start a chat with someone or create a group.')+'</p></div>';
- $('.inbox-filters button').forEach(btn=>btn.classList.toggle('selected',btn.dataset.homeFilter===filter));
+ $$('.inbox-filters button').forEach(btn=>btn.classList.toggle('selected',btn.dataset.homeFilter===filter));
 }
 $('#homeSearch').addEventListener('input',renderInboxHome);
 $('.inbox-filters').addEventListener('click',e=>{const btn=e.target.closest('[data-home-filter]');if(!btn)return;state.homeFilter=btn.dataset.homeFilter;renderInboxHome()});
