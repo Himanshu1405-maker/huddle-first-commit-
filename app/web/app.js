@@ -346,7 +346,8 @@ $('#aiForm').addEventListener('submit',async e=>{
   e.preventDefault();if(state.aiBusy)return;
   if(!aiModeAvailable()){aiStatus();return;}
   const prompt=$('#aiPrompt').value.trim();if(!prompt)return;
-  const image=state.aiMode==='image',localMode=!image&&!state.config.ai_chat&&state.localAI.ready;
+  const image=state.aiMode==='image';
+  const localMode=!image&&!state.config.ai_chat&&state.localAI.ready;
   state.aiBusy=true;aiStatus();$('#aiPrompt').value='';
   const messages=localMode?state.localAI.history:state.aiMessages;
   messages.push({role:'user',kind:'text',body:(image?'Generate an image: ':'')+prompt});
