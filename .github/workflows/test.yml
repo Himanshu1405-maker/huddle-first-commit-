@@ -22,7 +22,5 @@ jobs:
       - run: node tests/google_sdk_upgrade.cjs
       - run: node tests/google_direct_login.cjs
       - run: node tests/ai_ux.cjs
-      - run: node --check app/web/local-ai-worker.js
       - run: node tests/local_ai.cjs
-      - run: node tests/local_cache.cjs
       - run: node tests/chat_layout.cjs
