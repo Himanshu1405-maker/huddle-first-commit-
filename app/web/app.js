@@ -272,7 +272,7 @@ async function openAI(){
   }
 }
 $('#aiSidebarBtn').addEventListener('click',openAI);
-$('[data-ai-prompt]').forEach(button=>button.addEventListener('click',()=>{
+$$('[data-ai-prompt]').forEach(button=>button.addEventListener('click',()=>{
   $('#aiPrompt').value=button.dataset.aiPrompt;
   $('#aiPrompt').focus();
   $('#aiPrompt').scrollIntoView({block:'nearest',behavior:'auto'});
