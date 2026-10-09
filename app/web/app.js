@@ -66,11 +66,12 @@ function localAIWorker(){
     if(data.type==='progress'){local.progress=data.message||'Preparing model…';localAIUpdate();return;}
     if(data.type==='ready'){
       local.loading=false;local.ready=true;local.cacheFiles=Number(data.cachedFiles)||0;
-      local.progress=local.cacheFiles>0?'AI ready • model files saved in browser storage.':'AI ready • browser storage may not retain model files.';
+      local.progress=local.fallback?'Lightweight fallback ready; answers may be limited.':local.cacheFiles>0?'Qwen AI ready • model files saved in browser storage.':'Qwen AI ready • browser storage may not retain model files.';
       local.error='';saveLocalAIPreference();localAIUpdate();return;
     }
+    if(data.type==='fallback'){local.fallback=true;local.progress='Lightweight fallback model running on this device; answers may be limited.';localAIUpdate();return;}
     if(data.type==='upgrade_ready'){
-      local.qualityLoading=false;local.quality=true;local.progress='Enhanced local model ready • responses may still contain mistakes.';
+      local.qualityLoading=false;local.quality=true;local.progress='Qwen3 advanced local model ready • verify important answers.';
       localAIUpdate();return;
     }
     if(data.type==='upgrade_error'){
@@ -150,7 +151,7 @@ function resizeComposer(){const inp=$('#messageInput');inp.style.height='auto';i
 $('#messageInput').addEventListener('input',()=>{resizeComposer();sendTyping(true)});
 function sendTyping(value){if(state.active&&state.connected){state.ws.send(JSON.stringify({type:'typing',conversation_id:state.active.id,typing:value}));clearTimeout(state.typingTimeout);if(value)state.typingTimeout=setTimeout(()=>sendTyping(false),1400)}}
 $('#emojiBtn').addEventListener('click',()=>$('#emojiPicker').classList.toggle('hidden'));
-$('#emojiPicker').addEventListener('click',e=>{if(e.target.tagName==='BUTTON'){$('#messageInput').value+=e.target.textContent;resizeComposer();$('#emojiPicker').classList.add('hidden');$('#messageInput').focus()}});
+$('#emojiPicker').addEventListener('click',e=>handleEmojiPickerClick(e));
 $('#messages').addEventListener('click',async e=>{const reaction=e.target.closest('[data-reaction-message]');if(reaction){await applyReaction(reaction.dataset.reactionMessage,reaction.dataset.reactionEmoji);return}const action=e.target.closest('[data-action]');if(!action)return;const message=state.messages.find(m=>m.id===action.dataset.message);if(!message)return;if(action.dataset.action==='react'){state.emojiFor=message.id;openModal('react');return}
 if(action.dataset.action==='report'){
  const reason=prompt('Why are you reporting this message? (harassment, spam, unsafe content, etc.)');
@@ -162,7 +163,7 @@ if(action.dataset.action==='report'){
 }if(action.dataset.action==='edit'){const updated=prompt('Edit your message:',message.body);if(updated===null)return;try{await patch(`/messages/${message.id}`,{body:updated})}catch(err){toast(err.message,true)}}if(action.dataset.action==='delete'){if(!confirm('Delete this message for everyone?'))return;try{await api(`/messages/${message.id}`,{method:'DELETE'})}catch(err){toast(err.message,true)}}});
 /* Campus-friendly multimedia sharing and opt-in in-tab notifications. */
 function setMediaProgress(text){const el=$('#mediaProgress');if(el)el.textContent=text||'';}
-async function sendMediaFile(file){
+async function sendMediaFile(file,caption=''){
   const cid=state.active?.id;if(!cid||!file)return;
   if(file.size>(file.type.startsWith('video/')?20:6)*1024*1024){toast('Selected file exceeds upload size limit.',true);return;}
   const name=file.name||'attachment';
@@ -170,7 +171,7 @@ async function sendMediaFile(file){
   try{
     const response=await fetch('/api/conversations/'+encodeURIComponent(cid)+'/attachments',{
       method:'POST',credentials:'same-origin',
-      headers:{'X-Huddle-Filename':encodeURIComponent(name),'Content-Type':file.type||'application/octet-stream'},
+      headers:{'X-Huddle-Filename':encodeURIComponent(name),'X-Huddle-Caption':encodeURIComponent(caption.slice(0,500)),'Content-Type':file.type||'application/octet-stream'},
       body:file
     });
     const payload=await response.json().catch(()=>({}));
@@ -180,7 +181,7 @@ async function sendMediaFile(file){
   }catch(err){toast(err.message||'Could not share that file.',true);}
   finally{btn.disabled=false;setMediaProgress('');$('#mediaFileInput').value='';}
 }
-$('#mediaFileInput').addEventListener('change',e=>sendMediaFile(e.target.files?.[0]));
+$('#mediaFileInput').addEventListener('change',e=>openMediaEditor(e.target.files?.[0]));
 let voiceRecorder=null,voiceStream=null,voiceParts=[];
 $('#voiceNoteBtn').addEventListener('click',async()=>{
   const button=$('#voiceNoteBtn');
@@ -522,7 +523,7 @@ function aiStatus(){
   status.classList.toggle('is-online',textReady||local.ready);
   notice.classList.toggle('hidden',available);
   $('#aiNoticeTitle').textContent=isImage?'Poster Studio works offline':local.error?'Local AI could not start':local.loading?'Getting your local AI ready':local.ready?'Local AI ready':'Free AI — right on your device';
-  body.textContent=isImage?'Create downloadable graphic posters and wallpapers from a prompt. This is a local design tool, not photorealistic AI image generation.':local.error||'Enable on-device answers, with an optional larger model for better wording. No paid API or card required. Answers may still be inaccurate.';
+  body.textContent=isImage?'Create downloadable graphic posters and wallpapers from a prompt. This is a local design tool, not photorealistic AI image generation.':local.error||'Qwen local assistant runs on this device. First-time setup downloads several hundred MB and may use significant memory. For strongest cloud answers, the owner can configure Gemini on Railway. AI can still make mistakes.';
   start.classList.toggle('hidden',isImage||textReady||local.ready);
   start.disabled=local.loading;
   start.textContent=local.loading?'Opening your saved AI model…':localAIPreference()?'✨ Restore on-device AI':'✨ Enable on-device AI (free)';
@@ -530,7 +531,7 @@ function aiStatus(){
   const upgrade=$('#aiQualityUpgrade');
   upgrade.classList.toggle('hidden',isImage||textReady||!local.ready||local.quality);
   upgrade.disabled=local.qualityLoading;
-  upgrade.textContent=local.qualityLoading?'Getting better answers ready…':'✧ Improve answers • optional 360 MB download';
+  upgrade.textContent=local.qualityLoading?'Getting better answers ready…':'✧ Advanced Qwen3 mode • larger download, WebGPU needed';
   button.disabled=!available||state.aiBusy;
   button.setAttribute('aria-label',available?(isImage?'Create graphic poster':'Send to Huddle AI'):'AI is not ready yet');
   button.title=available?'Send':'Enable local AI first';

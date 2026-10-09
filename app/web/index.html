@@ -7,6 +7,7 @@
   <meta name="description" content="Huddle – the joyful, real-time chat space built for campus communities." />
   <title>Huddle — Find your people, keep the conversation going</title>
   <link rel="stylesheet" href="/assets/style.css" />
+  <link rel="stylesheet" href="/assets/chat-enhancements.css" />
 </head>
 <body>
   <div class="auth-screen" id="authScreen">
@@ -15,16 +16,16 @@
 
       <div class="auth-copy">
         <div class="eyebrow"><span class="eyebrow-dot"></span> YOUR CAMPUS, CONNECTED</div>
-        <h1>Meet your people.<br><em>Make things happen.</em></h1>
-        <p>One beautiful place for late-night ideas, real friendships and your next big project.</p>
-        <div class="auth-highlights"><span>✦ Real conversations</span><span>◉ Campus circles</span><span>↗ Made for makers</span></div>
+        <h1>Conversations<br><em>that move ideas forward.</em></h1>
+        <p>A sharper way to connect, collaborate and share — built for communities that create.</p>
+        <div class="auth-highlights"><span>● Private conversations</span><span>✧ Creative collaboration</span><span>↗ Built to connect</span></div>
       </div>
       <div class="auth-showcase" aria-hidden="true">
         <div class="showcase-backdrop"></div>
         <div class="showcase-phone">
           <div class="showcase-phone-top"><span class="showcase-dots"><i></i><i></i><i></i></span><strong>huddle<span>.</span></strong><span class="showcase-phone-dot">✦</span></div>
           <div class="showcase-chat-head"><span class="showcase-avatar">FC</span><span><strong>First Commit Circle</strong><small>5 members · creating together</small></span><span class="showcase-online"></span></div>
-          <div class="showcase-messages"><div class="showcase-bubble left">Coffee + a hackathon idea? ☕</div><div class="showcase-bubble right">Already building it! ✨</div><div class="showcase-bubble left">This is what Huddle is for 🚀</div></div>
+          <div class="showcase-messages"><div class="showcase-bubble left">Sending the new project brief now.</div><div class="showcase-bubble right">Perfect. Sharing a preview.</div><div class="showcase-bubble left">Let’s take it from here.</div></div>
           <div class="showcase-compose"><span>Message your circle...</span><span>↑</span></div>
         </div>
         <div class="showcase-float showcase-float-top">✦ More than messaging</div>
@@ -35,9 +36,9 @@
     <div class="auth-panel">
       <div class="mobile-brand brand"><span class="brand-logo">✳</span> huddle<span class="brand-period">.</span></div>
       <div class="auth-form-shell">
-        <div class="welcome-icon">✳</div><div class="auth-card-kicker">WELCOME TO YOUR SPACE</div>
+        <div class="welcome-icon">✳</div><div class="auth-card-kicker">WELCOME BACK</div>
         <h2 id="authTitle">Welcome to Huddle<span class="accent">.</span></h2>
-        <p class="muted auth-sub" id="authSubtitle">Good to see you again. Your conversations are waiting.</p>
+        <p class="muted auth-sub" id="authSubtitle">Your space to connect, share and get things done.</p>
         <form id="authForm" autocomplete="on">
           <div id="registerNameField" class="form-field hidden">
             <label for="authName">Your name</label>
@@ -109,8 +110,8 @@
         </div>
         <div id="aiNotice" class="ai-notice hidden" role="status" aria-live="polite">
           <span class="ai-notice-icon" aria-hidden="true">⚡</span>
-          <div class="ai-notice-content"><strong id="aiNoticeTitle">Free AI — right on your device</strong><p id="aiNoticeText">Download a small open-source model to chat without an API key. Approximately 120–200 MB the first time; a Wi-Fi connection is recommended.</p>
-          <button id="aiLocalStart" type="button" class="ai-local-activate">✨ Enable on-device AI (free)</button><small id="aiLocalProgress" class="ai-local-progress" aria-live="polite">Runs locally. Larger model is optional and needs a one-time download.</small></div>
+          <div class="ai-notice-content"><strong id="aiNoticeTitle">Free AI — right on your device</strong><p id="aiNoticeText">Enable the open-source Qwen assistant on your device. The first download can be several hundred MB. Use Wi-Fi and allow sufficient memory.</p>
+          <button id="aiLocalStart" type="button" class="ai-local-activate">✨ Enable on-device AI (free)</button><small id="aiLocalProgress" class="ai-local-progress" aria-live="polite">Runs locally. Advanced mode is optional and needs WebGPU and a larger download.</small></div>
           <span class="ai-notice-chip">NO CARD</span>
         </div>
         <div class="ai-enhance-row"><button id="aiQualityUpgrade" type="button" class="ai-quality-upgrade hidden">✧ Improve answers (optional larger model)</button></div>
@@ -125,7 +126,7 @@
           </div>
           <div id="aiTyping" class="ai-typing hidden" aria-live="polite"><span aria-hidden="true">✦</span> Thinking <span class="ai-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
         </div>
-        <form id="aiForm" class="ai-composer"><label class="ai-context-option" for="aiUseChatContext"><input type="checkbox" id="aiUseChatContext" /> Use my last opened conversation as optional context</label><div class="ai-mode"><button type="button" class="ai-mode-option selected" data-ai-mode="text">✎ Ask anything</button><button type="button" class="ai-mode-option" data-ai-mode="image">▧ Poster studio</button></div><div class="ai-input-row" id="aiInputRow"><textarea id="aiPrompt" rows="1" maxlength="2500" placeholder="Ask me anything, big or small…" aria-label="Your message to Huddle AI"></textarea><button type="submit" id="aiSend" aria-label="Send to AI">↑</button></div><small id="aiComposerHint">Small local AI can make mistakes. Poster Studio creates downloadable graphic art — not realistic AI photos.</small></form>
+        <form id="aiForm" class="ai-composer"><label class="ai-context-option" for="aiUseChatContext"><input type="checkbox" id="aiUseChatContext" /> Use my last opened conversation as optional context</label><div class="ai-mode"><button type="button" class="ai-mode-option selected" data-ai-mode="text">✎ Ask anything</button><button type="button" class="ai-mode-option" data-ai-mode="image">▧ Poster studio</button></div><div class="ai-input-row" id="aiInputRow"><textarea id="aiPrompt" rows="1" maxlength="2500" placeholder="Ask me anything, big or small…" aria-label="Your message to Huddle AI"></textarea><button type="submit" id="aiSend" aria-label="Send to AI">↑</button></div><small id="aiComposerHint">Huddle AI uses on-device Qwen when cloud AI is not configured. Verify important facts; Poster Studio creates graphic designs.</small></form>
       </section>
     </main>
   </div>
@@ -134,5 +135,6 @@
   <div id="toastArea" class="toast-area" role="status" aria-live="polite"></div>
   <div class="mobile-scrim hidden" id="mobileScrim"></div>
   <script src="/assets/app.js" defer></script>
+  <script src="/assets/chat-enhancements.js" defer></script>
 </body>
 </html>

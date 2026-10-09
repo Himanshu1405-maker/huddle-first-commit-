@@ -1,7 +1,8 @@
 /* Free on-device Huddle AI: no credentials or paid provider. Runs in a Web Worker. */
 'use strict';
-const MODEL='onnx-community/SmolLM2-135M-Instruct-ONNX-GQA';
-const QUALITY_MODEL='onnx-community/SmolLM2-360M-Instruct-ONNX';
+const MODEL='onnx-community/Qwen2.5-0.5B-Instruct';
+const FALLBACK_MODEL='onnx-community/SmolLM2-135M-Instruct-ONNX-GQA';
+const QUALITY_MODEL='onnx-community/Qwen3-0.6B-ONNX';
 let qualityGenerator=null;
 let generator=null;
 let loading=null;
@@ -9,11 +10,13 @@ function progress(message){self.postMessage({type:'progress',message});}
 async function improveQuality(){
   if(qualityGenerator){self.postMessage({type:'upgrade_ready'});return;}
   if(!generator)await load();
-  progress('Downloading better-quality model (about 360 MB once); saved for later visits…');
+  progress('Preparing Qwen3 advanced mode. Requires WebGPU and a larger one-time download…');
   try{
     const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
     env.allowLocalModels=false;env.useBrowserCache=typeof caches!=='undefined';env.cacheKey='transformers-cache';
-    qualityGenerator=await pipeline('text-generation',QUALITY_MODEL,{device:'wasm',dtype:'q8',
+    const adapter=await navigator.gpu?.requestAdapter();
+    if(!adapter)throw Error('WebGPU required for advanced mode');
+    qualityGenerator=await pipeline('text-generation',QUALITY_MODEL,{device:'webgpu',dtype:'q4f16',
       progress_callback:(x)=>{if(x.status==='progress'&&typeof x.progress==='number')progress('Better answers model: '+Math.round(x.progress)+'% ('+String(x.file||'weights')+')');}});
     self.postMessage({type:'upgrade_ready'});
   }catch(error){
@@ -49,11 +52,11 @@ async function load(){
     try{
       generator=await pipeline('text-generation',MODEL,options);
     }catch(error){
-      // Some devices expose WebGPU but don't support this model's GPU operations.
-      console.warn('Local AI GPU load failed:',String(error?.name||'Error'),String(error?.message||'').slice(0,230));
-      if(!available)throw error;
-      progress('GPU unavailable for this model. Trying CPU mode…');
-      generator=await pipeline('text-generation',MODEL,{...options,device:'wasm',dtype:'q8'});
+      // Retain a light model as a fallback for low-memory browsers/devices.
+      console.warn('Qwen2.5 local load failed:',String(error?.name||'Error'),String(error?.message||'').slice(0,230));
+      progress('This device could not start Qwen2.5. Loading the lightweight fallback…');
+      generator=await pipeline('text-generation',FALLBACK_MODEL,{...options,device:'wasm',dtype:'q8'});
+      self.postMessage({type:'fallback'});
     }
     // Don't claim permanent storage unless the model has actually been cached.
     let cachedFiles=0;
@@ -83,7 +86,7 @@ self.addEventListener('message',async event=>{
     const result=await active(messages,{max_new_tokens:tokens,do_sample:false,return_full_text:false,repetition_penalty:1.15});
     const dataOut=result?.[0]?.generated_text;
     const value=typeof dataOut==='string'?dataOut:Array.isArray(dataOut)?String(dataOut.at(-1)?.content||''):dataOut&&typeof dataOut==='object'?String(dataOut.content||''):'';
-    const answer=value.trim().slice(0,2400)||'I could not generate a clear answer. Try a simpler question.';
+    const answer=value.replace(/^[\\s\\S]*?<\\/think>/i,'').trim().slice(0,3200)||'I could not generate a clear answer. Try a simpler question.';
     self.postMessage({type:'answer',id:data.id,text:answer});
   }catch(error){self.postMessage({type:'answer_error',id:data.id,code:'generation_failed'});}
 });
