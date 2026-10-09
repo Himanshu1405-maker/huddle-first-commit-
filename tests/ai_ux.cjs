@@ -8,7 +8,7 @@ for(const id of ['aiView','aiNotice','aiNoticeText','aiAvailability','aiInputRow
 }
 assert(js.includes('function aiModeAvailable()'), 'Model availability must be checked');
 assert(js.includes('button.disabled=!available||state.aiBusy'), 'Prevent sending without a cloud provider');
-assert(js.includes("notice.classList.toggle('hidden',image||(ready&&!state.aiError))"), 'Show setup status or error');
+assert(js.includes("notice.classList.toggle('hidden',image||((ready||puterReady)&&!state.aiError))"), 'Show setup status or error');
 assert(js.includes("$('#aiTyping').classList.remove('hidden')"), 'Pending response indicator');
 assert(js.includes('state.aiError='), 'Show provider errors');
 assert(js.includes('/ai/chat') && js.includes('/ai/history'), 'Use server-side AI');
