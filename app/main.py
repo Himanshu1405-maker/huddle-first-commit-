@@ -406,11 +406,12 @@ def create_app(database_path: str | None = None):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
-            "script-src 'self' https://accounts.google.com/gsi/client https://www.gstatic.com; "
-            "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; "
-            "frame-src https://accounts.google.com/gsi/ https://*.firebaseapp.com; "
+            "script-src 'self' https://accounts.google.com https://www.gstatic.com https://apis.google.com; "
+            "style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; "
+            "font-src 'self' data: https://fonts.gstatic.com; "
+            "frame-src https://accounts.google.com https://*.firebaseapp.com; "
             "img-src 'self' data: https://accounts.google.com https://*.googleusercontent.com https://*.gstatic.com; "
-            "connect-src 'self' ws: wss: https://accounts.google.com/gsi/ https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://*.firebaseapp.com"
+            "connect-src 'self' ws: wss: https://accounts.google.com https://apis.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://*.firebaseapp.com"
         )
         return response
 

@@ -94,3 +94,21 @@ def test_google_identity_service_takes_priority_when_both_clients_configured(tmp
         result=client.post('/api/auth/google',json={'credential':'sample-google-token-'+('x'*90)},headers={'X-Huddle-Client':'web'})
         assert result.status_code==200,result.text
         assert result.json()['user']['name']=='Google Person'
+
+
+def test_google_identity_services_csp_permissions(tmp_path):
+    # Google sign-in and the DM Sans web font must work without relaxing
+    # object-src or frame-ancestors rules.
+    with TestClient(create_app(str(tmp_path/'security.db'))) as client:
+        response=client.get('/')
+        assert response.status_code == 200
+        csp=response.headers['content-security-policy']
+        directives=dict((v.split()[0],v.split()[1:]) for v in csp.split(';') if v.strip())
+        assert 'https://accounts.google.com' in directives['script-src']
+        assert 'https://accounts.google.com' in directives['frame-src']
+        assert 'https://accounts.google.com' in directives['connect-src']
+        assert 'https://fonts.googleapis.com' in directives['style-src']
+        assert 'https://fonts.gstatic.com' in directives['font-src']
+        assert "'none'" in directives['object-src']
+        assert "'none'" in directives['frame-ancestors']
+        assert "'unsafe-eval'" not in csp
