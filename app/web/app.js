@@ -12,7 +12,41 @@ const ICONS = {
 function icon(name){return `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`}
 $$('[data-icon]').forEach(node => node.innerHTML=icon(node.dataset.icon));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={config:{email_otp:false,ai_chat:false,ai_image:false,google_login:false,google_client_id:'',firebase_config:null},googleLoaded:false,otpTicket:null,aiMode:"text",aiBusy:false,aiOpen:false,aiMessages:[],me:null,conversations:[],active:null,messages:[],ws:null,connected:false,retry:0,filter:'all',isRegister:false,groupSelected:new Set(),modalUsers:[],hasMore:false,loading:false,pending:new Map(),typers:new Map(),typingTimeout:null,emojiFor:null};
+const state={config:{email_otp:false,ai_chat:false,ai_image:false,ai_local:true,google_login:false,google_client_id:'',firebase_config:null},googleLoaded:false,otpTicket:null,aiMode:"text",aiBusy:false,aiOpen:false,aiMessages:[],me:null,conversations:[],active:null,messages:[],ws:null,connected:false,retry:0,filter:'all',isRegister:false,groupSelected:new Set(),modalUsers:[],hasMore:false,loading:false,pending:new Map(),typers:new Map(),typingTimeout:null,emojiFor:null};
+// AI inference runs in a dedicated Web Worker. No API keys, no paid services.
+state.localAI={ready:false,loading:false,worker:null,job:null,active:false,history:[],progress:'',error:''};
+function localAIUpdate(){if(state.aiOpen)aiStatus();}
+function localAIWorker(){
+  const local=state.localAI;
+  if(local.worker)return local.worker;
+  const worker=new Worker('/assets/local-ai-worker.js',{type:'module',name:'huddle-local-ai'});
+  local.worker=worker;
+  worker.addEventListener('message',e=>{
+    const data=e.data||{};
+    if(data.type==='progress'){local.progress=data.message||'Preparing model…';localAIUpdate();return;}
+    if(data.type==='ready'){local.loading=false;local.ready=true;local.progress='Local AI is ready. Your questions stay on your device.';local.error='';localAIUpdate();return;}
+    if(data.type==='error'){
+      local.loading=false;local.ready=false;local.error='Model could not load here. Try Chrome on Wi-Fi, or a device with more free memory.';
+      local.progress=local.error;localAIUpdate();
+      if(local.job){local.job.reject(new Error(local.error));local.job=null;}
+      local.worker?.terminate();local.worker=null;return;
+    }
+    if(data.type==='answer' && local.job && data.id===local.job.id){
+      const job=local.job;local.job=null;
+      job.resolve(data.text||'Sorry, I could not generate a helpful response.');
+    }
+    if(data.type==='answer_error' && local.job && data.id===local.job.id){
+      const job=local.job;local.job=null;job.reject(new Error('This device could not complete the answer. Try a shorter question.'));
+    }
+  });
+  worker.addEventListener('error',()=>{
+    local.loading=false;local.ready=false;local.progress='The AI model is not supported on this device.';
+    local.error=local.progress;localAIUpdate();
+    if(local.job){local.job.reject(new Error(local.error));local.job=null;}
+    worker.terminate();local.worker=null;
+  });
+  return worker;
+}
 function initials(name){return String(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'?'}
 function avatar(name,id,kind='dm',online=false){const hash=[...(id||name||'')].reduce((a,c)=>a+c.charCodeAt(0),0)%6;return `<span class="avatar ${kind==='group'?'group-avatar':`avatar-${hash}`}">${kind==='group'?'✳':esc(initials(name))}${online?'<i class="presence-dot"></i>':''}</span>`}
 function prettyTime(date){if(!date)return '';const d=new Date(date),today=new Date();if(d.toDateString()===today.toDateString())return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});return d.toLocaleDateString([],{month:'short',day:'numeric'})}
@@ -228,34 +262,59 @@ $('#otpForm').addEventListener('submit',async e=>{e.preventDefault();$('#otpErro
 $('#otpBack').addEventListener('click',()=>{state.otpTicket=null;$('#otpPanel').classList.add('hidden');$('#authForm').classList.remove('hidden');$('.switch-auth').classList.remove('hidden');if(state.config.google_login)$('#googleAuthArea').classList.remove('hidden');$('#authEmail').focus()});
 $('#resendOtp').addEventListener('click',async()=>{const button=$('#resendOtp');button.disabled=true;try{await post('/auth/resend',{ticket:state.otpTicket});toast('A fresh code was sent to your email')}catch(err){$('#otpError').textContent=err.message}finally{button.disabled=false}});
 
+
+$('#aiLocalStart').addEventListener('click',()=>{
+  const local=state.localAI;
+  if(local.loading||local.ready)return;
+  if(!window.Worker){local.error='This browser cannot run the local AI model.';aiStatus();return;}
+  local.loading=true;local.error='';local.progress='Starting model download…';
+  local.active=true;local.history=[];renderAI();aiStatus();
+  try{localAIWorker().postMessage({type:'load'});}
+  catch{local.loading=false;local.error='Could not start local AI on this device.';local.progress=local.error;aiStatus();}
+});
+function askLocalAI(history){
+  const local=state.localAI;
+  if(!local.ready)return Promise.reject(new Error('Local AI has not loaded'));
+  return new Promise((resolve,reject)=>{
+    if(local.job){reject(new Error('An answer is still being prepared'));return;}
+    const id=Date.now()+'-'+Math.random().toString(36).slice(2);
+    local.job={resolve,reject,id};
+    try{localAIWorker().postMessage({type:'ask',id,messages:history.slice(-7)});}
+    catch{local.job=null;reject(new Error('Could not start a local AI response'));}
+  });
+}
+
 function aiCard(m){
   const mine=m.role==='user',image=m.kind==='image'&&/^[0-9a-f]{32}$/.test(m.image_id||'');
   return `<article class="ai-line ${mine?'from-user':'from-ai'}"><span class="ai-face">${mine?'YOU':'✦'}</span><div class="ai-bubble">${image?`<img class="ai-generated-img" loading="lazy" src="/api/ai/image/${m.image_id}" alt="AI-generated image from your prompt" /><p>${esc(m.body)}</p><a href="/api/ai/image/${m.image_id}" download="huddle-ai.jpg">Save image ↧</a>`:esc(m.body)}</div></article>`;
 }
 function renderAI(){
   const box=$('#aiMessages');
-  box.innerHTML=state.aiMessages.map(aiCard).join('');
-  $('#aiSuggestions').classList.toggle('hidden',state.aiMessages.length>0);
-  $('#aiView').classList.toggle('ai-has-history',state.aiMessages.length>0);
+  const messages=state.localAI.active?state.localAI.history:state.aiMessages;
+  box.innerHTML=messages.map(aiCard).join('');
+  $('#aiSuggestions').classList.toggle('hidden',messages.length>0);
+  $('#aiView').classList.toggle('ai-has-history',messages.length>0);
   const scroller=$('#aiScroll');
   requestAnimationFrame(()=>{scroller.scrollTop=scroller.scrollHeight});
 }
-function aiModeAvailable(){return state.aiMode==='image'?Boolean(state.config.ai_image):Boolean(state.config.ai_chat)}
+function aiModeAvailable(){return state.aiMode==='image'?Boolean(state.config.ai_image):Boolean(state.config.ai_chat||state.localAI.ready)}
 function aiStatus(){
-  const textReady=Boolean(state.config.ai_chat),imageReady=Boolean(state.config.ai_image);
-  const available=aiModeAvailable(),isImage=state.aiMode==='image';
-  const status=$('#aiAvailability'),notice=$('#aiNotice'),body=$('#aiNoticeText'),button=$('#aiSend'),hint=$('#aiComposerHint');
-  status.textContent=textReady?'✦ Text AI connected':'◌ AI connection pending';
-  status.classList.toggle('is-online',textReady);
+  const local=state.localAI,textReady=Boolean(state.config.ai_chat),imageReady=Boolean(state.config.ai_image),available=aiModeAvailable(),isImage=state.aiMode==='image';
+  const status=$('#aiAvailability'),notice=$('#aiNotice'),body=$('#aiNoticeText'),button=$('#aiSend'),hint=$('#aiComposerHint'),start=$('#aiLocalStart');
+  status.textContent=textReady?'✦ Online AI connected':local.ready?'✦ Local AI ready':local.loading?'◌ Downloading local AI':'◌ Free local AI available';
+  status.classList.toggle('is-online',textReady||local.ready);
   notice.classList.toggle('hidden',available);
-  body.textContent=isImage
-    ? 'Image generation is not connected yet. You can explore the interface, but no image will be created until an image provider is enabled.'
-    : 'Your AI assistant is getting ready! Answers need a free-tier model connected by the Huddle owner. Regular chats are working normally.';
+  $('#aiNoticeTitle').textContent=isImage?'Image creation is not connected':local.error?'Local AI could not start':local.loading?'Getting your local AI ready':local.ready?'Local AI ready':'Free AI — right on your device';
+  body.textContent=isImage?'Image generation requires a supported model and remains unavailable.':local.error||'Enable a small AI model in your browser — no account, payment card or API key needed. First download is about 120–200 MB, ideally over Wi-Fi. Small models may make mistakes.';
+  start.classList.toggle('hidden',isImage||textReady||local.ready);
+  start.disabled=local.loading;
+  start.textContent=local.loading?'Downloading and loading model…':'✨ Enable on-device AI (free)';
+  $('#aiLocalProgress').textContent=local.progress||'The first load takes time and needs memory; later loads can reuse cached model files.';
   button.disabled=!available||state.aiBusy;
-  button.setAttribute('aria-label',available?(isImage?'Generate image':'Send to Huddle AI'):'AI feature not connected yet');
-  button.title=available?'Send':'This AI feature is not connected yet';
+  button.setAttribute('aria-label',available?(isImage?'Generate image':'Send to Huddle AI'):'AI is not ready yet');
+  button.title=available?'Send':'Enable local AI first';
   $('#aiInputRow').classList.toggle('ai-input-offline',!available);
-  hint.textContent=available?'AI can make mistakes. Avoid sharing sensitive information.':'Try a prompt idea above. Sending unlocks once AI is connected.';
+  hint.textContent=available?'AI may make mistakes. Avoid entering private information.':isImage?'Image creation is unavailable.':'Enable local AI, then choose a prompt or ask a question.';
   $('#aiPrompt').placeholder=isImage?'Describe a picture you want to create…':'Ask me anything, big or small…';
 }
 async function openAI(){
@@ -264,6 +323,7 @@ async function openAI(){
   $('#aiView').classList.remove('hidden');mobileDrawer(false);renderSidebar();
   $('#headerIdentity').innerHTML='<span class="header-placeholder">✦ HUDDLE AI</span>';
   aiStatus();
+  if(state.localAI.active){renderAI();return;}
   try{const result=await api('/ai/history');state.aiMessages=result.messages;renderAI()}
   catch(err){
     // A temporary history failure should not spam errors over the AI screen.
@@ -283,32 +343,32 @@ $$('[data-ai-mode]').forEach(button=>button.addEventListener('click',()=>{
   aiStatus();
 }));
 $('#aiForm').addEventListener('submit',async e=>{
-  e.preventDefault();
-  if(state.aiBusy)return;
-  if(!aiModeAvailable()){aiStatus();return}
+  e.preventDefault();if(state.aiBusy)return;
+  if(!aiModeAvailable()){aiStatus();return;}
   const prompt=$('#aiPrompt').value.trim();if(!prompt)return;
-  const image=state.aiMode==='image';
-  state.aiBusy=true;aiStatus();
-  $('#aiPrompt').value='';
-  state.aiMessages.push({role:'user',kind:'text',body:(image?'Generate an image: ':'')+prompt});
-  $('#aiTyping').classList.remove('hidden');
-  renderAI();
+  const image=state.aiMode==='image',localMode=!image&&!state.config.ai_chat&&state.localAI.ready;
+  state.aiBusy=true;aiStatus();$('#aiPrompt').value='';
+  const messages=localMode?state.localAI.history:state.aiMessages;
+  messages.push({role:'user',kind:'text',body:(image?'Generate an image: ':'')+prompt});
+  $('#aiTyping').classList.remove('hidden');renderAI();
   let aiFailure=null;
   try{
-    const result=await post(image?'/ai/image':'/ai/chat',{prompt});
-    state.aiMessages.push(result.reply);renderAI();
+    if(localMode){
+      const context=messages.slice(-7).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.body}));
+      const text=await askLocalAI(context);
+      messages.push({role:'assistant',kind:'text',body:text});
+    }else{
+      const result=await post(image?'/ai/image':'/ai/chat',{prompt});
+      messages.push(result.reply);
+    }
+    renderAI();
   }catch(err){
-    state.aiMessages.pop();
-    $('#aiPrompt').value=prompt;
-    aiFailure=err.message;
+    messages.pop();$('#aiPrompt').value=prompt;
+    aiFailure=localMode?'Your device could not finish this answer. Please try again.':err.message;
     renderAI();
   }finally{
-    $('#aiTyping').classList.add('hidden');
-    state.aiBusy=false;aiStatus();
-    if(aiFailure){
-      $('#aiNoticeText').textContent='AI could not answer this request: '+aiFailure;
-      $('#aiNotice').classList.remove('hidden');
-    }
+    $('#aiTyping').classList.add('hidden');state.aiBusy=false;aiStatus();
+    if(aiFailure){$('#aiNoticeText').textContent=aiFailure;$('#aiNotice').classList.remove('hidden');}
   }
 });
 $('#aiPrompt').addEventListener('keydown',e=>{

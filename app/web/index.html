@@ -101,8 +101,9 @@
         </div>
         <div id="aiNotice" class="ai-notice hidden" role="status" aria-live="polite">
           <span class="ai-notice-icon" aria-hidden="true">⚡</span>
-          <div><strong>Almost there — AI is being connected</strong><p id="aiNoticeText">Huddle AI needs a free-tier model connected before it can answer.</p></div>
-          <span class="ai-notice-chip">SETUP</span>
+          <div class="ai-notice-content"><strong id="aiNoticeTitle">Free AI — right on your device</strong><p id="aiNoticeText">Download a small open-source model to chat without an API key. Approximately 120–200 MB the first time; a Wi-Fi connection is recommended.</p>
+          <button id="aiLocalStart" type="button" class="ai-local-activate">✨ Enable on-device AI (free)</button><small id="aiLocalProgress" class="ai-local-progress" aria-live="polite">Runs locally; answers may be slow or imperfect on phones.</small></div>
+          <span class="ai-notice-chip">NO CARD</span>
         </div>
         <div id="aiScroll" class="ai-scroll">
           <div id="aiMessages" class="ai-messages"></div>

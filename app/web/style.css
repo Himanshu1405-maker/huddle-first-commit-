@@ -195,3 +195,13 @@ html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;scroll-behavior
   .ai-scroll{scroll-behavior:auto}
   .ai-suggestions button,.ai-mode-option,.ai-sidebar-btn{transition:none!important}
 }
+
+/* Free, on-device AI setup */
+.ai-notice-content{min-width:0;flex:1}
+.ai-local-activate{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:8px 12px;
+ border:0;border-radius:11px;background:#32226b;color:white;font-weight:800;font-size:11px;margin:10px 0 5px;cursor:pointer;
+ transition:transform .15s ease,background .15s ease}
+.ai-local-activate:not(:disabled):hover{background:#5b36a6;transform:translateY(-1px)}
+.ai-local-activate:disabled{opacity:.65;cursor:progress}
+.ai-local-progress{display:block;margin-top:5px;color:#766e91;font-size:10px;line-height:1.5}
+@media(max-width:720px){.ai-notice{align-items:flex-start}.ai-local-activate{width:100%;justify-content:center}}
