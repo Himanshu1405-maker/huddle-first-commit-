@@ -92,12 +92,22 @@ def main():
             png = root / "sample.png"
             Image.new("RGB", (60, 35), "orange").save(png)
             a.find_element(By.ID, "mediaFileInput").send_keys(str(png))
+            WebDriverWait(a, 10).until(lambda browser:
+                bool(browser.find_elements(By.CSS_SELECTOR, '[data-photo-tool="square"]')))
+            a.find_element(By.CSS_SELECTOR, '[data-photo-tool="square"]').click()
+            a.find_element(By.ID, "hEditorCaption").send_keys("Picture from our campus")
+            a.find_element(By.ID, "hEditorSend").click()
             WebDriverWait(c, 12).until(lambda browser:
                 len(browser.find_elements(By.CSS_SELECTOR, "#messages .image-media img")) >= 1)
+            assert "Picture from our campus" in c.find_element(By.ID, "messages").text
+            assert "picture.png" not in c.find_element(By.ID, "messages").text
 
             pdf = root / "study-notes.pdf"
             pdf.write_bytes(b"%PDF-1.4\n1 0 obj <<>> endobj\n%%EOF")
             a.find_element(By.ID, "mediaFileInput").send_keys(str(pdf))
+            WebDriverWait(a, 10).until(lambda browser:
+                bool(browser.find_elements(By.ID, "hEditorSend")))
+            a.find_element(By.ID, "hEditorSend").click()
             WebDriverWait(c, 12).until(lambda browser:
                 len(browser.find_elements(By.CSS_SELECTOR, "#messages .file-media")) >= 1)
 
