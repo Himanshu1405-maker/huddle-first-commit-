@@ -1,0 +1,56 @@
+name: Huddle AI Persistent Cache Browser Check
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/huddle-ai-cache-browser-check.yml']
+jobs:
+  cache-reload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - run: python -m pip install selenium==4.38.0
+      - name: Confirm saved model reuse after full browser reload
+        run: |
+          python - <<'PY'
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.common.by import By
+          import time
+          base='https://huddle-web-production-76f3.up.railway.app/'
+          o=Options()
+          for arg in ['--headless=new','--no-sandbox','--disable-dev-shm-usage','--window-size=1120,900']:o.add_argument(arg)
+          b=webdriver.Chrome(options=o)
+          try:
+            b.get(base)
+            time.sleep(7)
+            b.execute_script("document.querySelector('#authScreen').classList.add('hidden');document.querySelector('#appScreen').classList.remove('hidden');state.aiOpen=true;document.querySelector('#aiView').classList.remove('hidden');aiStatus();")
+            b.find_element(By.ID,'aiLocalStart').click()
+            for i in range(28):
+              result=b.execute_script("return {ready:state.localAI.ready,error:state.localAI.error,cachedFiles:state.localAI.cacheFiles,progress:state.localAI.progress};")
+              if result['ready'] or result['error']:break
+              time.sleep(5)
+            print('FIRST_MODEL_LOAD='+str(result),flush=True)
+            assert result['ready'] and not result['error'],'Model did not load on first visit'
+            assert result['cachedFiles']>0,'Model weights were not saved in Cache Storage'
+            pref=b.execute_script("return localStorage.getItem('huddle-ai-installed-v1')")
+            print('USER_OPT_IN_SAVED='+str(pref=='yes'),flush=True)
+            assert pref=='yes'
+            cached=b.execute_async_script("""
+              const done=arguments[arguments.length-1];
+              hasLocalAIModelCache().then(done,()=>done(false));
+            """)
+            print('MODEL_WEIGHTS_IN_CACHE='+str(cached),flush=True)
+            assert cached,'Actual model weight file missing from Cache API'
+            b.refresh()
+            time.sleep(7)
+            b.execute_script("document.querySelector('#authScreen').classList.add('hidden');document.querySelector('#appScreen').classList.remove('hidden');openAI();")
+            for i in range(25):
+              reloaded=b.execute_script("return {ready:state.localAI.ready,loading:state.localAI.loading,error:state.localAI.error,restored:state.localAI.restored,cacheFiles:state.localAI.cacheFiles};")
+              if reloaded['ready'] or reloaded['error']:break
+              time.sleep(4)
+            print('RELOADED_SAVED_MODEL='+str(reloaded),flush=True)
+            assert reloaded['ready'] and reloaded['restored'] and not reloaded['error'],'Browser did not auto-restore locally cached model'
+            assert reloaded['cacheFiles']>0
+            print('HUDDLE_MODEL_REUSE_AFTER_RELOAD_PASS',flush=True)
+          finally:b.quit()
+          PY
