@@ -171,8 +171,8 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         path=storage / aid
         path.write_bytes(binary)
         try:
-            category="image" if media_type.startswith("image/") else "voice" if media_type.startswith("audio/") else "file"
-            marker={"image":"🖼️","voice":"🎤","file":"📎"}[category]
+            category="image" if media_type.startswith("image/") else "video" if media_type.startswith("video/") else "voice" if media_type.startswith("audio/") else "file"
+            marker={"image":"🖼️","video":"🎬","voice":"🎤","file":"📎"}[category]
             text=f"{marker} {filename}"
             message,created=send_message(conversation_id,user["id"],text)
             with db.connection() as cx:
