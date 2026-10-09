@@ -33,4 +33,4 @@ jobs:
       - name: Verify frontend JavaScript parses
         run: node --check app/web/app.js
       - name: Verify real Chromium two-account multimedia behavior against isolated SQLite
-        run: python tests/browser_media.py
+        run: PYTHONPATH=. python tests/browser_media.py
