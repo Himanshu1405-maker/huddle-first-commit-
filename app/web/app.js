@@ -24,7 +24,7 @@ async function hasLocalAIModelCache(){
   try{
     const bucket=await caches.open('transformers-cache');
     const requests=await bucket.keys();
-    return requests.some(item=>/\\.onnx(?:$|[?#])/.test(item.url));
+    return requests.some(item=>/\.onnx(?:$|[?#])/.test(item.url));
   }catch{return false;}
 }
 function saveLocalAIPreference(){
