@@ -11,6 +11,11 @@ async function load(){
     progress('Loading the open-source inference engine…');
     const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
     env.allowLocalModels=false;
+    // Keep model weights + WASM binaries across reloads via the browser Cache API.
+    // Use the library's default cache key to reuse files from earlier Huddle versions.
+    env.useBrowserCache=typeof caches!=='undefined';
+    env.useWasmCache=env.useBrowserCache;
+    env.cacheKey='transformers-cache';
     // navigator.gpu can exist even when Chrome has no usable adapter.
     let available=false;
     try{available=Boolean(await navigator.gpu?.requestAdapter({powerPreference:'low-power'}));}catch{available=false;}
@@ -33,7 +38,12 @@ async function load(){
       progress('GPU unavailable for this model. Trying CPU mode…');
       generator=await pipeline('text-generation',MODEL,{...options,device:'wasm',dtype:'q8'});
     }
-    self.postMessage({type:'ready'});
+    // Don't claim permanent storage unless the model has actually been cached.
+    let cachedFiles=0;
+    if(env.useBrowserCache){
+      try{cachedFiles=(await (await caches.open(env.cacheKey)).keys()).length;}catch{}
+    }
+    self.postMessage({type:'ready',cachedFiles});
   })().catch(err=>{loading=null;console.warn('Local AI initialization failure:',String(err?.name||'Error'),String(err?.message||'').slice(0,240));progress('Could not load local AI. A Wi-Fi connection and available device memory are needed.');self.postMessage({type:'error',code:'load_failed',reason:String(err?.name||'Error').slice(0,55),detail:String(err?.message||'').slice(0,240)});throw err;});
   return loading;
 }

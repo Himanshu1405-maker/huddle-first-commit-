@@ -14,7 +14,43 @@ $$('[data-icon]').forEach(node => node.innerHTML=icon(node.dataset.icon));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const state={config:{email_otp:false,ai_chat:false,ai_image:false,ai_local:true,google_login:false,google_client_id:'',firebase_config:null},googleLoaded:false,otpTicket:null,aiMode:"text",aiBusy:false,aiOpen:false,aiMessages:[],me:null,conversations:[],active:null,messages:[],ws:null,connected:false,retry:0,filter:'all',isRegister:false,groupSelected:new Set(),modalUsers:[],hasMore:false,loading:false,pending:new Map(),typers:new Map(),typingTimeout:null,emojiFor:null};
 // AI inference runs in a dedicated Web Worker. No API keys, no paid services.
-state.localAI={ready:false,loading:false,worker:null,job:null,active:false,history:[],progress:'',error:''};
+state.localAI={ready:false,loading:false,worker:null,job:null,active:false,history:[],progress:'',error:'',cacheFiles:0,restored:false};
+const LOCAL_AI_PREF='huddle-ai-installed-v1';
+function localAIPreference(){
+  try{return localStorage.getItem(LOCAL_AI_PREF)==='yes';}catch{return false;}
+}
+async function hasLocalAIModelCache(){
+  if(!('caches' in window))return false;
+  try{
+    const bucket=await caches.open('transformers-cache');
+    const requests=await bucket.keys();
+    return requests.some(item=>/\\.onnx(?:$|[?#])/.test(item.url));
+  }catch{return false;}
+}
+function saveLocalAIPreference(){
+  try{localStorage.setItem(LOCAL_AI_PREF,'yes');}catch{}
+}
+function startLocalAI({restore=false}={}){
+  const local=state.localAI;
+  if(local.loading||local.ready)return;
+  if(!window.Worker){local.error='Your browser cannot run an on-device AI model.';aiStatus();return;}
+  local.loading=true;local.error='';
+  local.progress=restore?'Opening saved AI model from this device…':'Checking saved files; downloading missing model files…';
+  local.active=true;local.restored=restore;
+  renderAI();aiStatus();
+  try{localAIWorker().postMessage({type:'load'});}
+  catch{local.loading=false;local.error='Could not open the AI model on this device.';local.progress=local.error;aiStatus();}
+}
+async function restoreLocalAIIfSaved(){
+  if(state.config.ai_chat||!localAIPreference()||state.localAI.ready||state.localAI.loading)return;
+  const cached=await hasLocalAIModelCache();
+  if(!state.aiOpen)return;
+  if(cached)startLocalAI({restore:true});
+  else{
+    state.localAI.progress='Saved model files are missing or were cleared by the browser. Re-enable AI to download them again.';
+    aiStatus();
+  }
+}
 function localAIUpdate(){if(state.aiOpen)aiStatus();}
 function localAIWorker(){
   const local=state.localAI;
@@ -24,7 +60,11 @@ function localAIWorker(){
   worker.addEventListener('message',e=>{
     const data=e.data||{};
     if(data.type==='progress'){local.progress=data.message||'Preparing model…';localAIUpdate();return;}
-    if(data.type==='ready'){local.loading=false;local.ready=true;local.progress='Local AI is ready. Your questions stay on your device.';local.error='';localAIUpdate();return;}
+    if(data.type==='ready'){
+      local.loading=false;local.ready=true;local.cacheFiles=Number(data.cachedFiles)||0;
+      local.progress=local.cacheFiles>0?'AI ready • model files saved in browser storage.':'AI ready • browser storage may not retain model files.';
+      local.error='';saveLocalAIPreference();localAIUpdate();return;
+    }
     if(data.type==='error'){
       local.debug={reason:data.reason,detail:data.detail};
       local.loading=false;local.ready=false;local.error='Model could not load here. Try Chrome on Wi-Fi, or a device with more free memory.';
@@ -265,13 +305,10 @@ $('#resendOtp').addEventListener('click',async()=>{const button=$('#resendOtp');
 
 
 $('#aiLocalStart').addEventListener('click',()=>{
-  const local=state.localAI;
-  if(local.loading||local.ready)return;
-  if(!window.Worker){local.error='This browser cannot run the local AI model.';aiStatus();return;}
-  local.loading=true;local.error='';local.progress='Starting model download…';
-  local.active=true;local.history=[];renderAI();aiStatus();
-  try{localAIWorker().postMessage({type:'load'});}
-  catch{local.loading=false;local.error='Could not start local AI on this device.';local.progress=local.error;aiStatus();}
+  // Storage persistence requires a user gesture. This never grants billing or
+  // forces browser storage quotas; the browser may still evict files.
+  if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});
+  startLocalAI();
 });
 function askLocalAI(history){
   const local=state.localAI;
@@ -302,15 +339,15 @@ function aiModeAvailable(){return state.aiMode==='image'?Boolean(state.config.ai
 function aiStatus(){
   const local=state.localAI,textReady=Boolean(state.config.ai_chat),imageReady=Boolean(state.config.ai_image),available=aiModeAvailable(),isImage=state.aiMode==='image';
   const status=$('#aiAvailability'),notice=$('#aiNotice'),body=$('#aiNoticeText'),button=$('#aiSend'),hint=$('#aiComposerHint'),start=$('#aiLocalStart');
-  status.textContent=textReady?'✦ Online AI connected':local.ready?'✦ Local AI ready':local.loading?'◌ Downloading local AI':'◌ Free local AI available';
+  status.textContent=textReady?'✦ Online AI connected':local.ready?'✦ Local AI ready':local.loading?'◌ Opening local AI':'◌ Free local AI available';
   status.classList.toggle('is-online',textReady||local.ready);
   notice.classList.toggle('hidden',available);
   $('#aiNoticeTitle').textContent=isImage?'Image creation is not connected':local.error?'Local AI could not start':local.loading?'Getting your local AI ready':local.ready?'Local AI ready':'Free AI — right on your device';
   body.textContent=isImage?'Image generation requires a supported model and remains unavailable.':local.error||'Enable a small AI model in your browser — no account, payment card or API key needed. First download is about 120–200 MB, ideally over Wi-Fi. Small models may make mistakes.';
   start.classList.toggle('hidden',isImage||textReady||local.ready);
   start.disabled=local.loading;
-  start.textContent=local.loading?'Downloading and loading model…':'✨ Enable on-device AI (free)';
-  $('#aiLocalProgress').textContent=local.progress||'The first load takes time and needs memory; later loads can reuse cached model files.';
+  start.textContent=local.loading?'Opening your saved AI model…':localAIPreference()?'✨ Restore on-device AI':'✨ Enable on-device AI (free)';
+  $('#aiLocalProgress').textContent=local.progress||'Your first download is saved where browser storage permits. Following visits reload the model from local storage.';
   button.disabled=!available||state.aiBusy;
   button.setAttribute('aria-label',available?(isImage?'Generate image':'Send to Huddle AI'):'AI is not ready yet');
   button.title=available?'Send':'Enable local AI first';
@@ -325,6 +362,13 @@ async function openAI(){
   $('#headerIdentity').innerHTML='<span class="header-placeholder">✦ HUDDLE AI</span>';
   aiStatus();
   if(state.localAI.active){renderAI();return;}
+  if(localAIPreference()&&!state.config.ai_chat){
+    state.localAI.active=true;
+    state.localAI.progress='Checking saved model files on this device…';
+    renderAI();aiStatus();
+    await restoreLocalAIIfSaved();
+    return;
+  }
   try{const result=await api('/ai/history');state.aiMessages=result.messages;renderAI()}
   catch(err){
     // A temporary history failure should not spam errors over the AI screen.
