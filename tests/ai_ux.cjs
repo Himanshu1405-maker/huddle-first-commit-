@@ -14,3 +14,5 @@ assert(js.includes("$('#aiTyping').classList.remove('hidden')"), 'Pending respon
 assert(css.includes('@media(prefers-reduced-motion:reduce)'),'Respect reduced motion');
 assert(css.includes('.ai-suggestions{display:grid'),'Suggestion cards must use compact responsive layout');
 console.log('AI_UX_PASS: missing provider handled inline, duplicate toasts removed, creative responsive layout wired');
+
+assert(!/(^|\n)\$\('\[data-ai-mode\]'\)\.forEach/.test(js), 'AI mode buttons must query ALL matching buttons');

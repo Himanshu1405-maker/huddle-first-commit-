@@ -277,9 +277,9 @@ $$('[data-ai-prompt]').forEach(button=>button.addEventListener('click',()=>{
   $('#aiPrompt').focus();
   $('#aiPrompt').scrollIntoView({block:'nearest',behavior:'auto'});
 }));
-$('[data-ai-mode]').forEach(button=>button.addEventListener('click',()=>{
+$$('[data-ai-mode]').forEach(button=>button.addEventListener('click',()=>{
   state.aiMode=button.dataset.aiMode;
-  $('[data-ai-mode]').forEach(el=>el.classList.toggle('selected',el===button));
+  $$('[data-ai-mode]').forEach(el=>el.classList.toggle('selected',el===button));
   aiStatus();
 }));
 $('#aiForm').addEventListener('submit',async e=>{
