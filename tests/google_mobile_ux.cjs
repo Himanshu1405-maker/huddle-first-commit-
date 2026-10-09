@@ -5,7 +5,7 @@ const html=fs.readFileSync(path.join(root,'app/web/index.html'),'utf8');
 const css=fs.readFileSync(path.join(root,'app/web/style.css'),'utf8');
 for(const id of ['googleBrowserHelp','openChromeGoogle','copyGoogleLink','googleBrowserLink'])assert(html.includes('id="'+id+'"'),id+' missing');
 assert(js.includes('prepareGoogleBrowserHelp();'));
-assert(js.includes('auth/internal-error') && js.includes('googleSignInError(code)'));
+assert(js.includes('auth/internal-error') && js.includes('googleSignInError(code,reason)'));
 assert(js.includes('intent://huddle-web-production-76f3.up.railway.app/'));
 assert(css.includes('.google-browser-help'));
 assert(!js.includes("else{$('#authError').textContent=error.message;toast(error.message,true)}"));
