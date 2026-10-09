@@ -55,6 +55,16 @@ def validate_media(data: bytes, filename: str, media_type: str):
     media_type = media_type.split(";")[0].strip().lower()
     if media_type == "audio/x-wav": media_type = "audio/wav"
     if media_type == "audio/x-m4a": media_type = "audio/mp4"
+    if media_type in ("text/markdown", "text/x-markdown"): media_type = "text/plain"
+    if media_type in ("application/octet-stream",""):
+        # Browsers sometimes omit the MIME for non-executable safe formats.
+        media_type = {
+            ".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",
+            ".webp":"image/webp",".pdf":"application/pdf",".txt":"text/plain",
+            ".md":"text/plain",".docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".mp3":"audio/mpeg",".wav":"audio/wav",".ogg":"audio/ogg",
+            ".webm":"audio/webm",".m4a":"audio/mp4"
+        }.get(Path(filename).suffix.lower(), "application/octet-stream")
     if media_type not in ALLOW:
         raise ValueError("Only PNG/JPG/WebP images, voice notes, PDF/TXT and DOCX files are supported")
     ext = Path(filename).suffix.lower()

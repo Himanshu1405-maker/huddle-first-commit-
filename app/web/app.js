@@ -593,7 +593,11 @@ $('#aiForm').addEventListener('submit',async e=>{
       if(state.aiContextEnabled&&state.lastChatId){
         const summary=await api('/conversations/'+encodeURIComponent(state.lastChatId)+'/recap');
         const notes=summary.items.map(x=>x.speaker+': '+x.text).join('\n').slice(0,1500);
-        if(notes)context.unshift({role:'user',content:'Reference notes from my own conversation (user consented):\n'+notes+'\nPlease use them only if helpful to the next question.'});
+        if(notes){
+          // The worker accepts 7 messages. Keep a slot for the consented notes.
+          context.splice(0,Math.max(0,context.length-6));
+          context.unshift({role:'user',content:'Reference notes from my own conversation (user consented):\n'+notes+'\nPlease use them only if helpful to the next question.'});
+        }
       }
       const text=await askLocalAI(context);
       messages.push({role:'assistant',kind:'text',body:text});
