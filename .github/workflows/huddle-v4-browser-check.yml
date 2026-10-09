@@ -1,0 +1,82 @@
+name: Huddle Visual Refresh + Poster Browser Check
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/huddle-v4-browser-check.yml']
+jobs:
+  real-chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - run: python -m pip install selenium==4.38.0
+      - name: Check mobile login, toolbar, assistant and real PNG creation
+        run: |
+          python - <<'PY'
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.common.by import By
+          base='https://huddle-web-production-76f3.up.railway.app/'
+          o=Options()
+          for a in ['--headless=new','--no-sandbox','--disable-dev-shm-usage','--window-size=1200,900']:o.add_argument(a)
+          b=webdriver.Chrome(options=o)
+          try:
+            for ismobile in [True,False]:
+              width,height=(390,844) if ismobile else (1200,900)
+              b.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{'width':width,'height':height,'deviceScaleFactor':2 if ismobile else 1,'mobile':ismobile})
+              b.get(base);time.sleep(6)
+              layout=b.execute_script("""
+                return {
+                  viewport:innerWidth,
+                  scrollWidth:document.documentElement.scrollWidth,
+                  heroVisible:getComputedStyle(document.querySelector('.auth-hero')).display!=='none',
+                  loginTitle:document.querySelector('#authTitle').textContent.trim(),
+                  loginCardWidth:Math.round(document.querySelector('.auth-form-shell').getBoundingClientRect().width),
+                  loginCardBG:getComputedStyle(document.querySelector('.auth-form-shell')).backgroundColor
+                };
+              """)
+              print(('MOBILE' if ismobile else 'DESKTOP')+'_LOGIN='+str(layout),flush=True)
+              assert layout['scrollWidth']<=layout['viewport']+3,'Horizontal login page overflow'
+              assert layout['heroVisible'],'New login hero not visible'
+              assert layout['loginCardWidth']>=340,'Login card too narrow'
+              assert 'Huddle' in layout['loginTitle']
+            b.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{'width':390,'height':844,'deviceScaleFactor':2,'mobile':True})
+            b.get(base);time.sleep(5)
+            b.execute_script("""document.querySelector('#authScreen').classList.add('hidden');
+              document.querySelector('#appScreen').classList.remove('hidden');
+              state.me={id:'smoke',name:'Demo Student',handle:'demo',bio:''};
+              document.querySelector('#welcomeChat').classList.add('hidden');
+              document.querySelector('#aiView').classList.remove('hidden');
+              state.aiOpen=true;aiStatus();
+            """)
+            toolbar=b.execute_script("""
+              return {
+                search:!!document.querySelector('#searchMessagesBtn'),
+                ai:!!document.querySelector('#aiQuickBtn'),
+                profile:!!document.querySelector('#profileQuickBtn'),
+                oldInfo:!!document.querySelector('#infoBtn'),
+                hero:document.querySelector('.ai-hero-copy h2').textContent,
+                cards:document.querySelectorAll('.ai-suggestions button').length,
+                width:document.documentElement.scrollWidth,
+                viewport:innerWidth
+              };
+            """)
+            print('UPDATED_TOOLBAR='+str(toolbar),flush=True)
+            assert toolbar['search'] and toolbar['ai'] and toolbar['profile'] and not toolbar['oldInfo']
+            assert toolbar['cards']>=4 and toolbar['width']<=toolbar['viewport']+4
+            b.find_element(By.CSS_SELECTOR,'[data-ai-mode="image"]').click()
+            b.find_element(By.ID,'aiPrompt').send_keys('Make a beautiful sunset mountains travel poster')
+            b.find_element(By.ID,'aiSend').click()
+            for i in range(28):
+              state=b.execute_script("""
+                const img=document.querySelector('#aiMessages img[alt="Graphic poster designed in Huddle"]');
+                return {busy:window.state?.aiBusy??state.aiBusy, hasImage:!!img,valid:!!img && img.src.startsWith('data:image/png;base64,'),length:img?.src.length||0,save:!!document.querySelector('.poster-download'),error:document.querySelector('#aiNoticeText')?.textContent};
+              """)
+              if state['hasImage'] or not state['busy']:break
+              time.sleep(.4)
+            print('POSTER_RENDER='+str(state),flush=True)
+            assert state['hasImage'] and state['valid'] and state['length']>20000 and state['save'],'Image not created'
+            b.find_element(By.CLASS_NAME,'poster-download').click()
+            print('HUDDLE_V4_LIVE_BROWSER_PASS',flush=True)
+          finally:b.quit()
+          PY
