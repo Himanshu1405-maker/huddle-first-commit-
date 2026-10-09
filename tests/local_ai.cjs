@@ -5,6 +5,6 @@ const worker=fs.readFileSync('app/web/local-ai-worker.js','utf8');
 const main=fs.readFileSync('app/main.py','utf8');
 for(const id of ['aiLocalStart','aiLocalProgress','aiNoticeTitle'])assert(html.includes('id="'+id+'"'));
 for(const str of ['new Worker(\'/assets/local-ai-worker.js\'','function askLocalAI(history)','const localMode=!image&&!state.config.ai_chat&&state.localAI.ready','messages.slice(-7)'])assert(js.includes(str),str);
-for(const str of ['SmolLM2-135M-Instruct-ONNX-GQA','@huggingface/transformers@3.8.1','max_new_tokens:112', "type:'ready'"])assert(worker.includes(str),str);
+for(const str of ['SmolLM2-135M-Instruct-ONNX-GQA','@huggingface/transformers@3.8.1','max_new_tokens:tokens', "type:'ready'"])assert(worker.includes(str),str);
 assert(main.includes('"ai_local": True'));assert(main.includes("worker-src 'self'"));assert(main.includes('https://cdn.jsdelivr.net'));assert(main.includes('https://huggingface.co'));
 console.log('LOCAL_AI_WIRING_PASS: opt-in model, worker, CSP, availability and message flow');
