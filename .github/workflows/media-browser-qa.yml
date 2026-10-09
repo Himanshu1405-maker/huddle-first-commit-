@@ -1,0 +1,36 @@
+name: Huddle Two-Account Media Browser QA
+on:
+  push:
+    paths:
+      - app/extensions.py
+      - app/web/app.js
+      - app/web/index.html
+      - tests/browser_media.py
+      - tests/test_media_ranges.py
+      - .github/workflows/media-browser-qa.yml
+  pull_request:
+    paths:
+      - app/extensions.py
+      - app/web/app.js
+      - app/web/index.html
+      - tests/browser_media.py
+      - tests/test_media_ranges.py
+      - .github/workflows/media-browser-qa.yml
+  workflow_dispatch:
+jobs:
+  real-chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements-dev.txt selenium==4.38.0 requests
+      - name: Verify frontend JavaScript parses
+        run: node --check app/web/app.js
+      - name: Verify real Chromium two-account multimedia behavior against isolated SQLite
+        run: python tests/browser_media.py
