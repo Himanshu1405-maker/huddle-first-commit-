@@ -1,0 +1,52 @@
+name: Google Sign-In Browser Probe
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/google-browser-probe.yml']
+jobs:
+  google-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install selenium==4.38.0
+      - name: Check real Chrome rendering and Google OAuth origin
+        run: |
+          python - <<'PY'
+          import time, json, urllib.request
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+          from selenium.webdriver.common.by import By
+          base='https://huddle-web-production-76f3.up.railway.app'
+          with urllib.request.urlopen(base+'/api/config',timeout=25) as r:
+              config=json.load(r)
+          print('GOOGLE_PUBLIC_BUTTON_ENABLED='+str(config.get('google_login')))
+          print('GSI_CLIENT_ID_PRESENT='+str(config.get('google_client_id','').endswith('.apps.googleusercontent.com')))
+          opts=Options()
+          opts.add_argument('--headless=new')
+          opts.add_argument('--no-sandbox')
+          opts.add_argument('--disable-dev-shm-usage')
+          opts.add_argument('--window-size=1170,900')
+          opts.set_capability('goog:loggingPrefs',{'browser':'ALL'})
+          browser=webdriver.Chrome(options=opts)
+          try:
+              browser.get(base+'/')
+              time.sleep(9)
+              print('PAGE_LOADED='+str('Welcome back' in browser.page_source))
+              wrap=browser.find_elements(By.ID,'googleSignInButton')
+              print('GOOGLE_WRAPPER_PRESENT='+str(bool(wrap)))
+              print('GSI_IFRAME_COUNT='+str(len(wrap[0].find_elements(By.TAG_NAME,'iframe')) if wrap else 0))
+              print('FIREBASE_POPUP_BUTTON='+str(bool(browser.find_elements(By.ID,'firebaseGoogleBtn'))))
+              logs=browser.get_log('browser')
+              print('BROWSER_WARNING_COUNT='+str(len(logs)))
+              for item in logs:
+                  msg=item.get('message','').lower()
+                  if 'origin is not allowed' in msg: print('GOOGLE_CLIENT_ORIGIN_REJECTED=True')
+                  elif 'content security policy' in msg or 'violates the following' in msg: print('BROWSER_CSP_BLOCKED=True')
+                  elif 'google' in msg and ('client id' in msg or 'gsi_logger' in msg): print('GOOGLE_SCRIPT_WARNING=True')
+              print('GOOGLE_BROWSER_PROBE_DONE')
+          finally:
+              browser.quit()
+          PY
