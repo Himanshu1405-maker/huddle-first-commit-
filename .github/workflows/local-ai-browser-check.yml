@@ -37,7 +37,7 @@ jobs:
               for i in range(16):
                   if result.get('ready') or result.get('error'):break
                   time.sleep(10)
-                  result=browser.execute_script("return {loading:state.localAI.loading,ready:state.localAI.ready,progress:state.localAI.progress,error:state.localAI.error};")
+                  result=browser.execute_script("return {loading:state.localAI.loading,ready:state.localAI.ready,progress:state.localAI.progress,error:state.localAI.error,debug:state.localAI.debug};")
                   if i%3==0:print('LOCAL_AI_PROGRESS='+str(result),flush=True)
               print('LOCAL_AI_FINAL='+str(result),flush=True)
               logs=browser.get_log('browser')

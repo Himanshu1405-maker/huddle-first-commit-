@@ -26,6 +26,7 @@ function localAIWorker(){
     if(data.type==='progress'){local.progress=data.message||'Preparing model…';localAIUpdate();return;}
     if(data.type==='ready'){local.loading=false;local.ready=true;local.progress='Local AI is ready. Your questions stay on your device.';local.error='';localAIUpdate();return;}
     if(data.type==='error'){
+      local.debug={reason:data.reason,detail:data.detail};
       local.loading=false;local.ready=false;local.error='Model could not load here. Try Chrome on Wi-Fi, or a device with more free memory.';
       local.progress=local.error;localAIUpdate();
       if(local.job){local.job.reject(new Error(local.error));local.job=null;}
