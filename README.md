@@ -257,3 +257,6 @@ Run `python -m pytest -q` and `node tests/frontend_smoke.cjs && node tests/front
 | AI images | `HF_TOKEN`, `AI_IMAGES_ENABLED=1` | Credit availability and working inference model | Keep disabled until sufficient free credits are confirmed |
 
 Do not set placeholders for API keys: `google_login`, `email_otp` and `ai_chat` in `/api/config` are **availability flags based on variables**, not evidence that external credentials are valid. A real sign-in, OTP delivery and AI test are required before public claims. Existing accounts, messages and database content are retained when deploying code updates.
+
+### Google Identity Services reliability mode
+When `GOOGLE_CLIENT_ID` is set, Huddle uses Google's official sign-in button directly rather than Firebase's OAuth popup. The server validates its Google-issued ID token cryptographically against the exact OAuth client ID before creating a Huddle session. This resolves Firebase intermediary popup failures but still requires the website to be an allowed JavaScript origin in Google OAuth client settings. Firebase Spark config remains available as the backup. Never enable this merely based on deployment health: test the actual Google account sign-in.

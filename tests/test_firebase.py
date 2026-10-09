@@ -76,3 +76,21 @@ def test_google_diagnostics_reject_raw_provider_text(tmp_path, monkeypatch, capl
         ]:
             assert client.post('/api/diagnostics/google',json=bad).status_code == 422
         assert 'email@example.com' not in caplog.text
+
+
+def test_google_identity_service_takes_priority_when_both_clients_configured(tmp_path,monkeypatch):
+    """When a direct Web OAuth client is configured, bypass fragile Firebase popup."""
+    from app import main as main_mod
+    for k,v in ENV.items():monkeypatch.setenv(k,v)
+    monkeypatch.setenv('GOOGLE_CLIENT_ID','test-gsi-web-client.apps.googleusercontent.com')
+    monkeypatch.setattr(main_mod,'verify_google_credential',
+        lambda token: {'sub':'123-google-identity','email':'gsi@example.com','name':'Google Person'})
+    def fail_firebase(token):
+        raise AssertionError('Firebase popup token verifier should not be called')
+    monkeypatch.setattr(main_mod,'verify_firebase_credential',fail_firebase)
+    with TestClient(create_app(str(tmp_path/'gis.db'))) as client:
+        config=client.get('/api/config').json()
+        assert config['google_login'] and config['google_client_id'].endswith('.apps.googleusercontent.com')
+        result=client.post('/api/auth/google',json={'credential':'sample-google-token-'+('x'*90)},headers={'X-Huddle-Client':'web'})
+        assert result.status_code==200,result.text
+        assert result.json()['user']['name']=='Google Person'

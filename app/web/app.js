@@ -199,8 +199,13 @@ async function initFirebaseSignIn(){
   }
 }
 function initGoogleSignIn(){
-  if(state.config.firebase_config?.projectId){initFirebaseSignIn();return}
-  if(!state.config.google_login||!state.config.google_client_id)return;
+  // Use the native Google Identity Services flow instead of the failing
+  // Firebase intermediary popup whenever a Google OAuth Web client is ready.
+  if(!state.config.google_client_id){
+    if(state.config.firebase_config?.projectId)initFirebaseSignIn();
+    return;
+  }
+  if(!state.config.google_login)return;
   $('#googleAuthArea').classList.remove('hidden');
   const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
   script.onload=()=>{try{window.google.accounts.id.initialize({client_id:state.config.google_client_id,callback:onGoogleCredential,ux_mode:'popup',auto_select:false});state.googleLoaded=true;renderGoogleButton($('#googleSignInButton'))}catch(error){console.warn('Google sign-in unavailable',error)}};

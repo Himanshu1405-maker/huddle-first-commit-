@@ -532,7 +532,7 @@ def create_app(database_path: str | None = None):
             fail(403, "Google sign-in requires the Huddle website")
         enforce_rate_limit(login_attempts, "google:" + client_ip(request), 25, 900)
         try:
-            verifier = verify_firebase_credential if firebase_ready() else verify_google_credential
+            verifier = verify_google_credential if google_ready() else verify_firebase_credential
             info = await asyncio.to_thread(verifier, credential)
         except Exception:
             fail(401, "Google couldn't verify this sign-in. Please try again")
