@@ -19,6 +19,7 @@ const state={config:{email_otp:false,ai_chat:false,ai_image:false,ai_local:false
 state.lastChatId=null;
 state.aiContextEnabled=false;
 state.aiError='';
+state.puter={connected:false,connecting:false,scriptReady:false,error:'',note:''};
 function initials(name){return String(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'?'}
 function avatar(name,id,kind='dm',online=false){const hash=[...(id||name||'')].reduce((a,c)=>a+c.charCodeAt(0),0)%6;return `<span class="avatar ${kind==='group'?'group-avatar':`avatar-${hash}`}">${kind==='group'?'✳':esc(initials(name))}${online?'<i class="presence-dot"></i>':''}</span>`}
 function prettyTime(date){if(!date)return '';const d=new Date(date),today=new Date();if(d.toDateString()===today.toDateString())return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});return d.toLocaleDateString([],{month:'short',day:'numeric'})}
@@ -40,7 +41,7 @@ async function api(path,opts={}){let res;try{res=await fetch('/api'+path,{creden
 function post(path,data){return api(path,{method:'POST',body:JSON.stringify(data)})}
 function patch(path,data){return api(path,{method:'PATCH',body:JSON.stringify(data)})}
 function showAuth(){ $('#appScreen').classList.add('hidden');$('#authScreen').classList.remove('hidden');$('#otpPanel').classList.add('hidden');$('#authForm').classList.remove('hidden');$('.switch-auth').classList.remove('hidden');if(state.config.google_login)$('#googleAuthArea').classList.remove('hidden');$('#authError').textContent=''}
-function signOutLocal(){state.lastChatId=null;state.aiContextEnabled=false;window.google?.accounts?.id?.disableAutoSelect?.();$('#aiView').classList.add('hidden');state.aiOpen=false;state.otpTicket=null;state.me=null;state.active=null;state.conversations=[];state.messages=[];state.pending.clear();state.connected=false;state.ws?.close();state.ws=null;showAuth();if(state.isRegister)toggleAuth()}
+function signOutLocal(){state.lastChatId=null;state.aiContextEnabled=false;state.puter.connected=false;window.google?.accounts?.id?.disableAutoSelect?.();$('#aiView').classList.add('hidden');state.aiOpen=false;state.otpTicket=null;state.me=null;state.active=null;state.conversations=[];state.messages=[];state.pending.clear();state.connected=false;state.ws?.close();state.ws=null;showAuth();if(state.isRegister)toggleAuth()}
 function showApp(){ $('#authScreen').classList.add('hidden');$('#appScreen').classList.remove('hidden');$('#selfName').textContent=state.me.name;$('#selfHandle').textContent='@'+state.me.handle;$('#selfAvatar').innerHTML=avatar(state.me.name,state.me.id);renderSidebar();connectWS()}
 function toggleAuth(){state.isRegister=!state.isRegister;$('#authTitle').innerHTML=state.isRegister?'Join the Huddle<span class="accent">.</span>':'Welcome to Huddle<span class="accent">.</span>';$('#authSubtitle').textContent=state.isRegister?'Your people, your ideas, all in one place.':'Good to see you again. Your conversations are waiting.';$('#registerNameField').classList.toggle('hidden',!state.isRegister);$('#registerEmailField').classList.toggle('hidden',!(state.isRegister&&state.config.email_otp));$('#authEmail').required=state.isRegister&&state.config.email_otp;$('#authName').required=state.isRegister;$('#authPassword').autocomplete=state.isRegister?'new-password':'current-password';$('#authSubmit').innerHTML=state.isRegister?'Create account <span>→</span>':'Sign in <span>→</span>';$('#authSwitchPrefix').textContent=state.isRegister?'Already have an account?':'New around here?';$('#switchAuth').textContent=state.isRegister?'Sign in':'Create an account';$('#passwordHint').textContent=state.isRegister?'8+ characters':'';$('#authError').textContent=''}
 $('#switchAuth').addEventListener('click',toggleAuth);
@@ -406,21 +407,25 @@ function renderAI(){
   const scroller=$('#aiScroll');
   requestAnimationFrame(()=>{scroller.scrollTop=scroller.scrollHeight});
 }
-function aiModeAvailable(){return state.aiMode==='image'||Boolean(state.config.ai_chat)}
+function aiModeAvailable(){return state.aiMode==='image'||Boolean(state.config.ai_chat)||Boolean(state.puter.connected)}
 function aiStatus(){
- const image=state.aiMode==='image',ready=Boolean(state.config.ai_chat),available=aiModeAvailable(),provider=state.config.ai_provider||'';
- const status=$('#aiAvailability'),notice=$('#aiNotice'),body=$('#aiNoticeText'),button=$('#aiSend');
- status.textContent=image?'Poster Studio ready':ready?'● Cloud AI connected · '+provider:'○ Cloud AI not connected';
- status.classList.toggle('is-online',image||ready);
- notice.classList.toggle('hidden',image||(ready&&!state.aiError));
- $('#aiNoticeTitle').textContent=state.aiError?'AI request unsuccessful':'Cloud AI requires administrator setup';
- body.textContent=state.aiError||'Huddle uses a powerful hosted AI provider without downloading models to your phone. The administrator must add a server-side API key in Railway. Your conversations and Poster Studio remain available.';
+ const image=state.aiMode==='image',ready=Boolean(state.config.ai_chat),puterReady=Boolean(state.puter.connected),available=aiModeAvailable(),provider=state.config.ai_provider||'';
+ const status=$('#aiAvailability'),notice=$('#aiNotice'),body=$('#aiNoticeText'),button=$('#aiSend'),connect=$('#aiPuterConnect'),step=$('#aiPuterStep');
+ status.textContent=image?'Poster Studio ready':ready?'● Cloud AI connected · '+provider:puterReady?'● Hosted AI connected via Puter':'○ Connect hosted AI';
+ status.classList.toggle('is-online',image||ready||puterReady);
+ notice.classList.toggle('hidden',image||((ready||puterReady)&&!state.aiError));
+ $('#aiNoticeTitle').textContent=state.aiError?'AI request unsuccessful':state.puter.error?'Could not connect hosted AI':'Connect Huddle AI';
+ body.textContent=state.aiError||state.puter.error||'Connect to powerful hosted AI through Puter, without a developer API key or an AI model download. Puter is a separate service that requires sign-in and has a limited monthly free allowance.';
+ connect.classList.toggle('hidden',image||ready||puterReady);
+ connect.disabled=state.puter.connecting;
+ connect.textContent=state.puter.connecting?'Connecting…':state.puter.scriptReady?'Continue with Puter':'Connect hosted AI';
+ step.textContent=state.puter.note||'Your existing Huddle account remains separate. AI usage is subject to Puter allowances; no purchase is required to try the included allowance.';
  button.disabled=!available||state.aiBusy;
- button.title=available?'Send':'AI provider not configured';
- button.setAttribute('aria-label',available?(image?'Create graphic poster':'Ask cloud AI'):'Cloud AI is not yet connected');
+ button.title=available?'Send':'Connect hosted AI first';
+ button.setAttribute('aria-label',available?(image?'Create graphic poster':'Ask hosted AI'):'Connect hosted AI first');
  $('#aiInputRow').classList.toggle('ai-input-offline',!available);
- $('#aiComposerHint').textContent=image?'Poster Studio creates graphic designs and PNG wallpapers.':ready?'Cloud AI may be inaccurate. Your question is sent through Huddle to its selected provider; no AI model downloads.':'Cloud AI requires a provider API key set by the site administrator. No downloads.';
- $('#aiPrompt').placeholder=image?'Describe a poster…':ready?'Ask anything, brainstorm, write or code…':'Cloud AI not configured yet…';
+ $('#aiComposerHint').textContent=image?'Poster Studio creates graphic designs and PNG wallpapers.':ready?'Your prompts go through Huddle to the configured AI provider. No AI model downloads.':puterReady?'Your prompts go to Puter AI under your Puter account. Check answers and free allowance. No model downloads.':'Connect a Puter account to use hosted AI without a developer key. No AI model downloads.';
+ $('#aiPrompt').placeholder=image?'Describe a poster…':available?'Ask anything, brainstorm, write or code…':'Connect hosted AI to begin…';
 }
 async function openAI(){
  state.aiOpen=true;state.active=null;
@@ -455,6 +460,9 @@ $('#aiForm').addEventListener('submit',async e=>{
      const {createPoster}=await import('/assets/poster-studio.js');
      const result=await createPoster(prompt);
      messages.push({id:'poster-'+Date.now(),role:'assistant',kind:'poster',body:result.description,image_data:result.dataUrl});
+   }else if(!isImage&&!state.config.ai_chat&&state.puter.connected){
+     const reply=await askPuterCloudAI(prompt);
+     messages.push(reply);
    }else{
      const payload={prompt};
      if(!isImage&&state.aiContextEnabled&&state.lastChatId){payload.use_context=true;payload.conversation_id=state.lastChatId;}

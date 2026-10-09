@@ -48,3 +48,13 @@
  .ai-cloud-privacy-note{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.cloud-ai-hero *{animation:none!important}}
+
+
+/* One-time, explicitly authorized keyless cloud AI onboarding. */
+.ai-puter-cta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+.ai-puter-button{appearance:none;border:0;background:linear-gradient(120deg,#096f70,#0b968a);color:#fff;border-radius:12px;padding:12px 17px;font-size:13px;font-weight:800;min-height:44px;box-shadow:0 7px 17px rgba(12,113,102,.13);transition:filter .16s}
+.ai-puter-button:hover{filter:brightness(1.07)}
+.ai-puter-button:disabled{cursor:progress;opacity:.7}
+.ai-puter-cta #aiPuterStep{font-size:11px;color:#547179;line-height:1.5;flex:1;min-width:175px}
+.ai-cloud-privacy-note{display:block;max-width:610px}
+@media(max-width:720px){.ai-puter-cta{display:flex;flex-direction:column;align-items:stretch;gap:5px}.ai-puter-button{width:100%;font-size:14px}.ai-puter-cta #aiPuterStep{min-width:0;flex:initial}}

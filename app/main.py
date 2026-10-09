@@ -79,6 +79,11 @@ class AIRequest(BaseModel):
     conversation_id: str | None = Field(default=None, max_length=64)
 
 
+class HostedAIResult(BaseModel):
+    prompt: str = Field(min_length=2, max_length=2500)
+    answer: str = Field(min_length=1, max_length=12000)
+
+
 class GoogleCredentialBody(BaseModel):
     credential: str = Field(min_length=30, max_length=9000)
 
@@ -418,14 +423,14 @@ def create_app(database_path: str | None = None):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
-            "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net; "
+            "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://js.puter.com; "
             "worker-src 'self'; "
             "style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; "
             "font-src 'self' data: https://fonts.gstatic.com; "
-            "frame-src https://accounts.google.com https://*.firebaseapp.com; "
+            "frame-src https://accounts.google.com https://*.firebaseapp.com https://puter.com https://*.puter.com; "
             "img-src 'self' data: blob: https://accounts.google.com https://*.googleusercontent.com https://*.gstatic.com; "
             "media-src 'self' blob:; "
-            "connect-src 'self' ws: wss: https://accounts.google.com https://apis.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co https://*.xethub.hf.co https://*.xethub.huggingface.co"
+            "connect-src 'self' ws: wss: https://accounts.google.com https://apis.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co https://*.xethub.hf.co https://*.xethub.huggingface.co https://api.puter.com https://*.puter.com wss://*.puter.com"
         )
         return response
 
@@ -949,6 +954,23 @@ def create_app(database_path: str | None = None):
                                   context_notes=context_notes)
         except Exception:
             fail(503, "The AI provider could not answer right now. Please try again later.")
+        ai_save(user["id"], "user", "text", prompt)
+        reply = ai_save(user["id"], "assistant", "text", answer)
+        return {"reply": reply}
+
+    @app.post("/api/ai/client-result")
+    async def record_hosted_ai(payload: HostedAIResult, request: Request):
+        """Record external AI text under the requesting user's own account.
+
+        Client text cannot attest to an external provider, and it is never
+        used as a credential or to modify anybody else's conversation.
+        """
+        user = require_user(request)
+        enforce_rate_limit(ai_attempts, user["id"], 20, 3600)
+        prompt = payload.prompt.strip()
+        answer = payload.answer.strip()
+        if not prompt or not answer:
+            fail(422, "Question and answer cannot be empty")
         ai_save(user["id"], "user", "text", prompt)
         reply = ai_save(user["id"], "assistant", "text", answer)
         return {"reply": reply}
