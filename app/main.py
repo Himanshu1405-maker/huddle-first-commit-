@@ -406,7 +406,7 @@ def create_app(database_path: str | None = None):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
-            "script-src 'self' https://accounts.google.com https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net; "
+            "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net; "
             "worker-src 'self'; "
             "style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; "
             "font-src 'self' data: https://fonts.gstatic.com; "

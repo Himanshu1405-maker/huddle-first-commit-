@@ -44,7 +44,7 @@ jobs:
               for item in logs:
                   msg=item.get('message','').lower()
                   if 'content security policy' in msg or 'violates the following' in msg:
-                      print('LOCAL_AI_CSP_WARNING=True',flush=True)
+                      print('LOCAL_AI_CSP_WARNING='+msg[:280].replace('\\n',' '),flush=True)
               assert not result.get('error'), 'The worker failed to load model'
               if not result.get('ready'):print('LOCAL_AI_MODEL_STILL_LOADING=True',flush=True)
               else:print('LOCAL_AI_MODEL_LOADED=True',flush=True)
