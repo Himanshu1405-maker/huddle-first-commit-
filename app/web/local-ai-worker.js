@@ -44,7 +44,7 @@ async function load(){
       try{cachedFiles=(await (await caches.open(env.cacheKey)).keys()).length;}catch{}
     }
     self.postMessage({type:'ready',cachedFiles});
-  })().catch(err=>{loading=null;console.warn('Local AI initialization failure:',String(err?.name||'Error'),String(err?.message||'').slice(0,240));progress('Could not load local AI. A Wi-Fi connection and available device memory are needed.');self.postMessage({type:'error',code:'load_failed',reason:String(err?.name||'Error').slice(0,55),detail:String(err?.message||'').slice(0,240)});throw err;});
+  })().catch(err=>{loading=null;console.warn('Local AI initialization failure:',String(err?.name||'Error'),String(err?.message||'').slice(0,240));progress('Could not load local AI. A Wi-Fi connection and available device memory are needed.');self.postMessage({type:'error',code:'load_failed',reason:String(err?.name||'Error').slice(0,55),detail:String(err?.message||'').slice(0,240)});return null;});
   return loading;
 }
 self.addEventListener('message',async event=>{

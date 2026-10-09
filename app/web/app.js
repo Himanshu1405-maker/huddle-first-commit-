@@ -80,8 +80,9 @@ function localAIWorker(){
       const job=local.job;local.job=null;job.reject(new Error('This device could not complete the answer. Try a shorter question.'));
     }
   });
-  worker.addEventListener('error',()=>{
-    local.loading=false;local.ready=false;local.progress='The AI model is not supported on this device.';
+  worker.addEventListener('error',e=>{
+    local.debug={reason:'worker_exception',detail:String(e.message||'Worker initialization error').slice(0,240)};
+    local.loading=false;local.ready=false;local.progress='Could not reopen the saved AI model on this device.';
     local.error=local.progress;localAIUpdate();
     if(local.job){local.job.reject(new Error(local.error));local.job=null;}
     worker.terminate();local.worker=null;

@@ -18,6 +18,7 @@ jobs:
           import time
           base='https://huddle-web-production-76f3.up.railway.app/'
           o=Options()
+          o.set_capability('goog:loggingPrefs',{'browser':'ALL'})
           for arg in ['--headless=new','--no-sandbox','--disable-dev-shm-usage','--window-size=1120,900']:o.add_argument(arg)
           b=webdriver.Chrome(options=o)
           try:
@@ -45,10 +46,14 @@ jobs:
             time.sleep(7)
             b.execute_script("document.querySelector('#authScreen').classList.add('hidden');document.querySelector('#appScreen').classList.remove('hidden');openAI();")
             for i in range(25):
-              reloaded=b.execute_script("return {ready:state.localAI.ready,loading:state.localAI.loading,error:state.localAI.error,restored:state.localAI.restored,cacheFiles:state.localAI.cacheFiles};")
+              reloaded=b.execute_script("return {ready:state.localAI.ready,loading:state.localAI.loading,error:state.localAI.error,restored:state.localAI.restored,cacheFiles:state.localAI.cacheFiles,debug:state.localAI.debug,progress:state.localAI.progress};")
               if reloaded['ready'] or reloaded['error']:break
               time.sleep(4)
             print('RELOADED_SAVED_MODEL='+str(reloaded),flush=True)
+            for entry in b.get_log('browser'):
+              message=entry.get('message','')
+              if any(k in message.lower() for k in ['content security policy','blocked','worker','wasm','blob:','csp']):
+                print('RELOAD_BROWSER_LOG='+message[:500],flush=True)
             assert reloaded['ready'] and reloaded['restored'] and not reloaded['error'],'Browser did not auto-restore locally cached model'
             assert reloaded['cacheFiles']>0
             print('HUDDLE_MODEL_REUSE_AFTER_RELOAD_PASS',flush=True)
