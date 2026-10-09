@@ -1,0 +1,68 @@
+/* Huddle 3.0: chats-first inbox, real image studio and comprehensive emoji. */
+.inbox-home{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;overflow:hidden;min-height:0;flex:1;background:#fcfefe;padding:0!important}
+.inbox-home-header{padding:30px clamp(20px,5vw,54px) 12px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.inbox-title h1{font:800 clamp(27px,3.4vw,38px)/1.1 Manrope,sans-serif;letter-spacing:-1.4px;margin:4px 0 9px;color:#142c39}
+.inbox-title p{margin:0;color:#82939c;font-size:13px}
+.inbox-eyebrow{font-weight:850;color:#0d8c83;font-size:10px;letter-spacing:1.8px}
+.inbox-new-btn{display:inline-flex;align-items:center;justify-content:center;gap:11px;white-space:nowrap;padding:12px 17px;background:#057d79;color:#fff;border:0;border-radius:12px;font:800 12px Manrope,sans-serif;cursor:pointer;min-height:44px}
+.inbox-new-btn:hover{background:#065c60}
+.inbox-search-wrap{display:flex;align-items:center;gap:10px;border-radius:13px;background:#f2f6f7;border:1px solid #e4eeef;margin:14px clamp(20px,5vw,54px) 15px;min-height:48px;padding:0 15px}
+.inbox-search-wrap>span{font-size:26px;line-height:0;color:#7d939d}
+.inbox-search-wrap input{flex:1;width:100%;min-width:0;border:0;background:transparent;outline:0;font-size:14px;color:#233a47}
+.inbox-filters{display:flex;gap:9px;overflow-x:auto;padding:0 clamp(20px,5vw,54px) 13px;scrollbar-width:none;border-bottom:1px solid #e8eef1}
+.inbox-filters button{border:0;border-radius:18px;background:#edf3f5;color:#627783;padding:8px 16px;white-space:nowrap;font-weight:800;font-size:12px;min-height:35px}
+.inbox-filters button.selected{background:#def6ef;color:#057b71}
+.inbox-list{overflow:auto;overscroll-behavior-y:contain;flex:1;min-height:0;padding:8px clamp(10px,3vw,42px);width:100%}
+.inbox-chat{width:100%;border:0;border-bottom:1px solid #f0f2f4;background:#fff;min-height:84px;display:flex;align-items:center;gap:13px;text-align:left;padding:14px clamp(10px,2vw,20px);cursor:pointer}
+.inbox-chat:hover,.inbox-chat:focus-visible{background:#f2f9f7;outline:0;border-radius:13px}
+.inbox-chat .avatar{width:52px;height:52px;min-width:52px;font-size:16px;border-radius:50%}
+.inbox-chat-detail{flex:1;min-width:0}
+.inbox-chat-top,.inbox-chat-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.inbox-chat-top strong{font:800 15px Manrope,sans-serif;color:#1b323c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inbox-chat-top time{font-size:11px;flex-shrink:0;color:#9aa9b0}
+.inbox-chat-bottom{margin-top:7px}
+.inbox-chat-bottom>span{font-size:13px;color:#8698a2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.inbox-unread{background:#06a18e;color:white;border-radius:20px;font-weight:800;font-size:11px;padding:3px 7px}
+.inbox-home-footer{display:flex;justify-content:space-between;gap:15px;align-items:center;border-top:1px solid #edf1f3;padding:12px clamp(20px,5vw,54px);color:#8698a0;font-size:11px}
+.inbox-home-footer button{border:0;background:#e7f4f3;color:#077c7b;border-radius:10px;font-size:12px;font-weight:800;padding:10px 14px}
+.inbox-zero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:45px 20px;color:#82939d}
+.inbox-zero span{font-size:36px;background:#e9f8f4;border-radius:18px;width:70px;height:70px;display:grid;place-items:center;margin-bottom:16px}
+.inbox-zero strong{font:800 18px Manrope,sans-serif;color:#284251}
+.inbox-zero p{font-size:13px}
+.ai-compact-hero{margin:11px 14px 7px!important;padding:15px 19px!important}
+.ai-compact-hero .ai-hero-row{padding:5px 0 10px!important}
+.ai-compact-hero .ai-logo{width:39px!important;height:39px!important;min-width:39px!important;border-radius:12px!important}
+.ai-compact-hero .ai-logo span{font-size:23px!important}
+.ai-compact-hero .ai-hero-copy h2{font-size:21px!important;letter-spacing:-.5px!important}
+.ai-compact-hero .ai-hero-copy p{font-size:11px!important;line-height:1.4!important}
+.ai-compact-hero .ai-eyebrow{font-size:9px!important}
+.ai-compact-hero .ai-hero-chip{padding:5px 9px!important;font-size:9px!important}
+.ai-generated-img{display:block;border-radius:13px;max-height:460px;max-width:100%;object-fit:contain;background:#e9f0f2}
+.ai-image-note{display:block;margin-top:8px;font-size:11px;line-height:1.5;color:#7c8c97}
+.ai-image-open{display:inline-flex;margin-top:8px;font-weight:800;font-size:12px;text-decoration:none;color:#087e77}
+.emoji-picker:not(.hidden){display:flex!important}
+.emoji-picker .h-emoji-tabs button{padding:8px 10px!important}
+.emoji-picker .h-emoji-grid{grid-template-columns:repeat(8,minmax(0,1fr))!important}
+.emoji-picker .h-emoji-grid button{min-height:37px!important;font-size:24px!important}
+.emoji-picker .h-emoji-grid .sticker-option{min-height:45px!important}
+@media(max-width:720px){
+ .inbox-home-header{padding:18px 18px 5px}
+ .inbox-title h1{font-size:29px;margin:3px 0 5px}
+ .inbox-title p{font-size:11px}
+ .inbox-new-btn{padding:10px 12px;min-width:43px}
+ .inbox-new-btn span{display:none}
+ .inbox-search-wrap{margin:14px 15px 13px;min-height:52px}
+ .inbox-filters{padding:0 15px 12px}
+ .inbox-list{padding:2px 7px}
+ .inbox-chat{min-height:80px}
+ .inbox-home-footer{padding:11px 15px;font-size:10px}
+ .inbox-home-footer button{font-size:11px;padding:10px}
+ .ai-compact-hero{padding:13px 15px!important;margin:7px 9px 6px!important}
+ .ai-compact-hero .ai-logo{display:none!important}
+ .ai-compact-hero .ai-hero-copy h2{font-size:20px!important}
+ .ai-compact-hero .ai-hero-copy p{font-size:10.5px!important}
+ .ai-compact-hero .ai-hero-foot{margin-top:0!important}
+ .emoji-picker{height:min(410px,65dvh)!important;width:min(410px,calc(100vw - 20px))!important;left:10px!important;bottom:69px!important}
+ .emoji-picker .h-emoji-grid{grid-template-columns:repeat(7,minmax(0,1fr))!important}
+}
+@media(prefers-reduced-motion:reduce){.inbox-chat,.inbox-new-btn{transition:none!important}}

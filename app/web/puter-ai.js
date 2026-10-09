@@ -27,7 +27,7 @@ function updatePuterMessage(message){
 }
 
 async function connectPuterAI(){
-  if(!state.me || state.config.ai_chat)return;
+  if(!state.me || (state.config.ai_chat && state.aiMode!=='image'))return;
   if(state.puter.connecting)return;
   state.puter.connecting=true;
   state.puter.error='';
@@ -92,3 +92,41 @@ async function askPuterCloudAI(prompt){
 
 const puterConnectButton=document.querySelector('#aiPuterConnect');
 if(puterConnectButton)puterConnectButton.addEventListener('click',()=>{void connectPuterAI()});
+
+
+/** Actual image synthesis via a hosted model. This is not a text-on-background poster.
+ * Puter charges the authenticated user's AI allowance; images are temporary.
+ */
+async function generatePuterImage(prompt){
+  if(!state.puter.connected || !window.puter?.ai?.txt2img){
+    throw new Error('Connect hosted AI and sign in before generating an image.');
+  }
+  const clean=String(prompt||'').trim();
+  if(!clean)throw new Error('Describe the image you want to create.');
+  // For a short subject such as "tree", make it visually concrete.
+  // Preserve explicit style choices (cartoon, painting, 3D etc.).
+  const detailed=clean.split(/\s+/u).length<7
+    ? 'Create a striking, detailed image depicting '+clean+'. Make the subject recognizable, with a full scene, rich visual detail and balanced composition. No words, letters, captions, logos or graphic poster typography.'
+    : clean+'; visually coherent composition, natural details. Do not add text or labels unless explicitly requested.';
+  let image;
+  try{
+    image=await window.puter.ai.txt2img(detailed,{
+      model:'gemini-3.1-flash-image',
+      aspect_ratio:'1:1'
+    });
+  }catch(error){
+    const message=String(error?.message||error?.msg||'Image generation was not completed.').slice(0,220);
+    if(error?.code==='insufficient_funds')throw new Error('Your Puter image-generation credits are insufficient. Please check your allowance; no automatic extra payment was made.');
+    throw new Error(message);
+  }
+  const url=String(image?.src||'');
+  if(!(/^(https:\/\/|blob:|data:image\/(?:png|jpeg|webp);base64,)/i.test(url))){
+    throw new Error('Image provider returned an invalid picture URL.');
+  }
+  return {
+    id:'generated-'+Date.now()+'-'+Math.random().toString(36).slice(2),
+    role:'assistant',kind:'generated-image',
+    body:'Generated: '+clean.slice(0,220),
+    image_url:url
+  };
+}

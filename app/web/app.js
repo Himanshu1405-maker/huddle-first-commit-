@@ -42,21 +42,37 @@ function post(path,data){return api(path,{method:'POST',body:JSON.stringify(data
 function patch(path,data){return api(path,{method:'PATCH',body:JSON.stringify(data)})}
 function showAuth(){ $('#appScreen').classList.add('hidden');$('#authScreen').classList.remove('hidden');$('#otpPanel').classList.add('hidden');$('#authForm').classList.remove('hidden');$('.switch-auth').classList.remove('hidden');if(state.config.google_login)$('#googleAuthArea').classList.remove('hidden');$('#authError').textContent=''}
 function signOutLocal(){state.lastChatId=null;state.aiContextEnabled=false;state.puter.connected=false;window.google?.accounts?.id?.disableAutoSelect?.();$('#aiView').classList.add('hidden');state.aiOpen=false;state.otpTicket=null;state.me=null;state.active=null;state.conversations=[];state.messages=[];state.pending.clear();state.connected=false;state.ws?.close();state.ws=null;showAuth();if(state.isRegister)toggleAuth()}
-function showApp(){ $('#authScreen').classList.add('hidden');$('#appScreen').classList.remove('hidden');$('#selfName').textContent=state.me.name;$('#selfHandle').textContent='@'+state.me.handle;$('#selfAvatar').innerHTML=avatar(state.me.name,state.me.id);renderSidebar();connectWS()}
+function showApp(){ $('#authScreen').classList.add('hidden');$('#appScreen').classList.remove('hidden');$('#selfName').textContent=state.me.name;$('#selfHandle').textContent='@'+state.me.handle;$('#selfAvatar').innerHTML=avatar(state.me.name,state.me.id);renderSidebar();showWelcome();connectWS()}
 function toggleAuth(){state.isRegister=!state.isRegister;$('#authTitle').innerHTML=state.isRegister?'Join the Huddle<span class="accent">.</span>':'Welcome to Huddle<span class="accent">.</span>';$('#authSubtitle').textContent=state.isRegister?'Your people, your ideas, all in one place.':'Good to see you again. Your conversations are waiting.';$('#registerNameField').classList.toggle('hidden',!state.isRegister);$('#registerEmailField').classList.toggle('hidden',!(state.isRegister&&state.config.email_otp));$('#authEmail').required=state.isRegister&&state.config.email_otp;$('#authName').required=state.isRegister;$('#authPassword').autocomplete=state.isRegister?'new-password':'current-password';$('#authSubmit').innerHTML=state.isRegister?'Create account <span>→</span>':'Sign in <span>→</span>';$('#authSwitchPrefix').textContent=state.isRegister?'Already have an account?':'New around here?';$('#switchAuth').textContent=state.isRegister?'Sign in':'Create an account';$('#passwordHint').textContent=state.isRegister?'8+ characters':'';$('#authError').textContent=''}
 $('#switchAuth').addEventListener('click',toggleAuth);
 $('#togglePassword').addEventListener('click',()=>{$('#authPassword').type=$('#authPassword').type==='password'?'text':'password'});
 $('#authForm').addEventListener('submit',async e=>{e.preventDefault();const submit=$('#authSubmit');submit.disabled=true;$('#authError').textContent='';try{const handle=$('#authHandle').value.trim().toLowerCase(),password=$('#authPassword').value,name=state.isRegister?$('#authName').value.trim():'';if(state.isRegister&&!/^[a-z0-9_]{3,22}$/.test(handle)){$('#authError').textContent='Check username: use 3–22 letters, numbers or underscores (_). No spaces, @ signs, dots or hyphens.';$('#authHandle').focus();return}if(state.isRegister&&name.length<2){$('#authError').textContent='Check display name: enter at least 2 characters.';$('#authName').focus();return}const payload=state.isRegister?{name,handle,password,...(state.config.email_otp?{email:$('#authEmail').value.trim()}: {})}:{handle,password};const result=await post(state.isRegister?'/auth/register':'/auth/login',payload);if(result.requires_verification){state.otpTicket=result.ticket;$('#authForm').classList.add('hidden');$('.switch-auth').classList.add('hidden');$('#googleAuthArea').classList.add('hidden');$('#otpPanel').classList.remove('hidden');$('#otpHint').textContent='Code sent to '+result.email_hint+'. Enter the 6-digit code within 10 minutes.';$('#otpCode').value='';$('#otpCode').focus();return}state.me=result.user;await loadConversations();showApp()}catch(err){$('#authError').textContent=err.message}finally{submit.disabled=false}});
 async function init(){try{state.config=await api('/config')}catch{}initGoogleSignIn();try{const result=await api('/me');state.me=result.user;await loadConversations();showApp()}catch{showAuth()}}
 async function loadConversations(){if(!state.me)return;const {conversations}=await api('/conversations');state.conversations=conversations;if(state.active){const active=state.conversations.find(c=>c.id===state.active.id);if(active){state.active=active;renderHeader()}else{state.active=null;showWelcome()}}renderSidebar()}
-function renderSidebar(){if(!state.me)return;$('#allCount').textContent=state.conversations.length;const term=$('#sidebarSearch').value.trim().toLowerCase();const items=state.conversations.filter(c=>(state.filter==='all'||c.kind===state.filter)&&(c.name.toLowerCase().includes(term)||(c.last_message?.body||'').toLowerCase().includes(term)));$('#conversationList').innerHTML=items.length?items.map(c=>{const other=c.members.find(m=>m.id!==state.me.id);const online=c.kind==='dm'&&other?.online;const preview=c.last_message?(c.last_message.sender_id===state.me.id?'You: ':'')+c.last_message.body:(c.kind==='group'?'New circle · say hello':'Start with hello 👋');return `<button class="conv-item ${state.active?.id===c.id?'active':''}" data-conversation="${esc(c.id)}">${avatar(c.name,c.id,c.kind,online)}<span class="conv-details"><span class="conv-name-row"><span class="conv-name">${esc(c.name)}</span><span class="conv-time">${esc(prettyTime(c.last_message?.created_at||c.updated_at))}</span></span><span class="conv-preview-row"><span class="conv-preview">${esc(preview)}</span>${c.unread?`<span class="unread">${c.unread>99?'99+':c.unread}</span>`:''}</span></span></button>`}).join(''):'<div class="list-empty"><span class="big-icon">✳</span>No conversations here yet.<br/>Start with a hello.</div>'}
+function renderSidebar(){if(!state.me)return;$('#allCount').textContent=state.conversations.length;const term=$('#sidebarSearch').value.trim().toLowerCase();const items=state.conversations.filter(c=>(state.filter==='all'||c.kind===state.filter)&&(c.name.toLowerCase().includes(term)||(c.last_message?.body||'').toLowerCase().includes(term)));$('#conversationList').innerHTML=items.length?items.map(c=>{const other=c.members.find(m=>m.id!==state.me.id);const online=c.kind==='dm'&&other?.online;const preview=c.last_message?(c.last_message.sender_id===state.me.id?'You: ':'')+c.last_message.body:(c.kind==='group'?'New circle · say hello':'Start with hello 👋');return `<button class="conv-item ${state.active?.id===c.id?'active':''}" data-conversation="${esc(c.id)}">${avatar(c.name,c.id,c.kind,online)}<span class="conv-details"><span class="conv-name-row"><span class="conv-name">${esc(c.name)}</span><span class="conv-time">${esc(prettyTime(c.last_message?.created_at||c.updated_at))}</span></span><span class="conv-preview-row"><span class="conv-preview">${esc(preview)}</span>${c.unread?`<span class="unread">${c.unread>99?'99+':c.unread}</span>`:''}</span></span></button>`}).join(''):'<div class="list-empty"><span class="big-icon">✳</span>No conversations here yet.<br/>Start with a hello.</div>';renderInboxHome()}
+function renderInboxHome(){
+ const list=$('#homeChatList');if(!list||!state.me)return;
+ const term=$('#homeSearch').value.trim().toLowerCase(),filter=state.homeFilter||'all';
+ const items=state.conversations.filter(c=>(filter==='all'||filter===c.kind)&&(c.name.toLowerCase().includes(term)||(c.last_message?.body||'').toLowerCase().includes(term)));
+ list.innerHTML=items.length?items.map(c=>{
+    const other=c.members.find(m=>m.id!==state.me.id),online=c.kind==='dm'&&other?.online;
+    const preview=c.last_message?(c.last_message.sender_id===state.me.id?'You: ':'')+c.last_message.body:(c.kind==='group'?'Start a conversation in your group':'Say hello 👋');
+    return '<button type="button" class="inbox-chat" data-home-conversation="'+esc(c.id)+'">'+avatar(c.name,c.id,c.kind,online)+
+       '<span class="inbox-chat-detail"><span class="inbox-chat-top"><strong>'+esc(c.name)+'</strong><time>'+esc(prettyTime(c.last_message?.created_at||c.updated_at))+'</time></span><span class="inbox-chat-bottom"><span>'+esc(preview)+'</span>'+(c.unread?'<b class="inbox-unread">'+Math.min(99,c.unread)+'</b>':'')+'</span></span></button>';
+ }).join(''):'<div class="inbox-zero"><span aria-hidden="true">💬</span><strong>'+ (term?'No matching chats':'No conversations yet')+'</strong><p>'+(term?'Try a different name or search term.':'Start a chat with someone or create a group.')+'</p></div>';
+ $('.inbox-filters button').forEach(btn=>btn.classList.toggle('selected',btn.dataset.homeFilter===filter));
+}
+$('#homeSearch').addEventListener('input',renderInboxHome);
+$('.inbox-filters').addEventListener('click',e=>{const btn=e.target.closest('[data-home-filter]');if(!btn)return;state.homeFilter=btn.dataset.homeFilter;renderInboxHome()});
+$('#homeChatList').addEventListener('click',e=>{const btn=e.target.closest('[data-home-conversation]');if(btn)openConversation(btn.dataset.homeConversation)});
+$('#inboxOpenAI').addEventListener('click',()=>openAI());
 $('#conversationList').addEventListener('click',e=>{const btn=e.target.closest('[data-conversation]');if(btn)openConversation(btn.dataset.conversation)});
 $('#sidebarSearch').addEventListener('input',renderSidebar);
 $$('.filter').forEach(btn=>btn.addEventListener('click',()=>{state.filter=btn.dataset.filter;$$('.filter').forEach(b=>b.classList.toggle('selected',b===btn));renderSidebar()}));
 function mobileDrawer(open){$('#sidebar').classList.toggle('open',open);$('#mobileScrim').classList.toggle('hidden',!open)}
-$('#openSidebar').addEventListener('click',()=>mobileDrawer(true));$('#closeSidebar').addEventListener('click',()=>mobileDrawer(false));$('#mobileScrim').addEventListener('click',()=>mobileDrawer(false));
+$('#openSidebar').addEventListener('click',()=>{if(state.active||state.aiOpen)showWelcome();else mobileDrawer(true)});$('#closeSidebar').addEventListener('click',()=>mobileDrawer(false));$('#mobileScrim').addEventListener('click',()=>mobileDrawer(false));
 async function openConversation(id,focusId=null){const c=state.conversations.find(x=>x.id===id);if(!c)return;state.lastChatId=id;state.aiOpen=false;$('#aiView').classList.add('hidden');const changed=state.active?.id!==id;state.active=c;state.messages=[];state.hasMore=false;$('#welcomeChat').classList.add('hidden');$('#conversationView').classList.remove('hidden');$('#messageScroller').scrollTop=0;$('#messages').innerHTML='<div class="list-empty">Loading your conversation…</div>';renderHeader();renderSidebar();mobileDrawer(false);try{const result=await api(`/conversations/${id}/messages`);if(state.active?.id!==id)return;state.messages=result.messages;state.hasMore=result.has_more;renderMessages(true);markRead();if(focusId){scrollToMessage(focusId)}else if(changed&&window.matchMedia('(min-width: 721px)').matches){$('#messageInput').focus()}}catch(err){toast(err.message,true)}}
-function showWelcome(){state.aiOpen=false;$('#aiView').classList.add('hidden');state.active=null;$('#welcomeChat').classList.remove('hidden');$('#conversationView').classList.add('hidden');$('#chatBanner').textContent='';$('#headerIdentity').innerHTML='<span class="header-placeholder">YOUR CONVERSATION SPACE</span>';renderSidebar()}
+function showWelcome(){state.aiOpen=false;$('#aiView').classList.add('hidden');state.active=null;$('#welcomeChat').classList.remove('hidden');$('#conversationView').classList.add('hidden');$('#chatBanner').textContent='';$('#headerIdentity').innerHTML='<span class="header-placeholder">YOUR CHATS</span>';mobileDrawer(false);renderSidebar()}
 function renderHeader(){const c=state.active;if(!c)return;const other=c.members.find(m=>m.id!==state.me.id);const online=c.kind==='dm'&&other?.online;$('#headerIdentity').innerHTML=avatar(c.name,c.id,c.kind,online)+`<span><span class="header-name">${esc(c.name)}</span><span class="header-meta">${c.kind==='group'?`${c.members.length} members · Your circle`:`${online?'<i class="little-dot"></i> Online now':'Offline · @'+esc(c.handle)}`}</span></span>`;$('#chatBanner').innerHTML=`${c.kind==='group'?'✳ Welcome to <strong>'+esc(c.name)+'</strong>. Good things happen together.':'🔒 This conversation is between you and <strong>'+esc(c.name)+'</strong>.'}`;$('#messageInput').placeholder=`Message ${c.kind==='group'?'#'+c.name:c.name}…`}
 function renderMessages(jumpEnd=false){const view=$('#messageScroller');const oldHeight=view.scrollHeight,oldTop=view.scrollTop;$('#loadMoreBtn').classList.toggle('hidden',!state.hasMore);let previousDay='';$('#messages').innerHTML=state.messages.map(m=>{const day=dayLabel(m.created_at);let divider='';if(day!==previousDay){divider=`<div class="date-divider">${esc(day)}</div>`;previousDay=day}const mine=m.sender_id===state.me.id;const sender=state.active?.members.find(x=>x.id===m.sender_id)||{name:'Unknown'};const group=state.active?.kind==='group';const reactions=m.reactions?.length?`<div class="reactions">${m.reactions.map(r=>`<button class="reaction ${r.users.includes(state.me.id)?'reacted':''}" data-reaction-message="${esc(m.id)}" data-reaction-emoji="${esc(r.emoji)}" title="React ${esc(r.emoji)}">${esc(r.emoji)} ${r.count}</button>`).join('')}</div>`:'';const media=(m.attachments||[]).map(a=>{const url='/api/media/'+encodeURIComponent(a.id);const mime=a.content_type||'';const label=esc(a.filename);return mime.startsWith('image/')?`<a class="media-card image-media" href="${url}" target="_blank" rel="noopener"><img src="${url}" loading="lazy" alt="Shared image: ${label}" /><span>${label}</span></a>`:mime.startsWith('video/')?`<div class="media-card video-media"><video controls preload="metadata" playsinline src="${url}"></video><a href="${url}" download>${label} · Save ↧</a></div>`:mime.startsWith('audio/')?`<div class="media-card voice-media"><div>🎧 ${label}</div><audio controls preload="none" src="${url}"></audio></div>`:`<a class="media-card file-media" href="${url}" download>📎 ${label} <small>↧ Download</small></a>`;}).join('');const actions=!m.deleted_at?`<div class="message-actions"><button data-action="react" data-message="${esc(m.id)}" title="React">☺ React</button>${mine?`<button data-action="edit" data-message="${esc(m.id)}">Edit</button><button data-action="delete" data-message="${esc(m.id)}">Delete</button>`:`<button data-action="report" data-message="${esc(m.id)}" title="Report this message">⚑ Report</button>`}</div>`:'';return divider+`<div class="message-row ${mine?'mine':''}" id="msg-${esc(m.id)}">${mine?'<span class="avatar-placeholder"></span>':avatar(sender.name,sender.id)}<div class="message-stack">${group&&!mine?`<div class="sender-label">${esc(sender.name)}</div>`:''}<div class="bubble ${m.deleted_at?'deleted':''}">${m.deleted_at?'This message was deleted':esc(m.body)}</div>${m.deleted_at?'':media}<div class="bubble-meta">${esc(prettyTime(m.created_at))} ${m.edited_at?'<span class="edit-label">· edited</span>':''}${mine?`<span class="seen-check" title="${(m.seen_by||[]).length?'Seen':'Sent'}">${(m.seen_by||[]).length?'✓✓':'✓'}</span>`:''}</div>${reactions}${actions}</div></div>`}).join('')||'<div class="list-empty">No messages yet.<br/>Be the first to say hello 👋</div>';if(jumpEnd){view.scrollTop=view.scrollHeight}else{view.scrollTop=oldTop}}
 function scrollToMessage(id){const el=document.getElementById('msg-'+id);if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.querySelector('.bubble')?.classList.add('highlight-bubble');setTimeout(()=>el.querySelector('.bubble')?.classList.remove('highlight-bubble'),2200)}else toast('Message is in older history — load earlier messages')}
@@ -383,21 +399,13 @@ $('#resendOtp').addEventListener('click',async()=>{const button=$('#resendOtp');
 
 function aiCard(m){
   const mine=m.role==='user',image=m.kind==='image'&&/^[0-9a-f]{32}$/.test(m.image_id||'');
-  const poster=m.kind==='poster'&&/^data:image\/png;base64,/.test(m.image_data||'');
-  return `<article class="ai-line ${mine?'from-user':'from-ai'}"><span class="ai-face">${mine?'YOU':'✦'}</span><div class="ai-bubble">${poster?
-   `<img class="ai-generated-img" src="${esc(m.image_data)}" alt="Graphic poster designed in Huddle" /><p>${esc(m.body)}</p><button class="poster-download" data-poster-id="${esc(m.id)}">↓ Save PNG poster</button>`
+  const generated=m.kind==='generated-image'&&/^(https:\/\/|data:image\/(?:png|jpeg|webp);base64,|blob:)/i.test(m.image_url||'');
+  return `<article class="ai-line ${mine?'from-user':'from-ai'}"><span class="ai-face">${mine?'YOU':'✦'}</span><div class="ai-bubble">${generated?
+   `<img class="ai-generated-img" src="${esc(m.image_url)}" alt="${esc(m.body||'AI generated picture')}" loading="lazy" /><p>${esc(m.body)}</p><a class="ai-image-open" href="${esc(m.image_url)}" target="_blank" rel="noopener noreferrer">Open full image ↗</a><small class="ai-image-note">Generated with AI · temporary preview. Save the image to keep it.</small>`
    :image?`<img class="ai-generated-img" loading="lazy" src="/api/ai/image/${m.image_id}" alt="AI-generated image" /><p>${esc(m.body)}</p><a href="/api/ai/image/${m.image_id}" download="huddle-ai.jpg">Save image ↧</a>`
    :esc(m.body)}</div></article>`;
 }
-$('#aiMessages').addEventListener('click',event=>{
-  const btn=event.target.closest('[data-poster-id]');
-  if(!btn)return;
-  const messages=state.aiMessages;
-  const poster=messages.find(x=>x.id===btn.dataset.posterId && x.kind==='poster');
-  if(!poster)return;
-  const a=document.createElement('a');a.href=poster.image_data;a.download='huddle-studio-poster.png';
-  document.body.appendChild(a);a.click();a.remove();
-});
+
 function renderAI(){
   const box=$('#aiMessages');
   const messages=state.aiMessages;
@@ -407,16 +415,16 @@ function renderAI(){
   const scroller=$('#aiScroll');
   requestAnimationFrame(()=>{scroller.scrollTop=scroller.scrollHeight});
 }
-function aiModeAvailable(){return state.aiMode==='image'||Boolean(state.config.ai_chat)||Boolean(state.puter.connected)}
+function aiModeAvailable(){return state.aiMode==='image'?(Boolean(state.config.ai_image)||Boolean(state.puter.connected)):Boolean(state.config.ai_chat)||Boolean(state.puter.connected)}
 function aiStatus(){
  const image=state.aiMode==='image',ready=Boolean(state.config.ai_chat),puterReady=Boolean(state.puter.connected),available=aiModeAvailable(),provider=state.config.ai_provider||'';
  const status=$('#aiAvailability'),notice=$('#aiNotice'),body=$('#aiNoticeText'),button=$('#aiSend'),connect=$('#aiPuterConnect'),step=$('#aiPuterStep');
- status.textContent=image?'Poster Studio ready':ready?'● Cloud AI connected · '+provider:puterReady?'● Hosted AI connected via Puter':'○ Connect hosted AI';
- status.classList.toggle('is-online',image||ready||puterReady);
- notice.classList.toggle('hidden',image||((ready||puterReady)&&!state.aiError));
+ status.textContent=image?(state.config.ai_image||puterReady?'● Image generation ready':'○ Connect image generation'):ready?'● Cloud AI connected · '+provider:puterReady?'● Hosted AI connected via Puter':'○ Connect hosted AI';
+ status.classList.toggle('is-online',(image&&available)||(!image&&(ready||puterReady)));
+ notice.classList.toggle('hidden',available&&!state.aiError);
  $('#aiNoticeTitle').textContent=state.aiError?'AI request unsuccessful':state.puter.error?'Could not connect hosted AI':'Connect Huddle AI';
- body.textContent=state.aiError||state.puter.error||'Connect to powerful hosted AI through Puter, without a developer API key or an AI model download. Puter is a separate service that requires sign-in and has a limited monthly free allowance.';
- connect.classList.toggle('hidden',image||ready||puterReady);
+ body.textContent=state.aiError||state.puter.error||(image?'For photorealistic AI images, connect your Puter account. Image generation uses a hosted image model and your Puter credits; no downloaded phone models.':'Connect to hosted AI through Puter without an API key. Puter requires sign-in; usage allowances or charges may apply.');
+ connect.classList.toggle('hidden',available||(image&&state.config.ai_image)||(!image&&ready));
  connect.disabled=state.puter.connecting;
  connect.textContent=state.puter.connecting?'Connecting…':state.puter.scriptReady?'Continue with Puter':'Connect hosted AI';
  step.textContent=state.puter.note||'Your existing Huddle account remains separate. AI usage is subject to Puter allowances; no purchase is required to try the included allowance.';
@@ -424,8 +432,8 @@ function aiStatus(){
  button.title=available?'Send':'Connect hosted AI first';
  button.setAttribute('aria-label',available?(image?'Create graphic poster':'Ask hosted AI'):'Connect hosted AI first');
  $('#aiInputRow').classList.toggle('ai-input-offline',!available);
- $('#aiComposerHint').textContent=image?'Poster Studio creates graphic designs and PNG wallpapers.':ready?'Your prompts go through Huddle to the configured AI provider. No AI model downloads.':puterReady?'Your prompts go to Puter AI under your Puter account. Check answers and free allowance. No model downloads.':'Connect a Puter account to use hosted AI without a developer key. No AI model downloads.';
- $('#aiPrompt').placeholder=image?'Describe a poster…':available?'Ask anything, brainstorm, write or code…':'Connect hosted AI to begin…';
+ $('#aiComposerHint').textContent=image?(available?'Generate actual AI images with a hosted image model. Puter credits may be consumed; previews are temporary, so save images.':'Connect hosted AI to generate real photos and illustrations. The provider may charge credits per image.'):ready?'Your prompts go through Huddle to the configured AI provider. No AI model downloads.':puterReady?'Your prompts go to Puter AI under your Puter account. Check answers and free allowance. No model downloads.':'Connect a Puter account to use hosted AI without a developer key. No AI model downloads.';
+ $('#aiPrompt').placeholder=image?'Describe the image you want to generate…':available?'Ask anything, brainstorm, write or code…':'Connect hosted AI to begin…';
 }
 async function openAI(){
  state.aiOpen=true;state.active=null;
@@ -453,13 +461,12 @@ $('#aiForm').addEventListener('submit',async e=>{
  const prompt=$('#aiPrompt').value.trim();if(!prompt)return;
  const isImage=state.aiMode==='image',messages=state.aiMessages;
  state.aiBusy=true;state.aiError='';aiStatus();$('#aiPrompt').value='';
- const pending={role:'user',kind:'text',body:(isImage?'Design a poster: ':'')+prompt};
+ const pending={role:'user',kind:'text',body:(isImage?'Generate image: ':'')+prompt};
  messages.push(pending);$('#aiTyping').classList.remove('hidden');renderAI();
  try{
    if(isImage&&!state.config.ai_image){
-     const {createPoster}=await import('/assets/poster-studio.js');
-     const result=await createPoster(prompt);
-     messages.push({id:'poster-'+Date.now(),role:'assistant',kind:'poster',body:result.description,image_data:result.dataUrl});
+     const generated=await generatePuterImage(prompt);
+     messages.push(generated);
    }else if(!isImage&&!state.config.ai_chat&&state.puter.connected){
      const reply=await askPuterCloudAI(prompt);
      messages.push(reply);
@@ -473,7 +480,7 @@ $('#aiForm').addEventListener('submit',async e=>{
  }catch(err){
    const index=messages.indexOf(pending);if(index>=0)messages.splice(index,1);
    $('#aiPrompt').value=prompt;
-   state.aiError=isImage?'Could not create that poster. Please try again.':err.message;
+   state.aiError=err?.message||'The provider could not complete this request. Please try again.';
    renderAI();
  }finally{$('#aiTyping').classList.add('hidden');state.aiBusy=false;aiStatus();}
 });

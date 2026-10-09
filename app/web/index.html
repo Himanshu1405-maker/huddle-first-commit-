@@ -90,9 +90,12 @@
         <div class="header-identity" id="headerIdentity"><span class="header-placeholder">YOUR CONVERSATION SPACE</span></div>
         <div class="header-actions"><span class="ws-status" id="wsStatus" title="Connection status"><span></span> Connecting</span><button class="icon-btn toolbar-btn" id="searchMessagesBtn" aria-label="Search your messages" title="Search messages"><span data-icon="search"></span></button><button class="icon-btn toolbar-btn toolbar-ai" id="aiQuickBtn" aria-label="Open Huddle AI" title="Open Huddle AI"><span data-icon="sparkles"></span></button><button class="icon-btn toolbar-btn" id="profileQuickBtn" aria-label="Your profile and settings" title="Your profile"><span data-icon="user-round"></span></button></div>
       </header>
-      <section class="welcome-chat" id="welcomeChat">
-        <div class="welcome-inner"><div class="welcome-badge"><span class="twinkle t1">✦</span><span class="huddle-symbol">✳</span><span class="twinkle t2">✧</span></div><div class="welcome-kicker">YOUR CORNER OF CAMPUS</div><h1>Better together.<br><em>Always.</em></h1><p>Real connections start here. Catch up with a friend, start a circle, or make something amazing with your people.</p><button class="btn btn-primary welcome-button" id="welcomeNewBtn"><span data-icon="plus"></span> Start a conversation <span>↗</span></button><div class="welcome-facts"><div><span class="fact-icon">↗</span> Connect</div><div><span class="fact-icon">✦</span> Create</div><div><span class="fact-icon">◉</span> Collaborate</div></div></div>
-        <div class="decor-shape ds1"></div><div class="decor-shape ds2"></div>
+      <section class="welcome-chat inbox-home" id="welcomeChat" aria-label="Chat inbox">
+        <div class="inbox-home-header"><div class="inbox-title"><span class="inbox-eyebrow">HUDDLE / MESSAGES</span><h1>Chats</h1><p>Your conversations, right where you left them.</p></div><button class="inbox-new-btn" id="welcomeNewBtn" type="button" title="New conversation" aria-label="Start a new conversation">✎ <span>New chat</span></button></div>
+        <div class="inbox-search-wrap"><span aria-hidden="true">⌕</span><input id="homeSearch" type="search" placeholder="Search people and conversations" autocomplete="off" aria-label="Search your chats"></div>
+        <div class="inbox-filters" role="group" aria-label="Filter chats"><button type="button" data-home-filter="all" class="selected">All chats</button><button type="button" data-home-filter="dm">Direct messages</button><button type="button" data-home-filter="group">Groups</button></div>
+        <div id="homeChatList" class="inbox-list" aria-live="polite"></div>
+        <div class="inbox-home-footer"><span>🔒 Your private chats stay between members.</span><button type="button" id="inboxOpenAI">✦ Huddle Intelligence</button></div>
       </section>
       <section class="conversation-view hidden" id="conversationView">
         <div class="chat-banner" id="chatBanner"></div>
@@ -100,13 +103,13 @@
         <div class="composer-area"><div class="composer-tip" id="composerTip"></div><div class="composer"><button class="composer-emoji" id="emojiBtn" aria-label="Insert emoji" title="Insert emoji">☺</button><label for="mediaFileInput" class="composer-media" title="Share photos, short videos or files" aria-label="Attach a file">📎</label><input id="mediaFileInput" type="file" class="hidden" accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,.pdf,.txt,.md,.docx,.mp3,.wav,.ogg,.m4a" /><button id="voiceNoteBtn" type="button" class="composer-media" aria-label="Record voice note" title="Record voice note">🎙</button><textarea rows="1" maxlength="4000" id="messageInput" placeholder="Write a message…" aria-label="Type your message"></textarea><span class="composer-count" id="composerCount"></span><button class="send-btn" id="sendBtn" title="Send message" aria-label="Send message"><span data-icon="arrow-up"></span></button></div><div class="chat-extras"><button id="chatRecapBtn" type="button">✦ Conversation recap</button><span id="mediaProgress" role="status" aria-live="polite"></span></div><div class="composer-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift + Enter</kbd> for a new line <span>Be kind out there <b>✳</b></span></div><div class="emoji-picker hidden" id="emojiPicker"><button>✨</button><button>🚀</button><button>🔥</button><button>❤️</button><button>😂</button><button>🎉</button><button>👍</button><button>💡</button><button>👋</button><button>😊</button></div></div>
       </section>
       <section id="aiView" class="ai-view hidden" aria-label="Huddle AI assistant">
-        <div class="ai-hero cloud-ai-hero">
+        <div class="ai-hero cloud-ai-hero ai-compact-hero">
           <div class="ai-eyebrow"><span class="ai-eyebrow-dot">✦</span> HUDDLE INTELLIGENCE <span class="ai-hero-counter">YOUR AI WORKSPACE</span></div>
           <div class="ai-hero-row">
             <div class="ai-logo" aria-hidden="true"><span>✦</span></div>
-            <div class="ai-hero-copy"><h2>Think clearer. Create faster.</h2><p>Explore ideas, solve problems, understand concepts and write with confidence — with a hosted AI assistant.</p></div>
+            <div class="ai-hero-copy"><h2>Huddle Intelligence</h2><p>Ask questions or generate real AI images — without downloading models.</p></div>
           </div>
-          <div class="ai-hero-foot"><span class="ai-hero-chip">◆ Cloud-powered reasoning</span><span class="ai-hero-chip">◇ No model downloads</span><span id="aiAvailability" class="ai-live-status">Checking cloud provider…</span></div>
+          <div class="ai-hero-foot"><span class="ai-hero-chip">◆ Hosted AI</span><span class="ai-hero-chip">◇ Real image generation</span><span id="aiAvailability" class="ai-live-status">Checking cloud provider…</span></div>
         </div>
         <div id="aiNotice" class="ai-notice hidden" role="status" aria-live="polite">
           <span class="ai-notice-icon" aria-hidden="true">ℹ</span>
@@ -116,7 +119,7 @@
         <div id="aiScroll" class="ai-scroll">
           <div id="aiMessages" class="ai-messages"></div>
           <div class="ai-suggestions" id="aiSuggestions">
-            <div class="ai-suggest-heading"><span>NOT SURE WHERE TO START?</span><h3>Pick a little spark <span>✦</span></h3></div>
+            <div class="ai-suggest-heading"><span>NOT SURE WHERE TO START?</span><h3>Start with an idea <span>✦</span></h3></div>
             <button type="button" data-ai-prompt="Explain derivatives in simple words with an example"><span class="ai-card-emoji">🧠</span><span class="ai-card-text"><strong>Break it down</strong><small>Understand the tricky stuff</small></span><span class="ai-card-arrow">↗</span></button>
             <button type="button" data-ai-prompt="Help me brainstorm three original hackathon ideas"><span class="ai-card-emoji">💡</span><span class="ai-card-text"><strong>Big idea energy</strong><small>Brainstorm something bold</small></span><span class="ai-card-arrow">↗</span></button>
             <button type="button" data-ai-prompt="Make a friendly revision plan for an exam"><span class="ai-card-emoji">📚</span><span class="ai-card-text"><strong>Study sidekick</strong><small>Make a plan that sticks</small></span><span class="ai-card-arrow">↗</span></button>
@@ -124,7 +127,7 @@
           </div>
           <div id="aiTyping" class="ai-typing hidden" aria-live="polite"><span aria-hidden="true">✦</span> Thinking <span class="ai-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
         </div>
-        <form id="aiForm" class="ai-composer"><label class="ai-context-option" for="aiUseChatContext"><input type="checkbox" id="aiUseChatContext" /> Use my last opened conversation as optional context</label><div class="ai-mode"><button type="button" class="ai-mode-option selected" data-ai-mode="text">✎ Ask anything</button><button type="button" class="ai-mode-option" data-ai-mode="image">▧ Poster studio</button></div><div class="ai-input-row" id="aiInputRow"><textarea id="aiPrompt" rows="1" maxlength="2500" placeholder="Ask me anything, big or small…" aria-label="Your message to Huddle AI"></textarea><button type="submit" id="aiSend" aria-label="Send to AI">↑</button></div><small id="aiComposerHint">Cloud AI needs a server-side provider. No on-device AI downloads. Poster Studio still creates graphic designs.</small></form>
+        <form id="aiForm" class="ai-composer"><label class="ai-context-option" for="aiUseChatContext"><input type="checkbox" id="aiUseChatContext" /> Use my last opened conversation as optional context</label><div class="ai-mode"><button type="button" class="ai-mode-option selected" data-ai-mode="text">✎ Ask anything</button><button type="button" class="ai-mode-option" data-ai-mode="image">✧ Generate image</button></div><div class="ai-input-row" id="aiInputRow"><textarea id="aiPrompt" rows="1" maxlength="2500" placeholder="Ask me anything, big or small…" aria-label="Your message to Huddle AI"></textarea><button type="submit" id="aiSend" aria-label="Send to AI">↑</button></div><small id="aiComposerHint">Create real AI images from descriptions. Hosted generation requires Puter sign-in or a configured image provider; usage limits or charges may apply.</small></form>
       </section>
     </main>
   </div>
