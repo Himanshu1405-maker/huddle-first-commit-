@@ -2,6 +2,7 @@ name: Huddle Two-Account Media Browser QA
 on:
   push:
     paths:
+      - app/main.py
       - app/extensions.py
       - app/web/app.js
       - app/web/chat-enhancements.js
@@ -12,6 +13,7 @@ on:
       - .github/workflows/media-browser-qa.yml
   pull_request:
     paths:
+      - app/main.py
       - app/extensions.py
       - app/web/app.js
       - app/web/chat-enhancements.js
