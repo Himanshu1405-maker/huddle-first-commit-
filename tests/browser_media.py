@@ -251,7 +251,7 @@ def main():
             a.find_element(By.ID, "aiSend").click()
             WebDriverWait(a, 12).until(lambda browser:
                 bool(browser.find_elements(By.CSS_SELECTOR, "#aiMessages .ai-generated-img")))
-            assert "Generated: tree" in a.find_element(By.ID, "aiMessages").text
+            WebDriverWait(a, 6).until(lambda browser: "Generated: tree" in browser.find_element(By.ID, "aiMessages").text)
             assert a.execute_script("return document.querySelector('#aiMessages .ai-generated-img').naturalWidth") == 52
             records = alice.get(base + "/api/ai/history").json()["messages"]
             assert any("Mock hosted AI answer" in m["body"] for m in records)
