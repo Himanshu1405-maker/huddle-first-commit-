@@ -86,7 +86,7 @@ self.addEventListener('message',async event=>{
     const result=await active(messages,{max_new_tokens:tokens,do_sample:false,return_full_text:false,repetition_penalty:1.15});
     const dataOut=result?.[0]?.generated_text;
     const value=typeof dataOut==='string'?dataOut:Array.isArray(dataOut)?String(dataOut.at(-1)?.content||''):dataOut&&typeof dataOut==='object'?String(dataOut.content||''):'';
-    const answer=value.replace(/^[\\s\\S]*?<\\/think>/i,'').trim().slice(0,3200)||'I could not generate a clear answer. Try a simpler question.';
+    const answer=value.replace(/^[\s\S]*?<\/think>/i,'').trim().slice(0,3200)||'I could not generate a clear answer. Try a simpler question.';
     self.postMessage({type:'answer',id:data.id,text:answer});
   }catch(error){self.postMessage({type:'answer_error',id:data.id,code:'generation_failed'});}
 });
