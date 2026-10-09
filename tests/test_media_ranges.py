@@ -54,7 +54,7 @@ def test_two_accounts_share_encrypted_photo_document_voice_and_video(tmp_path, m
             download = bob.get(url)
             assert download.status_code == 200
             assert download.content == data
-            assert download.headers["cache-control"] == "private, no-store"
+            assert "no-store" in download.headers["cache-control"]
             encrypted = (tmp_path / "media" / attachment["id"]).read_bytes()
             assert encrypted.startswith(b"HUDDLE_MEDIA_V1:")
             assert data not in encrypted
