@@ -158,7 +158,7 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         media_type=request.headers.get("content-type","").lower()
         chunks=bytearray()
         async for piece in request.stream():
-            if len(chunks)+len(piece)>MAX_UPLOAD:
+            if len(chunks)+len(piece)>upload_limit:
                 fail(413,"File is larger than 6 MB")
             chunks.extend(piece)
         data=bytes(chunks)
