@@ -43,6 +43,11 @@ class RemoveMemberBody(BaseModel):
     user_id: str = Field(min_length=1, max_length=60)
 
 
+class ReviewReportBody(BaseModel):
+    report_id: str = Field(min_length=32, max_length=40)
+    status: str = Field(pattern=r"^(reviewed|dismissed)$")
+
+
 def validate_media(data: bytes, filename: str, media_type: str):
     """Exact allowlist + format checks; this is *validation*, not antivirus."""
     if not data or len(data) > MAX_UPLOAD:
@@ -211,6 +216,36 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         await hub.notify(member_ids(conversation_id)+[payload.user_id],
                          {"type":"conversation:refresh","conversation_id":conversation_id})
         return {"ok":True}
+
+    @app.get("/api/conversations/{conversation_id}/moderation/reports")
+    async def list_group_reports(conversation_id: str, request: Request):
+        user=require_user(request)
+        with db.connection() as cx:
+            conv=cx.execute("SELECT kind FROM conversations WHERE id=?",(conversation_id,)).fetchone()
+            mine=cx.execute("SELECT role FROM members WHERE conversation_id=? AND user_id=?",(conversation_id,user["id"])).fetchone()
+            if not conv or conv["kind"]!="group" or not mine or mine["role"]!="admin":
+                fail(403,"Only circle admins can review reports")
+            rows=cx.execute("""SELECT r.id,r.reason,r.status,r.created_at,m.id AS message_id,
+                     m.sender_id,u.name AS sender_name,m.body
+                     FROM message_reports r
+                     JOIN messages m ON m.id=r.message_id
+                     JOIN users u ON u.id=m.sender_id
+                     WHERE m.conversation_id=? ORDER BY r.created_at DESC LIMIT 80""",(conversation_id,)).fetchall()
+        return {"reports":[{**dict(row),"body":decrypt_text(row["body"])[:300]} for row in rows]}
+
+    @app.post("/api/conversations/{conversation_id}/moderation/review")
+    async def review_group_report(conversation_id: str, payload: ReviewReportBody, request: Request):
+        user=require_user(request)
+        with db.connection() as cx:
+            conv=cx.execute("SELECT kind FROM conversations WHERE id=?",(conversation_id,)).fetchone()
+            mine=cx.execute("SELECT role FROM members WHERE conversation_id=? AND user_id=?",(conversation_id,user["id"])).fetchone()
+            if not conv or conv["kind"]!="group" or not mine or mine["role"]!="admin":
+                fail(403,"Only circle admins can review reports")
+            report=cx.execute("""SELECT r.id FROM message_reports r JOIN messages m ON m.id=r.message_id
+                     WHERE r.id=? AND m.conversation_id=?""",(payload.report_id,conversation_id)).fetchone()
+            if not report:fail(404,"Report not found")
+            cx.execute("UPDATE message_reports SET status=? WHERE id=?",(payload.status,payload.report_id))
+        return {"ok":True,"status":payload.status}
 
     @app.get("/api/conversations/{conversation_id}/recap")
     async def conversation_recap(conversation_id: str, request: Request):

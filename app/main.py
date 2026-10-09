@@ -1004,6 +1004,13 @@ def create_app(database_path: str | None = None):
                 await hub.notify(list(hub.sockets), {"type": "presence:update", "user_id": uid, "online": False})
 
     install_extensions(app, db, hub, require_user, serialize_message, send_message, member_ids, ensure_membership, now, new_id)
+    # Lazy migration of legacy plaintext message records after installing a stable
+    # Fernet key. Existing conversation text remains readable; new writes encrypt.
+    if os.getenv("HUDDLE_MESSAGE_KEY"):
+        with db.connection() as cx:
+            legacy=cx.execute("SELECT id,body FROM messages WHERE body<>'' AND body NOT LIKE 'huddle.enc.v1:%'").fetchall()
+            for row in legacy:
+                cx.execute("UPDATE messages SET body=? WHERE id=?",(encrypt_text(row["body"]),row["id"]))
     if os.getenv("SEED_DEMO", "0") == "1":
         seed_demo(db)
     return app
