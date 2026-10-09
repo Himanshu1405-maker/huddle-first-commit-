@@ -89,6 +89,21 @@ def main():
             WebDriverWait(c, 12).until(lambda browser:
                 "Hello from browser Alice" in browser.find_element(By.ID, "messages").text)
 
+            assert a.execute_script("return getComputedStyle(document.querySelector('.message-actions')).display") == "none"
+            a.find_element(By.ID, "emojiBtn").click()
+            a.find_element(By.CSS_SELECTOR, '[data-emoji-tab="Stickers"]').click()
+            a.find_element(By.CSS_SELECTOR, '[data-sticker="🚀"]').click()
+            WebDriverWait(c, 12).until(lambda browser:
+                len(browser.find_elements(By.CSS_SELECTOR, "#messages .h-animated-sticker")) >= 1)
+            bubble=a.execute_script("return [...document.querySelectorAll('.mine .bubble')].find(e=>e.textContent.includes('Hello from browser Alice'))")
+            assert bubble is not None
+            a.execute_script("arguments[0].dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))", bubble)
+            WebDriverWait(a, 4).until(lambda browser:
+                len(browser.find_elements(By.CSS_SELECTOR, ".h-message-menu [data-h-reaction]")) >= 5)
+            a.find_element(By.CSS_SELECTOR, '[data-h-reaction="❤️"]').click()
+            WebDriverWait(c, 10).until(lambda browser:
+                len(browser.find_elements(By.CSS_SELECTOR, '#messages .reactions .reaction')) >= 1)
+
             png = root / "sample.png"
             Image.new("RGB", (60, 35), "orange").save(png)
             print("ENHANCEMENT_READY=", a.execute_script("return {editor:typeof openMediaEditor,emoji:typeof drawEmojiPicker, scripts:[...document.scripts].map(x=>x.src)}"), flush=True)
