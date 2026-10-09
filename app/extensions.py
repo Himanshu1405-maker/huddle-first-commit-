@@ -150,7 +150,12 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         filename=Path(unquote(request.headers.get("x-huddle-filename","attachment"))).name
         filename="".join(c for c in filename if c.isprintable() and c not in '<>:"/\\|?*')[:95] or "attachment"
         media_type=request.headers.get("content-type","").lower()
-        data=await request.body()
+        chunks=bytearray()
+        async for piece in request.stream():
+            if len(chunks)+len(piece)>MAX_UPLOAD:
+                fail(413,"File is larger than 6 MB")
+            chunks.extend(piece)
+        data=bytes(chunks)
         try: media_type=validate_media(data, filename, media_type)
         except ValueError as exc: fail(422,str(exc))
         storage=Path(db.path).resolve().parent / "media" if db.path!=":memory:" else Path("/tmp/huddle-media")
