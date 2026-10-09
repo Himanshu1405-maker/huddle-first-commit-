@@ -12,24 +12,32 @@
   <div class="auth-screen" id="authScreen">
     <div class="auth-hero">
       <div class="brand brand-light"><span class="brand-logo">✳</span><span>huddle<span class="brand-period">.</span></span></div>
+
       <div class="auth-copy">
-        <div class="eyebrow"><span class="eyebrow-dot"></span> BUILT FOR THE WAY CAMPUS CONNECTS</div>
-        <h1>Big ideas start with <em>small conversations.</em></h1>
-        <p>From your first hello to your next big project. A little place for every conversation that matters.</p>
-        <div class="hero-conversation" aria-hidden="true">
-          <div class="floating-chat c-one"><span class="mini-avatar peach">AS</span><span>Team, what if we build something amazing? <b>✨</b></span></div>
-          <div class="floating-chat c-two"><span class="mini-avatar lilac">KM</span><span>I'm in. Let's make it happen <b>🚀</b></span></div>
-          <div class="floating-chat c-three"><span class="mini-avatar mint">MR</span><span>Already opened my laptop 💻</span></div>
-        </div>
+        <div class="eyebrow"><span class="eyebrow-dot"></span> YOUR CAMPUS, CONNECTED</div>
+        <h1>Meet your people.<br><em>Make things happen.</em></h1>
+        <p>One beautiful place for late-night ideas, real friendships and your next big project.</p>
+        <div class="auth-highlights"><span>✦ Real conversations</span><span>◉ Campus circles</span><span>↗ Made for makers</span></div>
       </div>
-      <div class="hero-foot"><span class="live-dot"></span> Conversations move in real time <span class="line"></span> Made for First Commit · IIT Mandi</div>
+      <div class="auth-showcase" aria-hidden="true">
+        <div class="showcase-backdrop"></div>
+        <div class="showcase-phone">
+          <div class="showcase-phone-top"><span class="showcase-dots"><i></i><i></i><i></i></span><strong>huddle<span>.</span></strong><span class="showcase-phone-dot">✦</span></div>
+          <div class="showcase-chat-head"><span class="showcase-avatar">FC</span><span><strong>First Commit Circle</strong><small>5 members · creating together</small></span><span class="showcase-online"></span></div>
+          <div class="showcase-messages"><div class="showcase-bubble left">Coffee + a hackathon idea? ☕</div><div class="showcase-bubble right">Already building it! ✨</div><div class="showcase-bubble left">This is what Huddle is for 🚀</div></div>
+          <div class="showcase-compose"><span>Message your circle...</span><span>↑</span></div>
+        </div>
+        <div class="showcase-float showcase-float-top">✦ More than messaging</div>
+        <div class="showcase-float showcase-float-bottom"><span>● ● ●</span> Everyone's in the loop</div>
+      </div>
+      <div class="hero-foot"><span class="live-dot"></span> A little closer, wherever you are <span class="line"></span> IIT Mandi · First Commit</div>
     </div>
     <div class="auth-panel">
       <div class="mobile-brand brand"><span class="brand-logo">✳</span> huddle<span class="brand-period">.</span></div>
       <div class="auth-form-shell">
-        <div class="welcome-icon">✦</div>
-        <h2 id="authTitle">Welcome back<span class="accent">.</span></h2>
-        <p class="muted auth-sub" id="authSubtitle">Your people are just one hello away.</p>
+        <div class="welcome-icon">✳</div><div class="auth-card-kicker">WELCOME TO YOUR SPACE</div>
+        <h2 id="authTitle">Welcome to Huddle<span class="accent">.</span></h2>
+        <p class="muted auth-sub" id="authSubtitle">Good to see you again. Your conversations are waiting.</p>
         <form id="authForm" autocomplete="on">
           <div id="registerNameField" class="form-field hidden">
             <label for="authName">Your name</label>
@@ -78,10 +86,10 @@
       <header class="chat-top" id="chatHeader">
         <button class="icon-btn mobile-menu only-mobile" id="openSidebar" aria-label="Open conversations"><span data-icon="menu"></span></button>
         <div class="header-identity" id="headerIdentity"><span class="header-placeholder">YOUR CONVERSATION SPACE</span></div>
-        <div class="header-actions"><span class="ws-status" id="wsStatus" title="Connecting to server"><span></span> Connecting</span><button class="icon-btn" id="searchMessagesBtn" aria-label="Search messages" title="Search messages"><span data-icon="search"></span></button><button class="icon-btn" id="infoBtn" aria-label="Conversation details" title="Conversation details"><span data-icon="info"></span></button></div>
+        <div class="header-actions"><span class="ws-status" id="wsStatus" title="Connection status"><span></span> Connecting</span><button class="icon-btn toolbar-btn" id="searchMessagesBtn" aria-label="Search your messages" title="Search messages"><span data-icon="search"></span></button><button class="icon-btn toolbar-btn toolbar-ai" id="aiQuickBtn" aria-label="Open Huddle AI" title="Open Huddle AI"><span data-icon="sparkles"></span></button><button class="icon-btn toolbar-btn" id="profileQuickBtn" aria-label="Your profile and settings" title="Your profile"><span data-icon="user-round"></span></button></div>
       </header>
       <section class="welcome-chat" id="welcomeChat">
-        <div class="welcome-inner"><div class="welcome-badge"><span class="twinkle t1">✦</span><span class="huddle-symbol">✳</span><span class="twinkle t2">✧</span></div><div class="welcome-kicker">A SPACE FOR YOUR PEOPLE</div><h1>The best things start<br />with a <em>hello.</em></h1><p>Ideas, laughter, late-night plans. Keep them all in one place. Pick a conversation or start something new.</p><button class="btn btn-primary welcome-button" id="welcomeNewBtn"><span data-icon="plus"></span> Start a conversation <span>↗</span></button><div class="welcome-facts"><div><span class="fact-icon">⚡</span> Instant messages</div><div><span class="fact-icon">◎</span> Real connections</div><div><span class="fact-icon">✳</span> Your circles</div></div></div>
+        <div class="welcome-inner"><div class="welcome-badge"><span class="twinkle t1">✦</span><span class="huddle-symbol">✳</span><span class="twinkle t2">✧</span></div><div class="welcome-kicker">YOUR CORNER OF CAMPUS</div><h1>Better together.<br><em>Always.</em></h1><p>Real connections start here. Catch up with a friend, start a circle, or make something amazing with your people.</p><button class="btn btn-primary welcome-button" id="welcomeNewBtn"><span data-icon="plus"></span> Start a conversation <span>↗</span></button><div class="welcome-facts"><div><span class="fact-icon">↗</span> Connect</div><div><span class="fact-icon">✦</span> Create</div><div><span class="fact-icon">◉</span> Collaborate</div></div></div>
         <div class="decor-shape ds1"></div><div class="decor-shape ds2"></div>
       </section>
       <section class="conversation-view hidden" id="conversationView">
@@ -92,10 +100,10 @@
       <section id="aiView" class="ai-view hidden" aria-label="Huddle AI assistant">
         <div class="ai-hero">
           <div class="ai-hero-glow ai-glow-one" aria-hidden="true"></div><div class="ai-hero-glow ai-glow-two" aria-hidden="true"></div>
-          <div class="ai-eyebrow"><span class="ai-eyebrow-dot">✷</span> YOUR CREATIVE CORNER <span class="ai-hero-counter">BETA / 01</span></div>
+          <div class="ai-eyebrow"><span class="ai-eyebrow-dot">✷</span> YOUR CREATIVE CORNER <span class="ai-hero-counter">YOUR IDEAS START HERE</span></div>
           <div class="ai-hero-row">
             <div class="ai-logo" aria-hidden="true"><span>✦</span></div>
-            <div class="ai-hero-copy"><h2>Hey, curious mind<span class="ai-title-spark">✳</span></h2><p>Learn something new. Dream bigger. Make cool stuff.</p></div>
+            <div class="ai-hero-copy"><h2>A little help, a lot of possibility<span class="ai-title-spark">✳</span></h2><p>Ask a question, untangle a concept or design something worth sharing.</p></div>
           </div>
           <div class="ai-hero-foot"><span class="ai-hero-chip">✴ Huddle AI</span><span class="ai-hero-chip">⚡ Think + create</span><span id="aiAvailability" class="ai-live-status">Checking connection…</span></div>
         </div>
@@ -116,7 +124,7 @@
           </div>
           <div id="aiTyping" class="ai-typing hidden" aria-live="polite"><span aria-hidden="true">✦</span> Thinking <span class="ai-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
         </div>
-        <form id="aiForm" class="ai-composer"><div class="ai-mode"><button type="button" class="ai-mode-option selected" data-ai-mode="text">✎ Ask anything</button><button type="button" class="ai-mode-option" data-ai-mode="image">▧ Create image</button></div><div class="ai-input-row" id="aiInputRow"><textarea id="aiPrompt" rows="1" maxlength="2500" placeholder="Ask me anything, big or small…" aria-label="Your message to Huddle AI"></textarea><button type="submit" id="aiSend" aria-label="Send to AI">↑</button></div><small id="aiComposerHint">AI can make mistakes. Avoid sharing sensitive information.</small></form>
+        <form id="aiForm" class="ai-composer"><div class="ai-mode"><button type="button" class="ai-mode-option selected" data-ai-mode="text">✎ Ask anything</button><button type="button" class="ai-mode-option" data-ai-mode="image">▧ Poster studio</button></div><div class="ai-input-row" id="aiInputRow"><textarea id="aiPrompt" rows="1" maxlength="2500" placeholder="Ask me anything, big or small…" aria-label="Your message to Huddle AI"></textarea><button type="submit" id="aiSend" aria-label="Send to AI">↑</button></div><small id="aiComposerHint">Small local AI can make mistakes. Poster Studio creates downloadable graphic art — not realistic AI photos.</small></form>
       </section>
     </main>
   </div>
