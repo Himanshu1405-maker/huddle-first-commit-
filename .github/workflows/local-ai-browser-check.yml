@@ -27,7 +27,7 @@ jobs:
           try:
               browser.get(base)
               time.sleep(7)
-              browser.execute_script("state.aiOpen=true; document.querySelector('#aiView').classList.remove('hidden'); aiStatus();")
+              browser.execute_script("document.querySelector('#authScreen').classList.add('hidden'); document.querySelector('#appScreen').classList.remove('hidden'); state.aiOpen=true; document.querySelector('#aiView').classList.remove('hidden'); aiStatus();")
               btn=browser.find_element(By.ID,'aiLocalStart')
               print('LOCAL_AI_BUTTON_VISIBLE='+str(btn.is_displayed()),flush=True)
               btn.click()
