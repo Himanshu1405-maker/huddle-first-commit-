@@ -293,18 +293,22 @@ $('#aiForm').addEventListener('submit',async e=>{
   state.aiMessages.push({role:'user',kind:'text',body:(image?'Generate an image: ':'')+prompt});
   $('#aiTyping').classList.remove('hidden');
   renderAI();
+  let aiFailure=null;
   try{
     const result=await post(image?'/ai/image':'/ai/chat',{prompt});
     state.aiMessages.push(result.reply);renderAI();
   }catch(err){
     state.aiMessages.pop();
     $('#aiPrompt').value=prompt;
-    $('#aiNoticeText').textContent='AI could not answer this request: '+err.message;
-    $('#aiNotice').classList.remove('hidden');
+    aiFailure=err.message;
     renderAI();
   }finally{
     $('#aiTyping').classList.add('hidden');
     state.aiBusy=false;aiStatus();
+    if(aiFailure){
+      $('#aiNoticeText').textContent='AI could not answer this request: '+aiFailure;
+      $('#aiNotice').classList.remove('hidden');
+    }
   }
 });
 $('#aiPrompt').addEventListener('keydown',e=>{

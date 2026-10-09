@@ -16,3 +16,5 @@ assert(css.includes('.ai-suggestions{display:grid'),'Suggestion cards must use c
 console.log('AI_UX_PASS: missing provider handled inline, duplicate toasts removed, creative responsive layout wired');
 
 assert(!/(^|\n)\$\('\[data-ai-mode\]'\)\.forEach/.test(js), 'AI mode buttons must query ALL matching buttons');
+
+assert(js.includes('let aiFailure=null;') && js.includes('if(aiFailure){'), 'Async errors must remain visible after status refresh');
