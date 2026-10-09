@@ -101,3 +101,51 @@ def verify_google_credential(credential: str) -> dict:
         "email": str(claims["email"]).strip().lower(),
         "name": str(claims.get("name") or claims["email"].split("@")[0])[:60],
     }
+
+
+def firebase_ready() -> bool:
+    """Firebase's public Web configuration must be complete."""
+    return all(os.getenv(key, "").strip() for key in (
+        "FIREBASE_API_KEY", "FIREBASE_AUTH_DOMAIN", "FIREBASE_PROJECT_ID", "FIREBASE_APP_ID"))
+
+
+def firebase_web_config() -> dict:
+    if not firebase_ready():
+        return {}
+    return {"apiKey":os.environ["FIREBASE_API_KEY"].strip(),
+            "authDomain":os.environ["FIREBASE_AUTH_DOMAIN"].strip(),
+            "projectId":os.environ["FIREBASE_PROJECT_ID"].strip(),
+            "appId":os.environ["FIREBASE_APP_ID"].strip()}
+
+
+def verify_firebase_credential(token: str) -> dict:
+    """Verify ID token through Firebase's server API and require Google sign-in."""
+    import base64
+    from urllib.parse import quote
+    if not firebase_ready() or not 100 <= len(token) <= 10000:
+        raise ValueError("Invalid credential")
+    project = os.environ["FIREBASE_PROJECT_ID"].strip()
+    lookup = "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + quote(os.environ["FIREBASE_API_KEY"].strip(), safe="")
+    data = _post_json(lookup, {"idToken":token}, {}, timeout=15)
+    users = data.get("users") or []
+    if len(users) != 1 or users[0].get("disabled"):
+        raise ValueError("Account unavailable")
+    user = users[0]
+    uid = str(user.get("localId") or "")
+    email = str(user.get("email") or "").strip().lower()
+    if not uid or len(uid)>128 or not email or not user.get("emailVerified"):
+        raise ValueError("A verified email is required")
+    if not any(p.get("providerId") == "google.com" for p in user.get("providerUserInfo", [])):
+        raise ValueError("Google authentication required")
+    try:
+        b64 = token.split(".")[1]
+        claims = json.loads(base64.urlsafe_b64decode(b64 + "=" * (-len(b64) % 4)))
+    except (IndexError, ValueError, TypeError) as exc:
+        raise ValueError("Invalid token") from exc
+    if (claims.get("sub") != uid or claims.get("aud") != project
+        or claims.get("iss") != "https://securetoken.google.com/" + project
+        or claims.get("firebase", {}).get("sign_in_provider") != "google.com"):
+        raise ValueError("Invalid Google authentication")
+    return {"sub":"firebase:" + project + ":" + uid,
+            "email":email,
+            "name":str(user.get("displayName") or email.split("@")[0])[:60]}

@@ -246,7 +246,7 @@ def test_ai_permissions_history_and_rate_limit(tmp_path,monkeypatch):
     monkeypatch.setattr('app.main.ask_ai',fake_ai)
     app=create_app(str(tmp_path/'ai.db'))
     with TestClient(app) as a,TestClient(app) as b:
-        assert a.get('/api/config').json()=={'email_otp':False,'ai_chat':True,'ai_image':False,'google_login':False,'google_client_id':''}
+        assert a.get('/api/config').json()=={'email_otp':False,'ai_chat':True,'ai_image':False,'google_login':False,'google_client_id':'','firebase_config':{}}
         assert a.post('/api/ai/chat',json={'prompt':'Teach derivatives'}).status_code==401
         register(a,'learner')
         register(b,'another')

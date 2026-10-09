@@ -48,3 +48,6 @@ html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;scroll-behavior
 .google-signin-wrap{display:flex;align-items:center;justify-content:center;min-height:42px;max-width:100%;overflow:hidden}
 .google-help{text-align:center;color:#8995a5;font-size:10px;margin:9px 0 0;line-height:1.5}
 .google-link-section{border-top:1px solid #e7ecf0;padding:18px 0 8px;margin-top:10px}
+
+/* Firebase Google sign-in button */
+.google-firebase-btn{margin:0 auto;width:280px;max-width:100%;background:#fff!important;color:#253348!important;border:1px solid #ced6df!important;box-shadow:0 2px 10px rgba(0,0,0,.06);font-weight:750!important}.google-firebase-btn:before{content:"G";font-size:20px;font-weight:900;color:#4285f4;display:inline-block;margin-right:12px}.google-firebase-btn:disabled{opacity:.55;cursor:wait}

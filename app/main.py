@@ -26,7 +26,7 @@ from fastapi import Cookie, FastAPI, HTTPException, Request, Response, WebSocket
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from .extras import mail_ready, text_ready, image_ready, google_ready, verify_google_credential, send_verification_email, ask_ai, generate_ai_image
+from .extras import mail_ready, text_ready, image_ready, google_ready, verify_google_credential, firebase_ready, firebase_web_config, verify_firebase_credential, send_verification_email, ask_ai, generate_ai_image
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
@@ -398,11 +398,11 @@ def create_app(database_path: str | None = None):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
-            "script-src 'self' https://accounts.google.com/gsi/client; "
+            "script-src 'self' https://accounts.google.com/gsi/client https://www.gstatic.com; "
             "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; "
-            "frame-src https://accounts.google.com/gsi/; "
+            "frame-src https://accounts.google.com/gsi/ https://*.firebaseapp.com; "
             "img-src 'self' data: https://accounts.google.com https://*.googleusercontent.com https://*.gstatic.com; "
-            "connect-src 'self' ws: wss: https://accounts.google.com/gsi/"
+            "connect-src 'self' ws: wss: https://accounts.google.com/gsi/ https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://*.firebaseapp.com"
         )
         return response
 
@@ -417,8 +417,9 @@ def create_app(database_path: str | None = None):
     @app.get("/api/config")
     async def public_config():
         return {"email_otp": mail_ready(), "ai_chat": text_ready(), "ai_image": image_ready(),
-                "google_login": google_ready(),
-                "google_client_id": os.environ.get("GOOGLE_CLIENT_ID", "").strip() if google_ready() else ""}
+                "google_login": google_ready() or firebase_ready(),
+                "google_client_id": os.environ.get("GOOGLE_CLIENT_ID", "").strip() if google_ready() else "",
+                "firebase_config": firebase_web_config()}
 
     @app.post("/api/auth/register", status_code=201)
     async def register(payload: RegisterBody, response: Response, request: Request):
@@ -514,8 +515,8 @@ def create_app(database_path: str | None = None):
             fail(503, "Email service unavailable. Try again later")
         return {"ok":True}
 
-    def google_identity(credential: str, request: Request):
-        if not google_ready():
+    async def google_identity(credential: str, request: Request):
+        if not (firebase_ready() or google_ready()):
             fail(503, "Google sign-in is not configured yet")
         # Popup credential stays in our own first-party JavaScript. Cross-origin
         # forms cannot set this custom header; do not accept a GIS redirect POST.
@@ -523,14 +524,15 @@ def create_app(database_path: str | None = None):
             fail(403, "Google sign-in requires the Huddle website")
         enforce_rate_limit(login_attempts, "google:" + client_ip(request), 25, 900)
         try:
-            info = verify_google_credential(credential)
+            verifier = verify_firebase_credential if firebase_ready() else verify_google_credential
+            info = await asyncio.to_thread(verifier, credential)
         except Exception:
             fail(401, "Google couldn't verify this sign-in. Please try again")
         return info
 
     @app.post("/api/auth/google")
     async def google_login(payload: GoogleCredentialBody, response: Response, request: Request):
-        identity = google_identity(payload.credential, request)
+        identity = await google_identity(payload.credential, request)
         with db.connection() as cx:
             linked = cx.execute("SELECT user_id FROM google_accounts WHERE google_sub=?", (identity["sub"],)).fetchone()
             if linked:
@@ -562,7 +564,7 @@ def create_app(database_path: str | None = None):
     @app.post("/api/auth/google/link")
     async def google_link(payload: GoogleCredentialBody, request: Request):
         user = require_user(request)
-        identity = google_identity(payload.credential, request)
+        identity = await google_identity(payload.credential, request)
         with db.connection() as cx:
             existing = cx.execute("SELECT user_id FROM google_accounts WHERE google_sub=?", (identity["sub"],)).fetchone()
             if existing:

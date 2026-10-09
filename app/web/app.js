@@ -12,7 +12,7 @@ const ICONS = {
 function icon(name){return `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`}
 $$('[data-icon]').forEach(node => node.innerHTML=icon(node.dataset.icon));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={config:{email_otp:false,ai_chat:false,ai_image:false,google_login:false,google_client_id:''},googleLoaded:false,otpTicket:null,aiMode:"text",aiBusy:false,aiOpen:false,aiMessages:[],me:null,conversations:[],active:null,messages:[],ws:null,connected:false,retry:0,filter:'all',isRegister:false,groupSelected:new Set(),modalUsers:[],hasMore:false,loading:false,pending:new Map(),typers:new Map(),typingTimeout:null,emojiFor:null};
+const state={config:{email_otp:false,ai_chat:false,ai_image:false,google_login:false,google_client_id:'',firebase_config:null},googleLoaded:false,otpTicket:null,aiMode:"text",aiBusy:false,aiOpen:false,aiMessages:[],me:null,conversations:[],active:null,messages:[],ws:null,connected:false,retry:0,filter:'all',isRegister:false,groupSelected:new Set(),modalUsers:[],hasMore:false,loading:false,pending:new Map(),typers:new Map(),typingTimeout:null,emojiFor:null};
 function initials(name){return String(name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'?'}
 function avatar(name,id,kind='dm',online=false){const hash=[...(id||name||'')].reduce((a,c)=>a+c.charCodeAt(0),0)%6;return `<span class="avatar ${kind==='group'?'group-avatar':`avatar-${hash}`}">${kind==='group'?'✳':esc(initials(name))}${online?'<i class="presence-dot"></i>':''}</span>`}
 function prettyTime(date){if(!date)return '';const d=new Date(date),today=new Date();if(d.toDateString()===today.toDateString())return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});return d.toLocaleDateString([],{month:'short',day:'numeric'})}
@@ -85,7 +85,36 @@ async function onGoogleCredential(result){
     state.me=response.user;await loadConversations();showApp();toast('Welcome to Huddle! ✨');
   }catch(error){if(linkMode){toast(error.message,true)}else{$('#authError').textContent=error.message;toast(error.message,true)}}
 }
+async function initFirebaseSignIn(){
+  const container=$('#googleSignInButton');
+  $('#googleAuthArea').classList.remove('hidden');
+  container.innerHTML='<button type="button" class="btn btn-wide google-firebase-btn" id="firebaseGoogleBtn" disabled>Connecting to Google…</button>';
+  const button=$('#firebaseGoogleBtn');
+  try{
+    const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signOut}]=await Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js')
+    ]);
+    const auth=getAuth(initializeApp(state.config.firebase_config));
+    const provider=new GoogleAuthProvider();
+    button.disabled=false;
+    button.textContent='Continue with Google';
+    button.addEventListener('click',async()=>{
+      button.disabled=true;
+      try{
+        const result=await signInWithPopup(auth,provider);
+        await onGoogleCredential({credential:await result.user.getIdToken(true)});
+        await signOut(auth);
+      }catch(err){
+        const message=err.code==='auth/unauthorized-domain'?'The website domain must be added under Firebase Authentication → Settings → Authorized domains.':err.code==='auth/popup-blocked'?'Please open Huddle in Chrome and allow the Google sign-in window.':'Google sign-in did not finish. Please try again.';
+        if(!state.me)$('#authError').textContent=message;
+        toast(message,true);
+      }finally{button.disabled=false}
+    });
+  }catch(err){console.warn('Firebase Google sign-in unavailable',err);container.textContent='Google sign-in is temporarily unavailable.'}
+}
 function initGoogleSignIn(){
+  if(state.config.firebase_config?.projectId){initFirebaseSignIn();return}
   if(!state.config.google_login||!state.config.google_client_id)return;
   $('#googleAuthArea').classList.remove('hidden');
   const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
