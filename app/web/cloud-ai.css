@@ -1,0 +1,50 @@
+/* Huddle Intelligence — a compact, professional hosted AI workspace.
+   No local models, runtime loaders, ONNX, or machine-learning downloads. */
+.ai-view{background:linear-gradient(180deg,#f3f8f9 0%,#fafcfd 54%,#fff 100%)}
+.ai-hero.cloud-ai-hero{min-height:unset!important;padding:25px clamp(20px,4vw,43px)!important;margin:17px clamp(16px,3.3%,34px) 11px!important;border:1px solid #cce0e0!important;border-radius:21px!important;background:radial-gradient(circle at 100% 0%,rgba(40,195,168,.18),transparent 48%),linear-gradient(115deg,#10253a,#163e46)!important;color:white!important;box-shadow:0 12px 28px rgba(19,58,72,.12)!important}
+.cloud-ai-hero .ai-hero-glow,.cloud-ai-hero .ai-hero-counter:after{display:none!important}
+.cloud-ai-hero .ai-eyebrow{color:#afe2d9!important;letter-spacing:2px;font-size:10px;display:flex;gap:8px;align-items:center}
+.cloud-ai-hero .ai-eyebrow-dot{color:#75e4c8}
+.cloud-ai-hero .ai-hero-counter{background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.17)!important;border-radius:999px!important;color:#bfe0da!important;padding:7px 13px}
+.cloud-ai-hero .ai-hero-row{align-items:center;gap:18px;padding:12px 0!important}
+.cloud-ai-hero .ai-logo{width:62px!important;height:62px!important;min-width:62px!important;background:rgba(110,226,206,.1)!important;border:1px solid rgba(136,233,214,.23)!important;border-radius:17px!important;box-shadow:none!important;transform:none!important}
+.cloud-ai-hero .ai-logo span{color:#a2efd9!important;font-size:35px!important;animation:none!important}
+.cloud-ai-hero .ai-hero-copy h2{color:#fff!important;font:800 clamp(22px,2.5vw,31px)/1.16 Manrope, sans-serif!important;letter-spacing:-.9px!important;max-width:560px;margin:0 0 6px!important}
+.cloud-ai-hero .ai-hero-copy p{color:#c1d6da!important;font-size:13px!important;line-height:1.6!important;max-width:620px;margin:0!important}
+.cloud-ai-hero .ai-hero-foot{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:7px!important}
+.cloud-ai-hero .ai-hero-chip{background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.14)!important;color:#d4e9ec!important;border-radius:999px!important;font-size:10px!important;padding:8px 12px!important}
+.cloud-ai-hero .ai-live-status{color:#ffddae!important;background:rgba(250,199,110,.07)!important;border:1px solid rgba(255,219,160,.2)!important;border-radius:999px!important;padding:7px 12px!important;font-size:11px!important;font-weight:700!important}
+.cloud-ai-hero .ai-live-status.is-online{color:#a3f7d6!important;background:rgba(38,177,131,.12)!important;border-color:rgba(70,220,179,.25)!important}
+.ai-notice{margin:8px clamp(16px,3.3%,34px) 0!important;border:1px solid #d8e6e8!important;background:#fff!important;color:#2c4650!important;box-shadow:0 5px 20px rgba(33,68,78,.05)!important;padding:14px 18px!important;border-radius:15px!important;gap:15px}
+.ai-notice-icon{background:#dff3ef!important;color:#087c76!important;border-radius:11px!important}
+.ai-notice-content strong{font-weight:800;color:#19394b!important;font-size:14px!important}
+.ai-notice-content p{color:#607784!important;font-size:12.5px!important;line-height:1.65!important;margin:5px 0!important}
+.ai-cloud-privacy-note{color:#7f9299;font-size:11px;line-height:1.6;display:block}
+.ai-notice-chip{font-size:10px!important;color:#087e79!important;background:#e5f6f2!important;border:1px solid #caeee8!important;border-radius:999px!important;padding:6px 11px!important}
+.ai-suggestions{max-width:890px;margin-left:auto;margin-right:auto}
+.ai-suggest-heading h3{color:#243e4e}
+.ai-suggestions button{border-radius:17px!important;border:1px solid #deeaec!important;box-shadow:0 7px 17px rgba(35,68,75,.045)!important}
+.ai-composer{background:#fff!important;border-top:1px solid #e1e9ec!important}
+.ai-input-row{background:#f8fbfc!important;border-color:#e0e8ec!important;border-radius:17px!important}
+.ai-input-row:focus-within{border-color:#4bb9ad!important}
+.ai-mode-option.selected{background:#0c726f!important;color:#fff!important}
+.ai-notice:not(.hidden)+.ai-scroll{min-height:0}
+@media(max-width:720px){
+ .ai-hero.cloud-ai-hero{margin:10px 11px 8px!important;padding:16px 17px!important;border-radius:17px!important}
+ .cloud-ai-hero .ai-hero-row{gap:12px!important;padding:12px 0!important}
+ .cloud-ai-hero .ai-logo{width:43px!important;height:43px!important;min-width:43px!important;border-radius:13px!important}
+ .cloud-ai-hero .ai-logo span{font-size:26px!important}
+ .cloud-ai-hero .ai-hero-copy h2{font-size:22px!important;letter-spacing:-.6px!important}
+ .cloud-ai-hero .ai-hero-copy p{font-size:11px!important;line-height:1.55!important}
+ .cloud-ai-hero .ai-hero-counter{display:none!important}
+ .cloud-ai-hero .ai-eyebrow{font-size:9px!important;letter-spacing:1.35px!important}
+ .cloud-ai-hero .ai-hero-foot{gap:6px}
+ .cloud-ai-hero .ai-hero-chip{font-size:9px!important;padding:6px 8px!important}
+ .cloud-ai-hero .ai-live-status{flex:0 0 auto!important;font-size:10px!important;padding:6px 8px!important}
+ .ai-notice{margin:8px 11px 0!important;padding:12px!important;gap:11px!important}
+ .ai-notice-content strong{font-size:13px!important}
+ .ai-notice-content p{font-size:11.5px!important}
+ .ai-notice-chip{display:none!important}
+ .ai-cloud-privacy-note{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.cloud-ai-hero *{animation:none!important}}
