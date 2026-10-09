@@ -55,7 +55,7 @@ def test_reject_invalid_project_and_unverified_email(tmp_path,monkeypatch):
 
 
 def test_browser_diagnostics_are_safe_and_rate_limited(tmp_path,monkeypatch,caplog):
-    for key in FB: monkeypatch.delenv(key,raising=False)
+    for key in ENV: monkeypatch.delenv(key,raising=False)
     with TestClient(create_app(str(tmp_path/'diagnostics.db'))) as client:
         assert client.post('/api/diagnostics/google',json={'stage':'popup','code':'auth/popup-closed-by-user'}).status_code==200
         assert 'error_code=auth/popup-closed-by-user' in caplog.text
