@@ -179,7 +179,10 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         try:
             category="image" if media_type.startswith("image/") else "video" if media_type.startswith("video/") else "voice" if media_type.startswith("audio/") else "file"
             marker={"image":"🖼️","video":"🎬","voice":"🎤","file":"📎"}[category]
-            text=f"{marker} {filename}"
+            caption=unquote(request.headers.get("x-huddle-caption","")).strip()
+            if len(caption)>500 or any(ord(c)<32 and c not in "\n\t" for c in caption):
+                fail(422,"Caption cannot exceed 500 characters or contain control characters")
+            text=f"{marker} {filename}"+("\n"+caption if caption else "")
             message,created=send_message(conversation_id,user["id"],text)
             with db.connection() as cx:
                 cx.execute("""INSERT INTO attachments(id,message_id,filename,content_type,byte_size,storage_name,created_at)

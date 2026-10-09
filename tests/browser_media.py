@@ -89,15 +89,43 @@ def main():
             WebDriverWait(c, 12).until(lambda browser:
                 "Hello from browser Alice" in browser.find_element(By.ID, "messages").text)
 
+            assert a.execute_script("return getComputedStyle(document.querySelector('.message-actions')).display") == "none"
+            a.find_element(By.ID, "emojiBtn").click()
+            a.find_element(By.CSS_SELECTOR, '[data-emoji-tab="Stickers"]').click()
+            a.find_element(By.CSS_SELECTOR, '[data-sticker="🚀"]').click()
+            WebDriverWait(c, 12).until(lambda browser:
+                len(browser.find_elements(By.CSS_SELECTOR, "#messages .h-animated-sticker")) >= 1)
+            bubble=a.execute_script("return [...document.querySelectorAll('.mine .bubble')].find(e=>e.textContent.includes('Hello from browser Alice'))")
+            assert bubble is not None
+            a.execute_script("arguments[0].dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))", bubble)
+            WebDriverWait(a, 4).until(lambda browser:
+                len(browser.find_elements(By.CSS_SELECTOR, ".h-message-menu [data-h-reaction]")) >= 5)
+            a.find_element(By.CSS_SELECTOR, '[data-h-reaction="❤️"]').click()
+            WebDriverWait(c, 10).until(lambda browser:
+                len(browser.find_elements(By.CSS_SELECTOR, '#messages .reactions .reaction')) >= 1)
+
             png = root / "sample.png"
             Image.new("RGB", (60, 35), "orange").save(png)
+            print("ENHANCEMENT_READY=", a.execute_script("return {editor:typeof openMediaEditor,emoji:typeof drawEmojiPicker, scripts:[...document.scripts].map(x=>x.src)}"), flush=True)
+            print("EARLY_BROWSER_LOGS=", a.get_log("browser"), flush=True)
             a.find_element(By.ID, "mediaFileInput").send_keys(str(png))
+            print("POST_UPLOAD_SELECT=", a.execute_script("return {editor:!!document.querySelector('.h-editor-overlay'), progress:document.querySelector('#mediaProgress')?.textContent, input:document.querySelector('#mediaFileInput')?.files?.length}"), flush=True)
+            WebDriverWait(a, 10).until(lambda browser:
+                bool(browser.find_elements(By.CSS_SELECTOR, '[data-photo-tool="square"]')))
+            a.find_element(By.CSS_SELECTOR, '[data-photo-tool="square"]').click()
+            a.find_element(By.ID, "hEditorCaption").send_keys("Picture from our campus")
+            a.find_element(By.ID, "hEditorSend").click()
             WebDriverWait(c, 12).until(lambda browser:
                 len(browser.find_elements(By.CSS_SELECTOR, "#messages .image-media img")) >= 1)
+            assert "Picture from our campus" in c.find_element(By.ID, "messages").text
+            assert "picture.png" not in c.find_element(By.ID, "messages").text
 
             pdf = root / "study-notes.pdf"
             pdf.write_bytes(b"%PDF-1.4\n1 0 obj <<>> endobj\n%%EOF")
             a.find_element(By.ID, "mediaFileInput").send_keys(str(pdf))
+            WebDriverWait(a, 10).until(lambda browser:
+                bool(browser.find_elements(By.ID, "hEditorSend")))
+            a.find_element(By.ID, "hEditorSend").click()
             WebDriverWait(c, 12).until(lambda browser:
                 len(browser.find_elements(By.CSS_SELECTOR, "#messages .file-media")) >= 1)
 
@@ -169,7 +197,8 @@ def main():
             a.execute_cdp_cmd("Browser.grantPermissions",
                               {"origin": base, "permissions": ["notifications"]})
             a.find_element(By.ID, "notificationsBtn").click()
-            assert a.execute_script("return localStorage.getItem('huddle-notify-opt-in')") == "yes"
+            WebDriverWait(a, 8).until(lambda browser:
+                browser.execute_script("return localStorage.getItem('huddle-notify-opt-in')") == "yes")
             assert a.execute_script("return document.documentElement.scrollWidth <= innerWidth+4")
             assert all(not any(v in entry["message"] for v in ["Uncaught SyntaxError", "ReferenceError"])
                        for browser in clients for entry in browser.get_log("browser"))

@@ -337,6 +337,12 @@ def create_app(database_path: str | None = None):
             "reactions": [{"emoji": r["emoji"], "count": r["count"], "users": r["users"].split(",")} for r in reactions]
         }
 
+    def message_preview(body):
+        """Short friendly previews for typed Huddle animated stickers."""
+        if body.startswith("[[huddle-sticker:") and body.endswith("]]"):
+            return "🎉 Animated sticker"
+        return body
+
     def serialize_conversation(cx, conv, user_id):
         members = cx.execute("""SELECT u.id,u.handle,u.name,u.bio,m.role,m.last_read_at
             FROM members m JOIN users u ON u.id=m.user_id WHERE m.conversation_id=? ORDER BY u.name""", (conv["id"],)).fetchall()
@@ -353,7 +359,7 @@ def create_app(database_path: str | None = None):
             "handle": other["handle"] if other and conv["kind"] == "dm" else "",
             "members": [{**public_user(m), "role": m["role"], "online": hub.online(m["id"])} for m in members],
             "unread": unread, "updated_at": conv["updated_at"],
-            "last_message": ({"body": "Message deleted" if latest["deleted_at"] else decrypt_text(latest["body"]),
+            "last_message": ({"body": "Message deleted" if latest["deleted_at"] else message_preview(decrypt_text(latest["body"])),
                               "created_at": latest["created_at"], "sender_id": latest["sender_id"]} if latest else None)
         }
 
@@ -415,7 +421,8 @@ def create_app(database_path: str | None = None):
             "style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; "
             "font-src 'self' data: https://fonts.gstatic.com; "
             "frame-src https://accounts.google.com https://*.firebaseapp.com; "
-            "img-src 'self' data: https://accounts.google.com https://*.googleusercontent.com https://*.gstatic.com; "
+            "img-src 'self' data: blob: https://accounts.google.com https://*.googleusercontent.com https://*.gstatic.com; "
+            "media-src 'self' blob:; "
             "connect-src 'self' ws: wss: https://accounts.google.com https://apis.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co https://*.xethub.hf.co https://*.xethub.huggingface.co"
         )
         return response
