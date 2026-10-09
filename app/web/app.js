@@ -164,7 +164,7 @@ if(action.dataset.action==='report'){
 function setMediaProgress(text){const el=$('#mediaProgress');if(el)el.textContent=text||'';}
 async function sendMediaFile(file){
   const cid=state.active?.id;if(!cid||!file)return;
-  if(file.size>6*1024*1024){toast('File too large. Limit is 6 MB.',true);return;}
+  if(file.size>(file.type.startsWith('video/')?20:6)*1024*1024){toast('Selected file exceeds upload size limit.',true);return;}
   const name=file.name||'attachment';
   const btn=$('#voiceNoteBtn');btn.disabled=true;setMediaProgress('Uploading '+name+'…');
   try{
