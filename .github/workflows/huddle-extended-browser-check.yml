@@ -1,0 +1,98 @@
+name: Huddle Multimedia + Privacy Browser Check
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/huddle-extended-browser-check.yml']
+jobs:
+  real-chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt selenium==4.38.0 requests
+      - name: Test signed-in mobile file attachment, voice note, private preview and chat recap
+        run: |
+          python - <<'PY'
+          import io,os,time,threading,tempfile,requests
+          from pathlib import Path
+          from PIL import Image
+          import uvicorn
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from app.main import create_app
+          folder=Path(tempfile.mkdtemp(prefix='huddle_media_ci_'))
+          app=create_app(str(folder/'huddle.db'))
+          server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=8899,log_level='warning'))
+          thread=threading.Thread(target=server.run,daemon=True);thread.start()
+          base='http://127.0.0.1:8899'
+          for _ in range(40):
+            try:
+              if requests.get(base+'/health',timeout=1).status_code==200:break
+            except requests.RequestException:pass
+            time.sleep(.2)
+          alice=requests.Session();bob=requests.Session()
+          def register(session,handle):
+            r=session.post(base+'/api/auth/register',json={'name':handle.title(),'handle':handle,'password':'StrongPass123!'})
+            assert r.status_code==201,r.text
+            return r.json()['user']
+          a=register(alice,'alice');b=register(bob,'bobby')
+          room=alice.post(base+'/api/conversations/direct',json={'user_id':b['id']}).json()['conversation']['id']
+          o=webdriver.ChromeOptions()
+          for arg in ['--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--window-size=390,844']:
+            o.add_argument(arg)
+          chrome=webdriver.Chrome(options=o)
+          try:
+            chrome.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{'width':390,'height':844,'deviceScaleFactor':2,'mobile':True})
+            chrome.get(base)
+            cookie=alice.cookies.get('huddle_session')
+            assert cookie,'Session cookie absent'
+            chrome.add_cookie({'name':'huddle_session','value':cookie,'path':'/','sameSite':'Strict'})
+            chrome.refresh()
+            for _ in range(30):
+              if chrome.execute_script("return !document.querySelector('#appScreen').classList.contains('hidden')"):break
+              time.sleep(.3)
+            assert not chrome.execute_script("return document.querySelector('#appScreen').classList.contains('hidden')")
+            chrome.execute_async_script("""const done=arguments[arguments.length-1];openConversation(arguments[0]).then(()=>done(true)).catch(e=>done(e.message));""",room)
+            assert chrome.execute_script("return document.querySelector('#voiceNoteBtn')!==null && document.querySelector('#mediaFileInput')!==null")
+            assert chrome.execute_script("return document.documentElement.scrollWidth<=innerWidth+3")
+            assert chrome.execute_script("return document.featurePolicy?.allowsFeature('microphone')!==false")
+            pic=folder/'campus.png'
+            Image.new('RGB',(80,60),'teal').save(pic)
+            chrome.find_element(By.ID,'mediaFileInput').send_keys(str(pic))
+            for _ in range(35):
+              seen=chrome.execute_script("return document.querySelectorAll('#messages .image-media img').length")
+              if seen:break
+              time.sleep(.3)
+            print('PRIVATE_IMAGE_PREVIEW='+str(seen>0),flush=True)
+            assert seen>0
+            chrome.find_element(By.ID,'chatRecapBtn').click()
+            for _ in range(20):
+              content=chrome.find_element(By.ID,'modalContent').text
+              if 'campus' in content or 'No recent text' in content:break
+              time.sleep(.2)
+            assert 'recent' in content.lower() or 'campus' in content.lower()
+            chrome.find_element(By.ID,'closeModal').click()
+            # Chrome fake microphone input validates genuine recording and upload,
+            # not just the existence of a decorative button.
+            chrome.find_element(By.ID,'voiceNoteBtn').click()
+            time.sleep(2)
+            recording=chrome.execute_script("return document.querySelector('#voiceNoteBtn').classList.contains('recording')")
+            print('VOICE_RECORDING='+str(recording),flush=True)
+            assert recording,'Mic recording did not start'
+            chrome.find_element(By.ID,'voiceNoteBtn').click()
+            for _ in range(40):
+              audio=chrome.execute_script("return document.querySelectorAll('#messages audio').length")
+              if audio:break
+              time.sleep(.3)
+            print('VOICE_NOTE_PLAYBACK='+str(audio>0),flush=True)
+            assert audio>0
+            assert chrome.execute_script("return document.querySelector('#notificationsBtn')!==null")
+            assert chrome.execute_script("return document.documentElement.scrollWidth<=innerWidth+3")
+            print('HUDDLE_MULTIMEDIA_BROWSER_PASS',flush=True)
+          finally:
+            chrome.quit()
+            server.should_exit=True
+          PY
