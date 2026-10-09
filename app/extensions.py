@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from .security import encrypt_bytes, decrypt_bytes, decrypt_text
 
 MAX_UPLOAD = 6 * 1024 * 1024
+MAX_VIDEO_UPLOAD = 20 * 1024 * 1024
 SAFE_IMAGE_TYPES = {
     "image/png": (".png",),
     "image/jpeg": (".jpg", ".jpeg"),
