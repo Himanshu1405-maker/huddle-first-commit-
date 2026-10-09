@@ -11,7 +11,9 @@ async function load(){
     progress('Loading the open-source inference engine…');
     const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
     env.allowLocalModels=false;
-    const available=typeof navigator!=='undefined' && navigator.gpu;
+    // navigator.gpu can exist even when Chrome has no usable adapter.
+    let available=false;
+    try{available=Boolean(await navigator.gpu?.requestAdapter({powerPreference:'low-power'}));}catch{available=false;}
     const options={
       device:available?'webgpu':'wasm',
       dtype:available?'q4f16':'q8',
