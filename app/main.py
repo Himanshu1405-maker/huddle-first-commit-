@@ -28,6 +28,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from .extras import mail_ready, text_ready, image_ready, google_ready, verify_google_credential, firebase_ready, firebase_web_config, verify_firebase_credential, send_verification_email, ask_ai, generate_ai_image
+from .security import encrypt_text, decrypt_text
+from .extensions import install_extensions
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
@@ -321,15 +323,17 @@ def create_app(database_path: str | None = None):
             return [r["user_id"] for r in cx.execute("SELECT user_id FROM members WHERE conversation_id=?", (conversation_id,))]
 
     def serialize_message(cx, msg):
+        attachment = cx.execute("""SELECT id,filename,content_type,byte_size FROM attachments WHERE message_id=?""",(msg["id"],)).fetchone()
         reactions = cx.execute("""SELECT emoji, COUNT(*) AS count, GROUP_CONCAT(user_id) AS users
               FROM reactions WHERE message_id=? GROUP BY emoji ORDER BY emoji""", (msg["id"],)).fetchall()
         readers = cx.execute("""SELECT user_id FROM members
             WHERE conversation_id=? AND user_id<>? AND last_read_at>=?""", (msg["conversation_id"], msg["sender_id"], msg["created_at"])).fetchall()
         return {
             "id": msg["id"], "conversation_id": msg["conversation_id"],
-            "sender_id": msg["sender_id"], "body": "" if msg["deleted_at"] else msg["body"],
+            "sender_id": msg["sender_id"], "body": "" if msg["deleted_at"] else decrypt_text(msg["body"]),
             "created_at": msg["created_at"], "edited_at": msg["edited_at"],
             "deleted_at": msg["deleted_at"], "seen_by": [r["user_id"] for r in readers],
+            "attachments": [dict(attachment)] if attachment and not msg["deleted_at"] else [],
             "reactions": [{"emoji": r["emoji"], "count": r["count"], "users": r["users"].split(",")} for r in reactions]
         }
 
@@ -349,7 +353,7 @@ def create_app(database_path: str | None = None):
             "handle": other["handle"] if other and conv["kind"] == "dm" else "",
             "members": [{**public_user(m), "role": m["role"], "online": hub.online(m["id"])} for m in members],
             "unread": unread, "updated_at": conv["updated_at"],
-            "last_message": ({"body": "Message deleted" if latest["deleted_at"] else latest["body"],
+            "last_message": ({"body": "Message deleted" if latest["deleted_at"] else decrypt_text(latest["body"]),
                               "created_at": latest["created_at"], "sender_id": latest["sender_id"]} if latest else None)
         }
 
@@ -382,7 +386,7 @@ def create_app(database_path: str | None = None):
             enforce_rate_limit(message_attempts, user_id, 30, 60)
             msg_id, ts = new_id(), now()
             cx.execute("INSERT INTO messages(id,conversation_id,sender_id,body,client_nonce,created_at) VALUES(?,?,?,?,?,?)",
-                       (msg_id, conv_id, user_id, body, nonce, ts))
+                       (msg_id, conv_id, user_id, encrypt_text(body), nonce, ts))
             cx.execute("UPDATE conversations SET updated_at=? WHERE id=?", (ts, conv_id))
             msg = cx.execute("SELECT * FROM messages WHERE id=?", (msg_id,)).fetchone()
             return serialize_message(cx, msg), True
@@ -809,7 +813,7 @@ def create_app(database_path: str | None = None):
             msg = cx.execute("SELECT * FROM messages WHERE id=?", (message_id,)).fetchone()
             if not msg or msg["sender_id"] != user["id"] or msg["deleted_at"]:
                 fail(404, "Your message was not found")
-            cx.execute("UPDATE messages SET body=?, edited_at=? WHERE id=?", (content, now(), message_id))
+            cx.execute("UPDATE messages SET body=?, edited_at=? WHERE id=?", (encrypt_text(content), now(), message_id))
             new_msg = serialize_message(cx, cx.execute("SELECT * FROM messages WHERE id=?", (message_id,)).fetchone())
         await hub.notify(member_ids(new_msg["conversation_id"]), {"type": "message:update", "message": new_msg})
         return {"message": new_msg}
@@ -854,19 +858,29 @@ def create_app(database_path: str | None = None):
         if len(q) < 2:
             return {"results": []}
         with db.connection() as cx:
-            args = [user["id"], f"%{escape_like(q)}%"]
-            extra = ""
+            cond = ""
+            args = [user["id"]]
             if conversation_id:
                 ensure_membership(cx, conversation_id, user["id"])
-                extra = " AND ms.conversation_id=?"
+                cond = " AND ms.conversation_id=?"
                 args.append(conversation_id)
+            # Search a bounded recent history after decryption; SQL LIKE cannot
+            # match Fernet ciphertext. Membership is enforced in the JOIN.
             rows = cx.execute(f"""SELECT ms.id,ms.conversation_id,ms.body,ms.created_at,
                 u.name AS sender_name, c.kind,c.name AS group_name
                 FROM messages ms JOIN members mem ON mem.conversation_id=ms.conversation_id
                 JOIN users u ON u.id=ms.sender_id JOIN conversations c ON c.id=ms.conversation_id
-                WHERE mem.user_id=? AND ms.body LIKE ? ESCAPE '\\' AND ms.deleted_at IS NULL {extra}
-                ORDER BY ms.created_at DESC LIMIT 30""", args).fetchall()
-        return {"results": [dict(r) for r in rows]}
+                WHERE mem.user_id=? AND ms.deleted_at IS NULL {cond}
+                ORDER BY ms.created_at DESC LIMIT 5000""", args).fetchall()
+        matches = []
+        for row in rows:
+            body = decrypt_text(row["body"])
+            if q.casefold() in body.casefold():
+                entry = dict(row)
+                entry["body"] = body
+                matches.append(entry)
+                if len(matches) >= 30: break
+        return {"results": matches}
 
     @app.get("/api/ai/history")
     async def ai_history(request: Request):
@@ -989,6 +1003,7 @@ def create_app(database_path: str | None = None):
             if not hub.online(uid):
                 await hub.notify(list(hub.sockets), {"type": "presence:update", "user_id": uid, "online": False})
 
+    install_extensions(app, db, hub, require_user, serialize_message, send_message, member_ids, ensure_membership, now, new_id)
     if os.getenv("SEED_DEMO", "0") == "1":
         seed_demo(db)
     return app
