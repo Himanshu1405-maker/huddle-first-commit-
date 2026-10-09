@@ -1,10 +1,15 @@
-const assert=require('node:assert/strict'),fs=require('node:fs');
+// Regression guard: no on-device AI or accidental multi-hundred-megabyte downloads.
+const fs=require('node:fs'), assert=require('node:assert/strict');
 const html=fs.readFileSync('app/web/index.html','utf8');
 const js=fs.readFileSync('app/web/app.js','utf8');
-const worker=fs.readFileSync('app/web/local-ai-worker.js','utf8');
 const main=fs.readFileSync('app/main.py','utf8');
-for(const id of ['aiLocalStart','aiLocalProgress','aiNoticeTitle'])assert(html.includes('id="'+id+'"'));
-for(const str of ['new Worker(\'/assets/local-ai-worker.js\'','function askLocalAI(history)','const localMode=!image&&!state.config.ai_chat&&state.localAI.ready','messages.slice(-7)'])assert(js.includes(str),str);
-for(const str of ['SmolLM2-135M-Instruct-ONNX-GQA','@huggingface/transformers@3.8.1','max_new_tokens:tokens', "type:'ready'"])assert(worker.includes(str),str);
-assert(main.includes('"ai_local": True'));assert(main.includes("worker-src 'self'"));assert(main.includes('https://cdn.jsdelivr.net'));assert(main.includes('https://huggingface.co'));
-console.log('LOCAL_AI_WIRING_PASS: opt-in model, worker, CSP, availability and message flow');
+const extras=fs.readFileSync('app/extras.py','utf8');
+assert(!fs.existsSync('app/web/local-ai-worker.js'),'Local worker must not ship');
+for(const fragment of ['startLocalAI(', 'askLocalAI(', 'localAIWorker(', 'hasLocalAIModelCache(', 'restoreLocalAIIfSaved(', 'transformers-cache', "new Worker("]){
+ assert(!js.includes(fragment),fragment+' would initiate a device AI model');
+}
+assert(!html.includes('Enable on-device AI') && !html.includes('Opening your saved AI model'),'Legacy loading copy');
+assert(main.includes('"ai_local": False'), 'Public config must disable local inference');
+for(const provider of ['gemini','groq','openrouter','openai'])assert(extras.includes('"'+provider+'"'));
+assert(js.includes("'/ai/chat'"),'Text requests must use server endpoint');
+console.log('NO_LOCAL_AI_PASS: all assistant inference is provider-hosted, no ONNX or device model downloads');
