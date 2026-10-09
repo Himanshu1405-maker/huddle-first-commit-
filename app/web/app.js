@@ -17,6 +17,8 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const state={config:{email_otp:false,ai_chat:false,ai_image:false,ai_local:true,google_login:false,google_client_id:'',firebase_config:null},googleLoaded:false,otpTicket:null,aiMode:"text",aiBusy:false,aiOpen:false,aiMessages:[],me:null,conversations:[],active:null,messages:[],ws:null,connected:false,retry:0,filter:'all',isRegister:false,groupSelected:new Set(),modalUsers:[],hasMore:false,loading:false,pending:new Map(),typers:new Map(),typingTimeout:null,emojiFor:null};
 // AI inference runs in a dedicated Web Worker. No API keys, no paid services.
 state.localAI={ready:false,loading:false,worker:null,job:null,active:false,history:[],progress:'',error:'',cacheFiles:0,restored:false,qualityLoading:false,quality:false};
+state.lastChatId=null;
+state.aiContextEnabled=false;
 const LOCAL_AI_PREF='huddle-ai-installed-v1';
 function localAIPreference(){
   try{return localStorage.getItem(LOCAL_AI_PREF)==='yes';}catch{return false;}
@@ -121,7 +123,7 @@ async function api(path,opts={}){let res;try{res=await fetch('/api'+path,{creden
 function post(path,data){return api(path,{method:'POST',body:JSON.stringify(data)})}
 function patch(path,data){return api(path,{method:'PATCH',body:JSON.stringify(data)})}
 function showAuth(){ $('#appScreen').classList.add('hidden');$('#authScreen').classList.remove('hidden');$('#otpPanel').classList.add('hidden');$('#authForm').classList.remove('hidden');$('.switch-auth').classList.remove('hidden');if(state.config.google_login)$('#googleAuthArea').classList.remove('hidden');$('#authError').textContent=''}
-function signOutLocal(){window.google?.accounts?.id?.disableAutoSelect?.();$('#aiView').classList.add('hidden');state.aiOpen=false;state.otpTicket=null;state.me=null;state.active=null;state.conversations=[];state.messages=[];state.pending.clear();state.connected=false;state.ws?.close();state.ws=null;showAuth();if(state.isRegister)toggleAuth()}
+function signOutLocal(){state.lastChatId=null;state.aiContextEnabled=false;window.google?.accounts?.id?.disableAutoSelect?.();$('#aiView').classList.add('hidden');state.aiOpen=false;state.otpTicket=null;state.me=null;state.active=null;state.conversations=[];state.messages=[];state.pending.clear();state.connected=false;state.ws?.close();state.ws=null;showAuth();if(state.isRegister)toggleAuth()}
 function showApp(){ $('#authScreen').classList.add('hidden');$('#appScreen').classList.remove('hidden');$('#selfName').textContent=state.me.name;$('#selfHandle').textContent='@'+state.me.handle;$('#selfAvatar').innerHTML=avatar(state.me.name,state.me.id);renderSidebar();connectWS()}
 function toggleAuth(){state.isRegister=!state.isRegister;$('#authTitle').innerHTML=state.isRegister?'Join the Huddle<span class="accent">.</span>':'Welcome to Huddle<span class="accent">.</span>';$('#authSubtitle').textContent=state.isRegister?'Your people, your ideas, all in one place.':'Good to see you again. Your conversations are waiting.';$('#registerNameField').classList.toggle('hidden',!state.isRegister);$('#registerEmailField').classList.toggle('hidden',!(state.isRegister&&state.config.email_otp));$('#authEmail').required=state.isRegister&&state.config.email_otp;$('#authName').required=state.isRegister;$('#authPassword').autocomplete=state.isRegister?'new-password':'current-password';$('#authSubmit').innerHTML=state.isRegister?'Create account <span>→</span>':'Sign in <span>→</span>';$('#authSwitchPrefix').textContent=state.isRegister?'Already have an account?':'New around here?';$('#switchAuth').textContent=state.isRegister?'Sign in':'Create an account';$('#passwordHint').textContent=state.isRegister?'8+ characters':'';$('#authError').textContent=''}
 $('#switchAuth').addEventListener('click',toggleAuth);
@@ -135,10 +137,10 @@ $('#sidebarSearch').addEventListener('input',renderSidebar);
 $$('.filter').forEach(btn=>btn.addEventListener('click',()=>{state.filter=btn.dataset.filter;$$('.filter').forEach(b=>b.classList.toggle('selected',b===btn));renderSidebar()}));
 function mobileDrawer(open){$('#sidebar').classList.toggle('open',open);$('#mobileScrim').classList.toggle('hidden',!open)}
 $('#openSidebar').addEventListener('click',()=>mobileDrawer(true));$('#closeSidebar').addEventListener('click',()=>mobileDrawer(false));$('#mobileScrim').addEventListener('click',()=>mobileDrawer(false));
-async function openConversation(id,focusId=null){const c=state.conversations.find(x=>x.id===id);if(!c)return;state.aiOpen=false;$('#aiView').classList.add('hidden');const changed=state.active?.id!==id;state.active=c;state.messages=[];state.hasMore=false;$('#welcomeChat').classList.add('hidden');$('#conversationView').classList.remove('hidden');$('#messageScroller').scrollTop=0;$('#messages').innerHTML='<div class="list-empty">Loading your conversation…</div>';renderHeader();renderSidebar();mobileDrawer(false);try{const result=await api(`/conversations/${id}/messages`);if(state.active?.id!==id)return;state.messages=result.messages;state.hasMore=result.has_more;renderMessages(true);markRead();if(focusId){scrollToMessage(focusId)}else if(changed&&window.matchMedia('(min-width: 721px)').matches){$('#messageInput').focus()}}catch(err){toast(err.message,true)}}
+async function openConversation(id,focusId=null){const c=state.conversations.find(x=>x.id===id);if(!c)return;state.lastChatId=id;state.aiOpen=false;$('#aiView').classList.add('hidden');const changed=state.active?.id!==id;state.active=c;state.messages=[];state.hasMore=false;$('#welcomeChat').classList.add('hidden');$('#conversationView').classList.remove('hidden');$('#messageScroller').scrollTop=0;$('#messages').innerHTML='<div class="list-empty">Loading your conversation…</div>';renderHeader();renderSidebar();mobileDrawer(false);try{const result=await api(`/conversations/${id}/messages`);if(state.active?.id!==id)return;state.messages=result.messages;state.hasMore=result.has_more;renderMessages(true);markRead();if(focusId){scrollToMessage(focusId)}else if(changed&&window.matchMedia('(min-width: 721px)').matches){$('#messageInput').focus()}}catch(err){toast(err.message,true)}}
 function showWelcome(){state.aiOpen=false;$('#aiView').classList.add('hidden');state.active=null;$('#welcomeChat').classList.remove('hidden');$('#conversationView').classList.add('hidden');$('#chatBanner').textContent='';$('#headerIdentity').innerHTML='<span class="header-placeholder">YOUR CONVERSATION SPACE</span>';renderSidebar()}
 function renderHeader(){const c=state.active;if(!c)return;const other=c.members.find(m=>m.id!==state.me.id);const online=c.kind==='dm'&&other?.online;$('#headerIdentity').innerHTML=avatar(c.name,c.id,c.kind,online)+`<span><span class="header-name">${esc(c.name)}</span><span class="header-meta">${c.kind==='group'?`${c.members.length} members · Your circle`:`${online?'<i class="little-dot"></i> Online now':'Offline · @'+esc(c.handle)}`}</span></span>`;$('#chatBanner').innerHTML=`${c.kind==='group'?'✳ Welcome to <strong>'+esc(c.name)+'</strong>. Good things happen together.':'🔒 This conversation is between you and <strong>'+esc(c.name)+'</strong>.'}`;$('#messageInput').placeholder=`Message ${c.kind==='group'?'#'+c.name:c.name}…`}
-function renderMessages(jumpEnd=false){const view=$('#messageScroller');const oldHeight=view.scrollHeight,oldTop=view.scrollTop;$('#loadMoreBtn').classList.toggle('hidden',!state.hasMore);let previousDay='';$('#messages').innerHTML=state.messages.map(m=>{const day=dayLabel(m.created_at);let divider='';if(day!==previousDay){divider=`<div class="date-divider">${esc(day)}</div>`;previousDay=day}const mine=m.sender_id===state.me.id;const sender=state.active?.members.find(x=>x.id===m.sender_id)||{name:'Unknown'};const group=state.active?.kind==='group';const reactions=m.reactions?.length?`<div class="reactions">${m.reactions.map(r=>`<button class="reaction ${r.users.includes(state.me.id)?'reacted':''}" data-reaction-message="${esc(m.id)}" data-reaction-emoji="${esc(r.emoji)}" title="React ${esc(r.emoji)}">${esc(r.emoji)} ${r.count}</button>`).join('')}</div>`:'';const actions=!m.deleted_at?`<div class="message-actions"><button data-action="react" data-message="${esc(m.id)}" title="React">☺ React</button>${mine?`<button data-action="edit" data-message="${esc(m.id)}">Edit</button><button data-action="delete" data-message="${esc(m.id)}">Delete</button>`:''}</div>`:'';return divider+`<div class="message-row ${mine?'mine':''}" id="msg-${esc(m.id)}">${mine?'<span class="avatar-placeholder"></span>':avatar(sender.name,sender.id)}<div class="message-stack">${group&&!mine?`<div class="sender-label">${esc(sender.name)}</div>`:''}<div class="bubble ${m.deleted_at?'deleted':''}">${m.deleted_at?'This message was deleted':esc(m.body)}</div><div class="bubble-meta">${esc(prettyTime(m.created_at))} ${m.edited_at?'<span class="edit-label">· edited</span>':''}${mine?`<span class="seen-check" title="${(m.seen_by||[]).length?'Seen':'Sent'}">${(m.seen_by||[]).length?'✓✓':'✓'}</span>`:''}</div>${reactions}${actions}</div></div>`}).join('')||'<div class="list-empty">No messages yet.<br/>Be the first to say hello 👋</div>';if(jumpEnd){view.scrollTop=view.scrollHeight}else{view.scrollTop=oldTop}}
+function renderMessages(jumpEnd=false){const view=$('#messageScroller');const oldHeight=view.scrollHeight,oldTop=view.scrollTop;$('#loadMoreBtn').classList.toggle('hidden',!state.hasMore);let previousDay='';$('#messages').innerHTML=state.messages.map(m=>{const day=dayLabel(m.created_at);let divider='';if(day!==previousDay){divider=`<div class="date-divider">${esc(day)}</div>`;previousDay=day}const mine=m.sender_id===state.me.id;const sender=state.active?.members.find(x=>x.id===m.sender_id)||{name:'Unknown'};const group=state.active?.kind==='group';const reactions=m.reactions?.length?`<div class="reactions">${m.reactions.map(r=>`<button class="reaction ${r.users.includes(state.me.id)?'reacted':''}" data-reaction-message="${esc(m.id)}" data-reaction-emoji="${esc(r.emoji)}" title="React ${esc(r.emoji)}">${esc(r.emoji)} ${r.count}</button>`).join('')}</div>`:'';const media=(m.attachments||[]).map(a=>{const url='/api/media/'+encodeURIComponent(a.id);const mime=a.content_type||'';const label=esc(a.filename);return mime.startsWith('image/')?`<a class="media-card image-media" href="${url}" target="_blank" rel="noopener"><img src="${url}" loading="lazy" alt="Shared image: ${label}" /><span>${label}</span></a>`:mime.startsWith('audio/')?`<div class="media-card voice-media"><div>🎧 ${label}</div><audio controls preload="none" src="${url}"></audio></div>`:`<a class="media-card file-media" href="${url}" download>📎 ${label} <small>↧ Download</small></a>`;}).join('');const actions=!m.deleted_at?`<div class="message-actions"><button data-action="react" data-message="${esc(m.id)}" title="React">☺ React</button>${mine?`<button data-action="edit" data-message="${esc(m.id)}">Edit</button><button data-action="delete" data-message="${esc(m.id)}">Delete</button>`:`<button data-action="report" data-message="${esc(m.id)}" title="Report this message">⚑ Report</button>`}</div>`:'';return divider+`<div class="message-row ${mine?'mine':''}" id="msg-${esc(m.id)}">${mine?'<span class="avatar-placeholder"></span>':avatar(sender.name,sender.id)}<div class="message-stack">${group&&!mine?`<div class="sender-label">${esc(sender.name)}</div>`:''}<div class="bubble ${m.deleted_at?'deleted':''}">${m.deleted_at?'This message was deleted':esc(m.body)}</div>${m.deleted_at?'':media}<div class="bubble-meta">${esc(prettyTime(m.created_at))} ${m.edited_at?'<span class="edit-label">· edited</span>':''}${mine?`<span class="seen-check" title="${(m.seen_by||[]).length?'Seen':'Sent'}">${(m.seen_by||[]).length?'✓✓':'✓'}</span>`:''}</div>${reactions}${actions}</div></div>`}).join('')||'<div class="list-empty">No messages yet.<br/>Be the first to say hello 👋</div>';if(jumpEnd){view.scrollTop=view.scrollHeight}else{view.scrollTop=oldTop}}
 function scrollToMessage(id){const el=document.getElementById('msg-'+id);if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.querySelector('.bubble')?.classList.add('highlight-bubble');setTimeout(()=>el.querySelector('.bubble')?.classList.remove('highlight-bubble'),2200)}else toast('Message is in older history — load earlier messages')}
 $('#loadMoreBtn').addEventListener('click',async()=>{if(state.loading||!state.hasMore||!state.messages.length)return;state.loading=true;const cid=state.active.id;const scroller=$('#messageScroller');const beforeHeight=scroller.scrollHeight;try{const result=await api(`/conversations/${cid}/messages?before=${state.messages[0].id}`);if(state.active?.id!==cid)return;state.messages=[...result.messages,...state.messages];state.hasMore=result.has_more;renderMessages();scroller.scrollTop=scroller.scrollHeight-beforeHeight}catch(e){toast(e.message,true)}finally{state.loading=false}});
 function markRead(){if(!state.active)return;const id=state.active.id;post(`/conversations/${id}/read`,{}).then(()=>{const c=state.conversations.find(c=>c.id===id);if(c){c.unread=0;renderSidebar()}}).catch(()=>{})}
@@ -149,9 +151,123 @@ $('#messageInput').addEventListener('input',()=>{resizeComposer();sendTyping(tru
 function sendTyping(value){if(state.active&&state.connected){state.ws.send(JSON.stringify({type:'typing',conversation_id:state.active.id,typing:value}));clearTimeout(state.typingTimeout);if(value)state.typingTimeout=setTimeout(()=>sendTyping(false),1400)}}
 $('#emojiBtn').addEventListener('click',()=>$('#emojiPicker').classList.toggle('hidden'));
 $('#emojiPicker').addEventListener('click',e=>{if(e.target.tagName==='BUTTON'){$('#messageInput').value+=e.target.textContent;resizeComposer();$('#emojiPicker').classList.add('hidden');$('#messageInput').focus()}});
-$('#messages').addEventListener('click',async e=>{const reaction=e.target.closest('[data-reaction-message]');if(reaction){await applyReaction(reaction.dataset.reactionMessage,reaction.dataset.reactionEmoji);return}const action=e.target.closest('[data-action]');if(!action)return;const message=state.messages.find(m=>m.id===action.dataset.message);if(!message)return;if(action.dataset.action==='react'){state.emojiFor=message.id;openModal('react');return}if(action.dataset.action==='edit'){const updated=prompt('Edit your message:',message.body);if(updated===null)return;try{await patch(`/messages/${message.id}`,{body:updated})}catch(err){toast(err.message,true)}}if(action.dataset.action==='delete'){if(!confirm('Delete this message for everyone?'))return;try{await api(`/messages/${message.id}`,{method:'DELETE'})}catch(err){toast(err.message,true)}}});
-async function applyReaction(mid,emoji){try{await post(`/messages/${mid}/reactions`,{emoji})}catch(err){toast(err.message,true)}}
-function onSocketMessage(data){switch(data.type){case 'hello':setStatus('online');break;case 'pong':break;case 'message:ack':state.pending.delete(data.nonce);break;case 'error':if(data.nonce){const p=state.pending.get(data.nonce);state.pending.delete(data.nonce);if(p&&state.active?.id===p.conversation_id)$('#messageInput').value=p.body}toast(data.detail,true);break;case 'message:new':{const msg=data.message;if(state.active?.id===msg.conversation_id&&!state.messages.some(m=>m.id===msg.id)){const scroller=$('#messageScroller');const stick=scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<120;state.messages.push(msg);renderMessages(stick||msg.sender_id===state.me.id);if(msg.sender_id!==state.me.id)markRead()}loadConversations().catch(()=>{});break}case 'message:update':{const ix=state.messages.findIndex(m=>m.id===data.message.id);if(ix!==-1){state.messages[ix]=data.message;const scroller=$('#messageScroller');const atBottom=scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<130;renderMessages(atBottom)}loadConversations().catch(()=>{});break}case 'read:update':if(state.active?.id===data.conversation_id){state.messages.forEach(m=>{if(m.sender_id!==data.user_id&&m.created_at<=data.read_at&&!m.seen_by.includes(data.user_id))m.seen_by.push(data.user_id)});const scroller=$('#messageScroller');renderMessages(scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<140)}break;case 'conversation:refresh':case 'user:refresh':case 'presence:update':loadConversations().catch(()=>{});break;case 'typing:update':{if(data.user_id!==state.me.id){const key=data.conversation_id+':'+data.user_id;if(data.typing){state.typers.set(key,Date.now());setTimeout(()=>{if(Date.now()-(state.typers.get(key)||0)>2000){state.typers.delete(key);renderTyping()}},2700)}else state.typers.delete(key);renderTyping()}break}}}
+$('#messages').addEventListener('click',async e=>{const reaction=e.target.closest('[data-reaction-message]');if(reaction){await applyReaction(reaction.dataset.reactionMessage,reaction.dataset.reactionEmoji);return}const action=e.target.closest('[data-action]');if(!action)return;const message=state.messages.find(m=>m.id===action.dataset.message);if(!message)return;if(action.dataset.action==='react'){state.emojiFor=message.id;openModal('react');return}
+if(action.dataset.action==='report'){
+ const reason=prompt('Why are you reporting this message? (harassment, spam, unsafe content, etc.)');
+ if(reason===null)return;
+ if(reason.trim().length<5){toast('Please add a brief reason, at least 5 characters.',true);return;}
+ try{await post('/messages/'+encodeURIComponent(message.id)+'/report',{reason:reason.trim()});toast('Report submitted for review.');}
+ catch(err){toast(err.message,true);}
+ return;
+}if(action.dataset.action==='edit'){const updated=prompt('Edit your message:',message.body);if(updated===null)return;try{await patch(`/messages/${message.id}`,{body:updated})}catch(err){toast(err.message,true)}}if(action.dataset.action==='delete'){if(!confirm('Delete this message for everyone?'))return;try{await api(`/messages/${message.id}`,{method:'DELETE'})}catch(err){toast(err.message,true)}}});
+async 
+/* Campus-friendly multimedia sharing and opt-in in-tab notifications. */
+function setMediaProgress(text){const el=$('#mediaProgress');if(el)el.textContent=text||'';}
+async function sendMediaFile(file){
+  const cid=state.active?.id;if(!cid||!file)return;
+  if(file.size>6*1024*1024){toast('File too large. Limit is 6 MB.',true);return;}
+  const name=file.name||'attachment';
+  const btn=$('#voiceNoteBtn');btn.disabled=true;setMediaProgress('Uploading '+name+'…');
+  try{
+    const response=await fetch('/api/conversations/'+encodeURIComponent(cid)+'/attachments',{
+      method:'POST',credentials:'same-origin',
+      headers:{'X-Huddle-Filename':encodeURIComponent(name),'Content-Type':file.type||'application/octet-stream'},
+      body:file
+    });
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok)throw Error(payload.detail||'Upload failed');
+    toast('Shared '+name+' ✓');
+    if(!state.connected&&state.active?.id===cid)await openConversation(cid);
+  }catch(err){toast(err.message||'Could not share that file.',true);}
+  finally{btn.disabled=false;setMediaProgress('');$('#mediaFileInput').value='';}
+}
+$('#mediaFileInput').addEventListener('change',e=>sendMediaFile(e.target.files?.[0]));
+let voiceRecorder=null,voiceStream=null,voiceParts=[];
+$('#voiceNoteBtn').addEventListener('click',async()=>{
+  const button=$('#voiceNoteBtn');
+  if(voiceRecorder&&voiceRecorder.state==='recording'){
+    voiceRecorder.stop();return;
+  }
+  if(!state.active)return;
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){
+    toast('Voice recording requires microphone support in your browser.',true);return;
+  }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    voiceStream=stream;
+    const candidates=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
+    const mimeType=candidates.find(t=>MediaRecorder.isTypeSupported(t));
+    if(!mimeType)throw Error('Your browser does not support supported voice note formats');
+    const recorder=new MediaRecorder(stream,{mimeType});
+    voiceRecorder=recorder;voiceParts=[];
+    const roomId=state.active.id;
+    button.textContent='■';button.classList.add('recording');button.title='Stop recording';
+    setMediaProgress('Recording — tap stop to send (max 45 seconds)');
+    let deadline=setTimeout(()=>{if(recorder.state==='recording')recorder.stop();},45000);
+    recorder.ondataavailable=e=>{if(e.data.size)voiceParts.push(e.data);};
+    recorder.onstop=async()=>{
+      clearTimeout(deadline);
+      stream.getTracks().forEach(t=>t.stop());
+      voiceStream=null;voiceRecorder=null;
+      button.textContent='🎙';button.classList.remove('recording');button.title='Record voice note';
+      const type=mimeType.split(';')[0];
+      const ext=type==='audio/mp4'?'m4a':type==='audio/ogg'?'ogg':'webm';
+      const file=new File(voiceParts,['voice-note.'+ext].join(''),{type});
+      // Prevent sending to a different conversation if user navigates away.
+      if(state.active?.id===roomId&&file.size)await sendMediaFile(file);
+      else setMediaProgress('');
+    };
+    recorder.start(600);
+  }catch(error){
+    voiceStream?.getTracks().forEach(t=>t.stop());
+    voiceStream=null;voiceRecorder=null;button.textContent='🎙';button.classList.remove('recording');
+    setMediaProgress('');
+    toast('Could not record: '+(error.message||'microphone unavailable'),true);
+  }
+});
+$('#chatRecapBtn').addEventListener('click',async()=>{
+  const c=state.active;if(!c)return;
+  try{
+    const recap=await api('/conversations/'+encodeURIComponent(c.id)+'/recap');
+    $('#modalOverlay').classList.remove('hidden');
+    setModalHeading('CHAT RECAP','Recent discussion');
+    $('#modalContent').innerHTML='<p class="modal-helper">Private recent-message highlights for participants. This is not an AI-generated summary.</p>'+
+      (recap.items.length?recap.items.map(m=>'<div class="recap-item"><strong>'+esc(m.speaker)+'</strong><p>'+esc(m.text)+'</p></div>').join(''):'<p class="modal-helper">No recent text messages to recap yet.</p>');
+  }catch(err){toast(err.message,true);}
+});
+function notificationPreference(){try{return localStorage.getItem('huddle-notify-opt-in')==='yes';}catch{return false;}}
+$('#notificationsBtn').addEventListener('click',async()=>{
+  if(!('Notification' in window)){toast('This browser does not support notifications.',true);return;}
+  if(notificationPreference()){
+    localStorage.removeItem('huddle-notify-opt-in');
+    $('#notificationsBtn').textContent='🔔 Enable message alerts';
+    toast('Message alerts turned off.');return;
+  }
+  const permission=await Notification.requestPermission();
+  if(permission!=='granted'){toast('Allow notifications in browser settings to turn on alerts.',true);return;}
+  localStorage.setItem('huddle-notify-opt-in','yes');
+  $('#notificationsBtn').textContent='🔔 Alerts on · tap to turn off';
+  toast('Alerts enabled while Huddle is open.');
+});
+function notifyIncomingMessage(msg){
+  if(!notificationPreference()||!('Notification' in window)||Notification.permission!=='granted')return;
+  if(document.visibilityState==='visible'&&state.active?.id===msg.conversation_id)return;
+  const conv=state.conversations.find(c=>c.id===msg.conversation_id);
+  const member=conv?.members?.find(m=>m.id===msg.sender_id);
+  const from=member?.name||conv?.name||'Someone';
+  try{new Notification('Huddle · '+from,{body:String(msg.body||'New message').slice(0,120),tag:'huddle-'+msg.conversation_id});}catch{}
+}
+if(notificationPreference())$('#notificationsBtn').textContent='🔔 Alerts on · tap to turn off';
+$('#aiUseChatContext').addEventListener('change',e=>{
+  state.aiContextEnabled=e.target.checked;
+  if(e.target.checked&&!state.lastChatId){
+    toast('Open a conversation first, then return to Huddle AI to use its context.',true);
+    e.target.checked=false;state.aiContextEnabled=false;
+  }
+});
+
+function applyReaction(mid,emoji){try{await post(`/messages/${mid}/reactions`,{emoji})}catch(err){toast(err.message,true)}}
+function onSocketMessage(data){switch(data.type){case 'hello':setStatus('online');break;case 'pong':break;case 'message:ack':state.pending.delete(data.nonce);break;case 'error':if(data.nonce){const p=state.pending.get(data.nonce);state.pending.delete(data.nonce);if(p&&state.active?.id===p.conversation_id)$('#messageInput').value=p.body}toast(data.detail,true);break;case 'message:new':{const msg=data.message;if(msg.sender_id!==state.me.id)notifyIncomingMessage(msg);if(state.active?.id===msg.conversation_id&&!state.messages.some(m=>m.id===msg.id)){const scroller=$('#messageScroller');const stick=scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<120;state.messages.push(msg);renderMessages(stick||msg.sender_id===state.me.id);if(msg.sender_id!==state.me.id)markRead()}loadConversations().catch(()=>{});break}case 'message:update':{const ix=state.messages.findIndex(m=>m.id===data.message.id);if(ix!==-1){state.messages[ix]=data.message;const scroller=$('#messageScroller');const atBottom=scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<130;renderMessages(atBottom)}loadConversations().catch(()=>{});break}case 'read:update':if(state.active?.id===data.conversation_id){state.messages.forEach(m=>{if(m.sender_id!==data.user_id&&m.created_at<=data.read_at&&!m.seen_by.includes(data.user_id))m.seen_by.push(data.user_id)});const scroller=$('#messageScroller');renderMessages(scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<140)}break;case 'conversation:refresh':case 'user:refresh':case 'presence:update':loadConversations().catch(()=>{});break;case 'typing:update':{if(data.user_id!==state.me.id){const key=data.conversation_id+':'+data.user_id;if(data.typing){state.typers.set(key,Date.now());setTimeout(()=>{if(Date.now()-(state.typers.get(key)||0)>2000){state.typers.delete(key);renderTyping()}},2700)}else state.typers.delete(key);renderTyping()}break}}}
 function renderTyping(){if(!state.active)return;const cid=state.active.id;const names=[];for(const key of state.typers.keys()){const [conv,uid]=key.split(':');if(conv===cid){const member=state.active.members.find(m=>m.id===uid);if(member)names.push(member.name.split(' ')[0])}}$('#typingIndicator').innerHTML=names.length?`<span class="typing-bubbles"><span></span><span></span><span></span></span>${esc(names.join(', '))} ${names.length>1?'are':'is'} typing…`:''}
 function setStatus(value){state.connected=value==='online';$('#wsStatus').className='ws-status '+(value==='online'?'online':'offline');$('#wsStatus').innerHTML=`<span></span>${value==='online'?'Live':value==='offline'?'Reconnecting':'Connecting'}`}
 function connectWS(){if(!state.me)return;if(state.ws&&(state.ws.readyState===0||state.ws.readyState===1))return;const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');state.ws=ws;setStatus('connecting');ws.addEventListener('open',()=>{state.retry=0;setStatus('online');loadConversations().catch(()=>{});if(state.active){const cid=state.active.id;openConversation(cid)}});ws.addEventListener('message',e=>{try{onSocketMessage(JSON.parse(e.data))}catch(err){console.warn(err)}});ws.addEventListener('close',(ev)=>{if(state.ws!==ws)return;if(ev.code===4401){signOutLocal();return}state.connected=false;setStatus('offline');if(!state.me)return;const wait=Math.min(16000,800*Math.pow(1.65,state.retry++));setTimeout(()=>{if(state.me&&state.ws===ws)connectWS()},wait)});ws.addEventListener('error',()=>ws.close())}
@@ -444,6 +560,11 @@ $('#aiForm').addEventListener('submit',async e=>{
       messages.push({id:'poster-'+Date.now(),role:'assistant',kind:'poster',body:result.description,image_data:result.dataUrl});
     }else if(localMode){
       const context=messages.slice(-7).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.body}));
+      if(state.aiContextEnabled&&state.lastChatId){
+        const summary=await api('/conversations/'+encodeURIComponent(state.lastChatId)+'/recap');
+        const notes=summary.items.map(x=>x.speaker+': '+x.text).join('\n').slice(0,1500);
+        if(notes)context.unshift({role:'user',content:'Reference notes from my own conversation (user consented):\n'+notes+'\nPlease use them only if helpful to the next question.'});
+      }
       const text=await askLocalAI(context);
       messages.push({role:'assistant',kind:'text',body:text});
     }else{
