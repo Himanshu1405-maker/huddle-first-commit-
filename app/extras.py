@@ -47,7 +47,7 @@ async def send_verification_email(email: str, code: str):
 async def ask_ai(messages: list[dict]) -> str:
     if not text_ready():
         raise RuntimeError("AI text provider not configured")
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     payload = {
       "systemInstruction": {"parts": [{"text": "You are Huddle AI, an approachable learning assistant. Help with doubts, explanations, studying, writing, brainstorming and safe creative requests. Be concise, accurate and say when uncertain. Never imply you have read users' private chats. Avoid collecting personal information and follow age-appropriate safety norms."}]},
       "contents": [{"role": "model" if m["role"] == "assistant" else "user", "parts": [{"text":m["body"][:2400]}]} for m in messages[-12:]],
