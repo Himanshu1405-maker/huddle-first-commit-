@@ -91,7 +91,10 @@ def main():
 
             png = root / "sample.png"
             Image.new("RGB", (60, 35), "orange").save(png)
+            print("ENHANCEMENT_READY=", a.execute_script("return {editor:typeof openMediaEditor,emoji:typeof drawEmojiPicker, scripts:[...document.scripts].map(x=>x.src)}"), flush=True)
+            print("EARLY_BROWSER_LOGS=", a.get_log("browser"), flush=True)
             a.find_element(By.ID, "mediaFileInput").send_keys(str(png))
+            print("POST_UPLOAD_SELECT=", a.execute_script("return {editor:!!document.querySelector('.h-editor-overlay'), progress:document.querySelector('#mediaProgress')?.textContent, input:document.querySelector('#mediaFileInput')?.files?.length}"), flush=True)
             WebDriverWait(a, 10).until(lambda browser:
                 bool(browser.find_elements(By.CSS_SELECTOR, '[data-photo-tool="square"]')))
             a.find_element(By.CSS_SELECTOR, '[data-photo-tool="square"]').click()
