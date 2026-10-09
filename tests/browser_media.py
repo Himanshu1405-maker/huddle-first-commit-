@@ -75,6 +75,11 @@ def main():
                 chrome.refresh()
                 WebDriverWait(chrome, 15).until(lambda browser: browser.execute_script(
                     "return !document.querySelector('#appScreen').classList.contains('hidden')"))
+                # Signed-in landing screen shows real chat list, not intro artwork.
+                assert chrome.find_element(By.ID, "welcomeChat").is_displayed()
+                assert "Chats" in chrome.find_element(By.CSS_SELECTOR, "#welcomeChat h1").text
+                assert len(chrome.find_elements(By.CSS_SELECTOR, "#homeChatList [data-home-conversation]")) >= 1
+                assert not chrome.find_elements(By.CSS_SELECTOR, ".welcome-badge")
                 ready = chrome.execute_async_script(
                     "const done=arguments[arguments.length-1];"
                     "openConversation(arguments[0]).then(()=>done(true)).catch(e=>done(e.message));", room)
@@ -91,6 +96,10 @@ def main():
 
             assert a.execute_script("return getComputedStyle(document.querySelector('.message-actions')).display") == "none"
             a.find_element(By.ID, "emojiBtn").click()
+            a.find_element(By.CSS_SELECTOR, '[data-emoji-tab="People"]').click()
+            assert len(a.find_elements(By.CSS_SELECTOR, '#emojiPicker [data-emoji]')) > 60
+            a.find_element(By.CSS_SELECTOR, '[data-emoji-tab="Flags"]').click()
+            assert len(a.find_elements(By.CSS_SELECTOR, '#emojiPicker [data-emoji]')) > 30
             a.find_element(By.CSS_SELECTOR, '[data-emoji-tab="Stickers"]').click()
             a.find_element(By.CSS_SELECTOR, '[data-sticker="🚀"]').click()
             WebDriverWait(c, 12).until(lambda browser:
@@ -224,6 +233,26 @@ def main():
             a.find_element(By.ID, "aiSend").click()
             WebDriverWait(a, 12).until(lambda browser:
                 "Mock hosted AI answer" in browser.find_element(By.ID, "aiMessages").text)
+            # Hosted image generation must call a genuine image API, not Poster Studio.
+            a.execute_script("""
+              window.puter.ai.txt2img=async(prompt,options)=>{
+                if(options.model!=='gemini-3.1-flash-image')throw Error('Wrong image model');
+                if(!prompt.toLowerCase().includes('tree'))throw Error('Tree prompt lost');
+                const c=document.createElement('canvas');c.width=52;c.height=52;
+                const ctx=c.getContext('2d');
+                ctx.fillStyle='green';ctx.fillRect(4,4,40,40);
+                const img=new Image();img.src=c.toDataURL('image/png');return img;
+              };
+            """)
+            a.find_element(By.CSS_SELECTOR, '[data-ai-mode="image"]').click()
+            WebDriverWait(a, 5).until(lambda browser:
+                browser.find_element(By.ID, "aiSend").is_enabled())
+            a.find_element(By.ID, "aiPrompt").send_keys("tree")
+            a.find_element(By.ID, "aiSend").click()
+            WebDriverWait(a, 12).until(lambda browser:
+                bool(browser.find_elements(By.CSS_SELECTOR, "#aiMessages .ai-generated-img")))
+            assert "Generated: tree" in a.find_element(By.ID, "aiMessages").text
+            assert a.execute_script("return document.querySelector('#aiMessages .ai-generated-img').naturalWidth") == 52
             records = alice.get(base + "/api/ai/history").json()["messages"]
             assert any("Mock hosted AI answer" in m["body"] for m in records)
             assert a.execute_script("return document.documentElement.scrollWidth <= innerWidth+4")
