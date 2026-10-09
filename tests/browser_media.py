@@ -182,7 +182,8 @@ def main():
             a.execute_cdp_cmd("Browser.grantPermissions",
                               {"origin": base, "permissions": ["notifications"]})
             a.find_element(By.ID, "notificationsBtn").click()
-            assert a.execute_script("return localStorage.getItem('huddle-notify-opt-in')") == "yes"
+            WebDriverWait(a, 8).until(lambda browser:
+                browser.execute_script("return localStorage.getItem('huddle-notify-opt-in')") == "yes")
             assert a.execute_script("return document.documentElement.scrollWidth <= innerWidth+4")
             assert all(not any(v in entry["message"] for v in ["Uncaught SyntaxError", "ReferenceError"])
                        for browser in clients for entry in browser.get_log("browser"))
