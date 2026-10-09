@@ -116,6 +116,8 @@ def validate_media(data: bytes, filename: str, media_type: str):
         raise ValueError("Invalid MP3 audio")
     elif media_type == "audio/mp4" and data[4:8] != b"ftyp":
         raise ValueError("Invalid MP4/M4A audio")
+    if media_type in SAFE_VIDEO_TYPES and len(data) < 16:
+        raise ValueError("Video file is too small")
     return media_type
 
 
