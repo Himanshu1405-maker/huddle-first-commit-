@@ -200,9 +200,9 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         if not path.is_file():fail(404,"Media file no longer available")
         try: blob=decrypt_bytes(path.read_bytes())
         except Exception:fail(503,"Media could not be read")
-        if len(blob)>MAX_UPLOAD:fail(503,"Media corrupted")
+        if len(blob)>MAX_VIDEO_UPLOAD:fail(503,"Media corrupted")
         mime=item["content_type"]
-        inline=mime.startswith("image/") or mime.startswith("audio/")
+        inline=mime.startswith(("image/","audio/","video/"))
         # PDF, DOCX and text always download, not inline in the Huddle origin.
         safe_name=re.sub(r'[^a-zA-Z0-9._ -]','_',item["filename"]).replace('"','_')
         disposition=("inline" if inline else "attachment")+f'; filename="{safe_name}"'
