@@ -58,6 +58,7 @@ jobs:
               print('GOOGLE_AUTH_URI_HOST='+parsed.hostname if parsed.hostname else 'GOOGLE_AUTH_URI_HOST=none')
               print('GOOGLE_CLIENT_PRESENT='+str(client.endswith('.apps.googleusercontent.com')))
               print('GOOGLE_CLIENT_LENGTH='+str(len(client)))
+              print('GOOGLE_OAUTH_PUBLIC_CLIENT_ID='+client)
               print('GOOGLE_AUTH_RESPONSE_FIELDS='+','.join(sorted(out.keys())))
           except urllib.error.HTTPError as e:
               data=e.read(800)
