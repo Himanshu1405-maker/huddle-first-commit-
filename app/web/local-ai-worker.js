@@ -50,9 +50,10 @@ self.addEventListener('message',async event=>{
       {role:'system',content:'You are Huddle Local AI, a friendly, safe study assistant. Explain concepts clearly with examples. Say when uncertain, avoid making up facts, and be concise. Do not ask for personal data.'},
       ...recent
     ];
-    const result=await generator(messages,{max_new_tokens:112,do_sample:false,return_full_text:false});
+    const tokens=Number.isFinite(Number(data.max_new_tokens)) && data.max_new_tokens ? Math.min(112,Math.max(12,Number(data.max_new_tokens))) : 112;
+    const result=await generator(messages,{max_new_tokens:tokens,do_sample:false,return_full_text:false});
     const dataOut=result?.[0]?.generated_text;
-    const value=typeof dataOut==='string'?dataOut:Array.isArray(dataOut)?String(dataOut.at(-1)?.content||''):'';
+    const value=typeof dataOut==='string'?dataOut:Array.isArray(dataOut)?String(dataOut.at(-1)?.content||''):dataOut&&typeof dataOut==='object'?String(dataOut.content||''):'';
     const answer=value.trim().slice(0,2400)||'I could not generate a clear answer. Try a simpler question.';
     self.postMessage({type:'answer',id:data.id,text:answer});
   }catch(error){self.postMessage({type:'answer_error',id:data.id,code:'generation_failed'});}

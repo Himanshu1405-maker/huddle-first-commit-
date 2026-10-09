@@ -47,7 +47,26 @@ jobs:
                       print('LOCAL_AI_CSP_WARNING='+msg[:280].replace('\\n',' '),flush=True)
               assert not result.get('error'), 'The worker failed to load model'
               if not result.get('ready'):print('LOCAL_AI_MODEL_STILL_LOADING=True',flush=True)
-              else:print('LOCAL_AI_MODEL_LOADED=True',flush=True)
+              else:
+                  print('LOCAL_AI_MODEL_LOADED=True',flush=True)
+                  browser.execute_script("""window._huddleProbeAnswer=null;
+                      state.localAI.job={
+                          id:'real-generation-check',
+                          resolve:(txt)=>{window._huddleProbeAnswer=txt;},
+                          reject:(err)=>{window._huddleProbeAnswer='ERROR: '+err.message;}
+                      };
+                      state.localAI.worker.postMessage({
+                          type:'ask',id:'real-generation-check',
+                          messages:[{role:'user',content:'Give one short sentence explaining what gravity is.'}],
+                          max_new_tokens:24
+                      });""")
+                  for _ in range(18):
+                      time.sleep(5)
+                      reply=browser.execute_script('return window._huddleProbeAnswer;')
+                      if reply is not None:break
+                  print('LOCAL_AI_GENERATED_RESPONSE_PRESENT='+str(bool(reply and len(reply)>8 and not reply.startswith('ERROR:'))),flush=True)
+                  print('LOCAL_AI_GENERATED_RESPONSE_LENGTH='+str(len(reply or '')),flush=True)
+                  assert reply and len(reply)>8 and not reply.startswith('ERROR:'), 'Local AI did not generate a usable response'
           finally:
               browser.quit()
           PY
