@@ -1,0 +1,117 @@
+/* Huddle chat header + genuine in-message reaction badges.
+   Keeps profile/settings accessible in the sidebar and inbox. */
+#appScreen .chat-top{
+  display:flex;align-items:center;justify-content:space-between;
+  min-width:0;gap:10px;
+}
+#appScreen .chat-top .header-identity{
+  display:flex;align-items:center;gap:9px;
+  min-width:0;flex:1 1 auto;overflow:hidden;
+}
+#appScreen .header-identity > span:not(.avatar){
+  min-width:0;flex:1 1 auto;overflow:hidden;display:block;
+}
+#appScreen .header-identity .avatar{
+  flex:0 0 auto;
+}
+#appScreen .header-name{
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  line-clamp:2;max-width:100%;overflow:hidden;
+  white-space:normal;overflow-wrap:anywhere;line-height:1.2;
+}
+#appScreen .header-meta{
+  display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  min-width:0;max-width:100%;line-height:1.35;
+}
+#appScreen .header-actions{
+  display:flex;align-items:center;flex:0 0 auto;
+  gap:6px;white-space:nowrap;
+}
+/* Keep Search, AI and Themes visible; profile is still in the sidebar. */
+#appScreen:has(#conversationView:not(.hidden)) #profileQuickBtn{
+  display:none!important;
+}
+
+/* Reaction markers belong to a bubble/media attachment, not to a message row. */
+#appScreen .message-stack .h-message-visual{
+  display:flex;flex-direction:column;align-items:flex-start;
+  position:relative;width:fit-content;max-width:100%;min-width:0;
+}
+#appScreen .message-row.mine .h-message-visual{align-items:flex-end}
+#appScreen .h-message-visual > .bubble{
+  max-width:100%;min-width:0;
+}
+#appScreen .h-message-visual:has(> .reactions){
+  margin-bottom:15px;
+}
+#appScreen .h-message-visual > .reactions{
+  position:absolute;right:7px;bottom:-13px;z-index:3;
+  display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;
+  width:max-content;max-width:min(228px,100%);
+  gap:2px;padding:2px 5px;margin:0;
+  border:1px solid color-mix(in srgb,var(--v-accent) 37%,var(--v-line));
+  border-radius:999px;
+  background:var(--v-sheet);
+  box-shadow:0 3px 10px rgba(24,45,68,.12);
+}
+#appScreen .h-message-visual > .reactions .reaction{
+  display:inline-flex;align-items:center;justify-content:center;gap:3px;
+  border:0!important;border-radius:999px!important;
+  min-height:23px!important;height:23px;
+  margin:0;padding:1px 5px!important;
+  background:transparent!important;color:var(--v-title)!important;
+  font-size:15px!important;line-height:1;
+  box-shadow:none!important;white-space:nowrap;
+}
+#appScreen .h-message-visual > .reactions .reaction.reacted{
+  background:var(--v-accent-wash)!important;
+  color:var(--v-accent)!important;
+}
+#appScreen .h-message-visual > .reactions .reaction-count{
+  display:inline-block;font:800 10px/1.2 'DM Sans',sans-serif;
+  min-width:9px;color:var(--v-muted);font-variant-numeric:tabular-nums;
+}
+#appScreen .h-message-visual > .reactions .reaction.reacted .reaction-count{
+  color:var(--v-accent);
+}
+#appScreen .h-message-visual > .reactions .reaction:focus-visible{
+  outline:2px solid var(--v-accent);outline-offset:1px;
+}
+#appScreen .h-message-visual > .reactions .reaction:hover{
+  background:var(--v-accent-wash)!important;transform:translateY(-1px);
+}
+#appScreen .message-stack .bubble-meta{
+  margin-top:5px;
+}
+@media(max-width:720px){
+  #appScreen .chat-top{height:70px;padding:0 10px;gap:6px}
+  #appScreen .chat-top .mobile-menu{width:34px;min-width:34px;flex:0 0 34px;margin:0;padding:0}
+  #appScreen .chat-top .header-identity{gap:7px}
+  #appScreen .header-identity .avatar{
+    width:36px;height:36px;flex-basis:36px;border-radius:12px;
+  }
+  #appScreen .header-name{font-size:13px;line-height:1.13;font-weight:800}
+  #appScreen .header-meta{font-size:10px;margin-top:3px}
+  #appScreen .header-actions{gap:4px}
+  #appScreen .header-actions .toolbar-btn{
+    flex:0 0 35px;min-width:35px;width:35px;
+    height:37px;border-radius:12px;padding:0;
+  }
+  #appScreen .header-actions .toolbar-btn svg{width:19px;height:19px}
+  #appScreen .header-actions .toolbar-theme{font-size:18px}
+  #appScreen .ws-status{display:none!important}
+  #appScreen .h-message-visual > .reactions{right:5px}
+}
+@media(max-width:370px){
+  #appScreen .chat-top{gap:4px;padding:0 7px}
+  #appScreen .chat-top .mobile-menu{width:30px;min-width:30px;flex-basis:30px}
+  #appScreen .header-identity .avatar{width:32px;height:32px;flex-basis:32px}
+  #appScreen .header-name{font-size:12px}
+  #appScreen .header-actions{gap:2px}
+  #appScreen .header-actions .toolbar-btn{
+    width:32px;min-width:32px;flex-basis:32px;height:34px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #appScreen .h-message-visual > .reactions .reaction:hover{transform:none}
+}
