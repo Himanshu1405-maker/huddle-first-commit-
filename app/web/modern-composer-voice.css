@@ -1,0 +1,197 @@
+/* 2026 Huddle voice notes + responsive long-message composer.
+   Retains all four native tool controls; never swaps out their listeners. */
+#appScreen .composer{
+ position:relative!important;
+ min-width:0!important;
+ align-items:flex-end!important;
+ gap:6px!important;
+ transition:border-color .22s ease,box-shadow .22s ease,background .22s ease,
+            border-radius .22s ease!important;
+}
+#appScreen .h-composer-toolset{
+ display:flex;flex:0 0 auto;gap:5px;align-items:center;
+ position:relative;min-width:0;white-space:nowrap;
+ transition:opacity .19s ease,transform .24s cubic-bezier(.18,.75,.25,1.1);
+}
+#appScreen .h-composer-toolset .h-tool-name{display:none}
+#appScreen .h-composer-more{
+ display:grid;place-items:center;
+ width:0!important;max-width:0!important;min-width:0!important;
+ height:39px;flex:0 0 0!important;overflow:hidden;
+ border:0;padding:0;opacity:0;
+ background:var(--v-accent-wash);color:var(--v-accent);
+ border-radius:12px;
+ pointer-events:none;
+ transform:scale(.75);
+ transition:opacity .18s ease,transform .24s cubic-bezier(.18,.75,.25,1.1),
+            max-width .22s ease,background .22s ease;
+}
+#appScreen .h-composer-more svg{width:22px;height:22px;flex:0 0 22px}
+#appScreen .h-composer-measure{
+ position:absolute!important;left:-300vw!important;top:0!important;
+ display:block!important;visibility:hidden!important;pointer-events:none!important;
+ z-index:-1!important;width:100px;min-height:0;max-height:none;
+ margin:0;padding:0;border:0;white-space:pre-wrap;overflow-wrap:anywhere;
+ word-break:break-word;
+}
+#appScreen .composer.h-composer-expanded .h-composer-toolset{
+ position:absolute!important;z-index:28!important;
+ bottom:calc(100% + 13px)!important;left:6px!important;
+ min-width:177px!important;width:191px!important;max-width:min(225px,calc(100vw - 35px))!important;
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ gap:5px!important;padding:9px!important;
+ border:1px solid var(--v-line);border-radius:19px;
+ background:var(--v-sheet);box-shadow:0 15px 39px rgba(24,42,60,.2);
+ opacity:0;visibility:hidden;pointer-events:none;
+ transform:translateY(12px) scale(.92);transform-origin:bottom left;
+ transition:opacity .2s ease,transform .24s cubic-bezier(.18,.8,.25,1.1),
+            visibility 0s linear .24s!important;
+}
+#appScreen .composer.h-composer-expanded.h-tools-open .h-composer-toolset{
+ opacity:1;visibility:visible;pointer-events:auto;
+ transform:translateY(0) scale(1);
+ transition:opacity .2s ease,transform .24s cubic-bezier(.18,.8,.25,1.1),
+            visibility 0s!important;
+}
+#appScreen .composer.h-composer-expanded .h-composer-toolset :is(#emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn){
+ flex:0 0 auto!important;
+ width:100%!important;min-width:0!important;height:42px!important;
+ display:flex!important;align-items:center!important;justify-content:flex-start!important;
+ gap:10px!important;padding:0 12px!important;
+ border-radius:12px!important;white-space:nowrap!important;
+ font:800 12px 'DM Sans',sans-serif!important;cursor:pointer;
+}
+#appScreen .composer.h-composer-expanded .h-composer-toolset .h-tool-name{
+ display:inline!important;font-size:12px!important;font-weight:800!important;
+ line-height:1.2;color:inherit!important;
+}
+#appScreen .composer.h-composer-expanded .h-composer-toolset svg{width:20px;height:20px;flex:0 0 20px}
+#appScreen .composer.h-composer-expanded .h-composer-more{
+ width:40px!important;min-width:40px!important;max-width:40px!important;
+ height:40px!important;flex:0 0 40px!important;
+ opacity:1;pointer-events:auto;
+ transform:scale(1);
+ background:var(--v-accent-wash)!important;
+ border:1px solid var(--v-line)!important;
+ box-shadow:0 2px 9px rgba(27,49,71,.08);
+}
+#appScreen .composer.h-composer-expanded .h-composer-more:hover,
+#appScreen .composer.h-composer-expanded.h-tools-open .h-composer-more{
+ background:var(--v-accent)!important;color:#fff!important;
+}
+#appScreen .h-composer-more.h-more-recording{
+ background:#ffe3ec!important;color:#c43c6c!important;
+ border-color:#efbad0!important;
+}
+#appScreen .h-composer-more:focus-visible{outline:2px solid var(--v-accent);outline-offset:2px}
+#appScreen .composer.h-composer-expanded textarea{
+ flex:1 1 auto!important;min-width:0!important;
+ max-width:100%;padding:8px 5px!important;
+ transition:height .12s ease;
+}
+#appScreen .composer.h-composer-expanded .h-composer-tools,
+#appScreen .composer.h-composer-expanded .h-composer-toolset{
+ -webkit-tap-highlight-color:transparent;
+}
+/* More refined sent / received voice notes. Compact, calm, readable. */
+#appScreen .media-card.voice-media{
+ width:min(272px,100%)!important;
+ min-width:min(238px,100%)!important;
+ max-width:100%!important;
+ min-height:72px!important;height:auto!important;
+ padding:10px 11px!important;margin:2px 0 3px!important;
+ display:flex!important;align-items:center!important;gap:10px!important;
+ border-radius:20px!important;
+ background:color-mix(in srgb,var(--v-sheet) 88%,var(--v-accent-wash))!important;
+ border:1px solid color-mix(in srgb,var(--v-accent) 19%,var(--v-line))!important;
+ box-shadow:0 5px 18px rgba(37,54,80,.085),
+            inset 0 1px 0 rgba(255,255,255,.19)!important;
+}
+#appScreen .message-row.mine .media-card.voice-media{
+ background:color-mix(in srgb,var(--v-bubble) 57%,var(--v-sheet))!important;
+}
+#appScreen .voice-media .h-voice-play{
+ width:43px!important;height:43px!important;flex:0 0 43px!important;
+ border:0!important;border-radius:16px!important;
+ background:var(--v-accent)!important;color:#fff!important;
+ box-shadow:0 3px 10px color-mix(in srgb,var(--v-accent) 22%,transparent)!important;
+ transition:transform .18s ease,filter .18s ease,box-shadow .18s ease!important;
+}
+#appScreen .voice-media .h-voice-play:hover{transform:scale(1.045);filter:brightness(.94)}
+#appScreen .voice-media .h-voice-play svg{width:18px!important;height:18px!important}
+#appScreen .voice-media .h-voice-details{gap:6px!important;min-width:0!important}
+#appScreen .voice-media .h-voice-title{
+ font-size:11px!important;letter-spacing:.18px!important;
+ font-weight:850!important;color:var(--v-title)!important;
+ display:flex;align-items:center;gap:5px;
+}
+#appScreen .voice-media .h-voice-title::before{
+ content:"";display:inline-block;flex:0 0 6px;width:6px;height:6px;
+ background:var(--v-accent);border-radius:50%;
+}
+#appScreen .voice-media .h-voice-track{min-height:19px!important;gap:8px!important}
+#appScreen .voice-media .h-voice-waves{
+ height:19px!important;gap:2px!important;
+ color:var(--v-accent)!important;
+}
+#appScreen .voice-media .h-voice-waves i{
+ opacity:.36;max-width:4px!important;
+ transition:opacity .18s ease,background .18s ease!important;
+}
+#appScreen .voice-media .h-voice-duration{
+ color:var(--v-muted)!important;
+ font-size:10px!important;min-width:25px!important;text-align:right!important;
+ font-variant-numeric:tabular-nums!important;
+}
+#appScreen .voice-media .h-voice-progress{
+ display:block!important;min-height:12px!important;height:12px!important;
+ background:transparent!important;appearance:none;-webkit-appearance:none;
+ width:100%!important;margin:-2px 0 0!important;
+ border:0!important;outline:none;cursor:pointer;
+}
+#appScreen .voice-media .h-voice-progress::-webkit-slider-runnable-track{
+ height:3px!important;border-radius:99px!important;
+ background:linear-gradient(to right,var(--v-accent) 0 var(--h-progress,0%),var(--v-line) var(--h-progress,0%) 100%);
+}
+#appScreen .voice-media .h-voice-progress::-moz-range-track{
+ height:3px!important;border-radius:99px!important;background:var(--v-line)!important;
+}
+#appScreen .voice-media .h-voice-progress::-moz-range-progress{
+ height:3px!important;border-radius:99px!important;background:var(--v-accent)!important;
+}
+#appScreen .voice-media .h-voice-progress::-webkit-slider-thumb{
+ -webkit-appearance:none!important;appearance:none!important;
+ width:10px!important;height:10px!important;border-radius:50%!important;
+ background:var(--v-accent)!important;border:2px solid var(--v-sheet)!important;
+ box-shadow:0 1px 5px #0002!important;margin-top:-3.5px!important;
+}
+#appScreen .voice-media .h-voice-progress::-moz-range-thumb{
+ width:10px!important;height:10px!important;border-radius:50%!important;
+ background:var(--v-accent)!important;border:2px solid var(--v-sheet)!important;
+}
+#appScreen .voice-media .h-voice-progress:focus-visible{outline:2px solid var(--v-accent);outline-offset:2px}
+#appScreen .voice-media.h-voice-playing .h-voice-waves i{opacity:.84}
+#appScreen .voice-media.h-voice-playing .h-voice-play{box-shadow:0 0 0 4px var(--v-accent-wash)!important}
+@media(max-width:720px){
+ #appScreen .composer{gap:4px!important}
+ #appScreen .h-composer-toolset{gap:4px!important}
+ #appScreen .composer.h-composer-expanded .h-composer-more{
+  width:37px!important;min-width:37px!important;max-width:37px!important;flex-basis:37px!important;height:38px!important;
+ }
+ #appScreen .media-card.voice-media{width:min(261px,100%)!important;min-width:min(225px,100%)!important;padding:9px!important}
+ #appScreen .voice-media .h-voice-play{width:40px!important;height:40px!important;flex-basis:40px!important;border-radius:13px!important}
+}
+@media(max-width:360px){
+ #appScreen .composer.h-composer-expanded .h-composer-more{
+  width:34px!important;min-width:34px!important;max-width:34px!important;flex-basis:34px!important;height:36px!important;
+ }
+ #appScreen .media-card.voice-media{min-width:min(212px,100%)!important;width:min(232px,100%)!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #appScreen .composer,
+ #appScreen .h-composer-toolset,
+ #appScreen .h-composer-more,
+ #appScreen .composer.h-composer-expanded textarea,
+ #appScreen .voice-media .h-voice-play,
+ #appScreen .voice-media .h-voice-waves i{transition:none!important}
+}
