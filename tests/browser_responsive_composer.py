@@ -120,8 +120,8 @@ def main():
                     const set=document.getElementById('hComposerToolset');
                     const cs=getComputedStyle(set);
                     return {open:window.HuddleComposerUI.isOpen(),visible:cs.visibility,
-                      icons:[...set.querySelectorAll('button,label')].filter(n=>n.id).map(n=>({
-                          id:n.id,accessible:n.getAttribute('aria-label'),width:n.getBoundingClientRect().width,
+                      icons:[...set.querySelectorAll('button,label')].filter(n=>n.id||n.matches('label[for="mediaFileInput"]')).map(n=>({
+                          id:n.id||'attachLabel',accessible:n.getAttribute('aria-label'),width:n.getBoundingClientRect().width,
                           icon:!!n.querySelector('svg')})),
                       textLabels:set.querySelectorAll('.h-tool-name').length,
                       layout:cs.display,
