@@ -1,82 +1,287 @@
-/* Compact icon-only tray and animated composer transformations. */
-#appScreen .composer.h-composer-expanded .h-composer-toolset{
+/* Unified, aligned Huddle composer: real width interpolation + vertical tools.
+   The persistent slot retains layout space during the four-to-one animation. */
+#appScreen .composer{
+  display:flex!important;
+  align-items:flex-end!important;
+  gap:5px!important;
+  padding:7px 8px!important;
+  min-width:0!important;
+}
+#appScreen .composer .h-composer-slot{
+  position:relative!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  flex:0 0 var(--h-tools-width,167px)!important;
+  width:var(--h-tools-width,167px)!important;
+  min-width:0!important;
+  height:42px!important;
+  overflow:visible!important;
+  transition:flex-basis .32s cubic-bezier(.22,.72,.22,1),
+             width .32s cubic-bezier(.22,.72,.22,1)!important;
+}
+#appScreen .composer .h-composer-toolset{
+  position:relative!important;
+  display:flex!important;
+  flex-direction:row!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  width:max-content!important;
+  min-width:0!important;
+  height:42px!important;
+  gap:5px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  opacity:1;visibility:visible;pointer-events:auto;
+  transform:none;
+}
+#appScreen .composer .h-composer-toolset :is(
+  #emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn
+){
   display:grid!important;
-  grid-template-columns:repeat(4,43px)!important;
-  grid-auto-rows:45px!important;
-  align-items:center!important;justify-content:center!important;
+  place-items:center!important;
+  align-items:center!important;
+  justify-items:center!important;
+  align-self:center!important;
+  box-sizing:border-box!important;
+  flex:0 0 38px!important;
+  width:38px!important;
+  min-width:38px!important;
+  max-width:38px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:12px!important;
+  line-height:1!important;
+  font-size:20px!important;
+  white-space:nowrap;
+  vertical-align:middle;
+  transform-origin:center!important;
+}
+#appScreen .composer .h-composer-toolset :is(
+  #emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn
+) svg{
+  display:block!important;
+  width:20px!important;height:20px!important;
+  margin:0!important;
+  transform:none!important;
+  flex:none!important;
+  vertical-align:middle!important;
+}
+#appScreen .composer #sendBtn{
+  align-self:flex-end!important;
+  width:42px!important;min-width:42px!important;max-width:42px!important;
+  height:42px!important;
+  flex:0 0 42px!important;
+  display:grid!important;place-items:center!important;
+}
+#appScreen .composer #messageInput{
+  align-self:flex-end!important;
+  min-width:0!important;
+  flex:1 1 0px!important;
+  margin:0!important;
+}
+#appScreen .composer.h-composer-expanded .h-composer-slot{
+  width:0!important;
+  flex-basis:0px!important;
+}
+/* The four controls remain the original clickable nodes.
+   In multiline mode they move into a vertical, icon-only popover. */
+#appScreen .composer.h-composer-expanded .h-composer-toolset{
+  display:flex!important;
+  position:absolute!important;
+  z-index:42!important;
+  left:0!important;
+  bottom:calc(100% + 12px)!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
   gap:7px!important;
-  width:max-content!important;min-width:0!important;
-  max-width:calc(100vw - 32px)!important;
-  padding:9px!important;
-  border-radius:18px!important;
-  transform-origin:bottom left!important;
-  will-change:opacity,transform;
+  width:61px!important;
+  min-width:61px!important;
+  max-width:61px!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:8px!important;
+  border:1px solid var(--v-line)!important;
+  border-radius:19px!important;
+  background:var(--v-sheet)!important;
+  box-shadow:0 17px 45px rgba(25,43,70,.19)!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  transform:translate3d(0,13px,0) scale(.88)!important;
+  transform-origin:bottom center!important;
+  transition:opacity .23s ease,
+             transform .3s cubic-bezier(.16,.85,.25,1),
+             visibility 0s linear .3s!important;
+  will-change:transform,opacity;
+}
+#appScreen .composer.h-composer-expanded.h-tools-open .h-composer-toolset{
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  transform:translate3d(0,0,0) scale(1)!important;
+  transition:opacity .2s ease,
+             transform .33s cubic-bezier(.16,.85,.25,1),
+             visibility 0s!important;
 }
 #appScreen .composer.h-composer-expanded .h-composer-toolset :is(
   #emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn
 ){
-  display:grid!important;place-items:center!important;
-  justify-content:center!important;
-  width:43px!important;min-width:43px!important;
-  max-width:43px!important;height:43px!important;
-  padding:0!important;margin:0!important;
+  flex:0 0 44px!important;
+  width:44px!important;
+  min-width:44px!important;
+  max-width:44px!important;
+  height:44px!important;
+  min-height:44px!important;
+  padding:0!important;
+  margin:0!important;
   border-radius:13px!important;
-  gap:0!important;
   font-size:0!important;
-  box-shadow:0 2px 8px rgba(28,48,76,.09)!important;
-  transform:none!important;
+  box-shadow:0 2px 7px rgba(30,45,72,.09)!important;
+  transform:translateY(7px) scale(.92)!important;
+  opacity:0!important;
+  transition:transform .28s cubic-bezier(.18,.8,.23,1),
+             opacity .24s ease!important;
 }
+#appScreen .composer.h-composer-expanded.h-tools-open .h-composer-toolset :is(
+  #emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn
+){
+  opacity:1!important;transform:translateY(0) scale(1)!important;
+}
+#appScreen .composer.h-composer-expanded.h-tools-open .h-composer-toolset
+:is(#emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn):nth-child(1){transition-delay:0ms!important}
+#appScreen .composer.h-composer-expanded.h-tools-open .h-composer-toolset
+label[for="mediaFileInput"]{transition-delay:28ms!important}
+#appScreen .composer.h-composer-expanded.h-tools-open .h-composer-toolset
+#shareLocationBtn{transition-delay:52ms!important}
+#appScreen .composer.h-composer-expanded.h-tools-open .h-composer-toolset
+#voiceNoteBtn{transition-delay:78ms!important}
 #appScreen .composer.h-composer-expanded .h-composer-toolset .h-tool-name{
   display:none!important;
 }
-#appScreen .composer.h-composer-expanded .h-composer-toolset svg{
-  width:23px!important;height:23px!important;
-  margin:0!important;flex-shrink:0!important;
-}
-#appScreen .composer.h-composer-expanded .h-composer-toolset :is(button,label):focus-visible{
-  outline:2px solid var(--v-accent)!important;outline-offset:3px!important;
-}
-#appScreen .composer.h-composer-expanded .h-composer-toolset :is(button,label):active{
-  transform:scale(.93)!important;
-  transition:transform .12s ease!important;
+#appScreen .composer .h-composer-toolset :is(button,label):focus-visible{
+  outline:2px solid var(--v-accent)!important;
+  outline-offset:2px!important;
 }
 #appScreen .composer.h-composer-restoring:not(.h-composer-expanded) .h-composer-toolset{
-  opacity:0!important;
-  pointer-events:none!important;
+  opacity:0!important;pointer-events:none!important;
 }
-#appScreen .h-composer-more{
+#appScreen .composer .h-composer-more{
+  align-self:flex-end!important;
   transform-origin:center!important;
+  flex:0 0 0px!important;
+  width:0!important;max-width:0!important;min-width:0!important;
+  height:42px!important;
+  padding:0!important;
+  opacity:0!important;
+  overflow:hidden!important;
+  transform:scale(.72)!important;
+  transition:flex-basis .3s cubic-bezier(.22,.72,.22,1),
+             width .3s cubic-bezier(.22,.72,.22,1),
+             max-width .3s cubic-bezier(.22,.72,.22,1),
+             opacity .24s ease,transform .3s ease!important;
+}
+#appScreen .composer.h-composer-expanded .h-composer-more{
+  flex:0 0 40px!important;
+  width:40px!important;min-width:40px!important;max-width:40px!important;
+  height:42px!important;
+  opacity:1!important;
+  transform:scale(1)!important;
+}
+#appScreen .composer .h-composer-more svg{
+  display:block!important;width:22px!important;height:22px!important;
+}
+#appScreen .composer.h-composer-expanded.h-tools-open .h-composer-more{
+  transform:rotate(90deg)!important;
 }
 .h-composer-ghost{
-  position:fixed!important;display:grid!important;place-items:center!important;
+  position:fixed!important;
+  display:grid!important;place-items:center!important;
   padding:0!important;margin:0!important;
-  border-radius:13px!important;
-  pointer-events:none!important;
-  z-index:400!important;
-  box-shadow:0 3px 11px rgba(34,52,84,.08)!important;
+  border-radius:12px!important;
+  pointer-events:none!important;z-index:400!important;
+  box-shadow:0 3px 10px rgba(30,50,80,.075)!important;
   overflow:hidden!important;
   will-change:transform,opacity;
 }
 .h-composer-ghost svg{
-  width:22px!important;height:22px!important;
-  display:block!important;
+  display:block!important;width:20px!important;height:20px!important;
   stroke:currentColor;
 }
-@media(max-width:370px){
+@media(max-width:720px){
+  #appScreen .composer{gap:4px!important;padding:6px!important}
+  #appScreen .composer .h-composer-slot,
+  #appScreen .composer .h-composer-toolset{height:40px!important}
+  #appScreen .composer .h-composer-toolset{gap:4px!important}
+  #appScreen .composer .h-composer-toolset :is(
+    #emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn
+  ){
+    flex-basis:35px!important;
+    width:35px!important;min-width:35px!important;max-width:35px!important;
+    height:38px!important;min-height:38px!important;
+    border-radius:11px!important;
+  }
+  #appScreen .composer #sendBtn{
+    width:40px!important;min-width:40px!important;max-width:40px!important;
+    height:40px!important;flex-basis:40px!important;
+  }
   #appScreen .composer.h-composer-expanded .h-composer-toolset{
-    grid-template-columns:repeat(4,40px)!important;grid-auto-rows:41px!important;
-    gap:6px!important;padding:8px!important;
+    height:auto!important;gap:7px!important;width:59px!important;
+    min-width:59px!important;max-width:59px!important;
   }
   #appScreen .composer.h-composer-expanded .h-composer-toolset :is(
     #emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn
-  ){width:40px!important;min-width:40px!important;max-width:40px!important;height:40px!important}
+  ){
+    flex-basis:42px!important;
+    width:42px!important;min-width:42px!important;max-width:42px!important;
+    height:42px!important;min-height:42px!important;
+  }
+  #appScreen .composer.h-composer-expanded .h-composer-more{
+    width:39px!important;min-width:39px!important;max-width:39px!important;
+    height:40px!important;flex-basis:39px!important;
+  }
+}
+@media(max-width:365px){
+  #appScreen .composer .h-composer-toolset :is(
+    #emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn
+  ){
+    width:32px!important;min-width:32px!important;max-width:32px!important;
+    flex-basis:32px!important;height:36px!important;min-height:36px!important;
+  }
+  #appScreen .composer .h-composer-toolset{gap:3px!important}
+  #appScreen .composer .h-composer-slot,
+  #appScreen .composer .h-composer-toolset{height:38px!important}
+  #appScreen .composer #sendBtn{
+    width:37px!important;min-width:37px!important;max-width:37px!important;
+    height:38px!important;flex-basis:37px!important;
+  }
+  #appScreen .composer.h-composer-expanded .h-composer-toolset{
+    height:auto!important;width:56px!important;min-width:56px!important;max-width:56px!important;
+  }
+  #appScreen .composer.h-composer-expanded .h-composer-toolset :is(
+    #emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn
+  ){
+    width:40px!important;min-width:40px!important;max-width:40px!important;
+    height:40px!important;min-height:40px!important;flex-basis:40px!important;
+  }
+  #appScreen .composer.h-composer-expanded .h-composer-more{
+    width:37px!important;min-width:37px!important;max-width:37px!important;
+    height:38px!important;flex-basis:37px!important;
+  }
 }
 @media(prefers-reduced-motion:reduce){
+  #appScreen .composer .h-composer-slot,
   #appScreen .composer .h-composer-toolset,
   #appScreen .composer .h-composer-more,
-  #appScreen .composer.h-composer-expanded .h-composer-toolset{
-    transition:none!important;
-    will-change:auto!important;
-  }
+  #appScreen .composer.h-composer-expanded .h-composer-toolset,
+  #appScreen .composer.h-composer-expanded .h-composer-toolset :is(
+    #emojiBtn,label[for="mediaFileInput"],#shareLocationBtn,#voiceNoteBtn
+  ){transition:none!important}
   .h-composer-ghost{display:none!important}
 }
