@@ -110,10 +110,10 @@ def install_message_context(app,db,hub,require_user,serialize_message,send_messa
                     copied_path=storage/aid
                     shutil.copyfile(origin,copied_path)
                     cx.execute("""INSERT INTO attachments
-                        (id,message_id,filename,content_type,byte_size,storage_name,created_at)
-                        VALUES(?,?,?,?,?,?,?)""",
+                        (id,message_id,filename,content_type,byte_size,storage_name,created_at,duration_ms)
+                        VALUES(?,?,?,?,?,?,?,?)""",
                         (aid,result["id"],attachment["filename"],attachment["content_type"],
-                         attachment["byte_size"],aid,now()))
+                         attachment["byte_size"],aid,now(),attachment["duration_ms"]))
                 cx.execute("""INSERT INTO message_context(message_id,source_message_id,action)
                               VALUES(?,?,?)""",
                            (result["id"],payload.source_message_id,payload.action))
