@@ -39,7 +39,7 @@ PH = PasswordHasher(time_cost=2, memory_cost=32768, parallelism=2)
 COOKIE = "huddle_session"
 TTL = timedelta(days=7)
 HANDLES = re.compile(r"^[a-z0-9_]{3,22}$")
-EMOJIS = {"❤️", "🔥", "😂", "👏", "👍", "🎉", "💡", "🚀"}
+EMOJIS = {"❤️", "🔥", "😂", "👏", "👍", "🎉", "💡", "🚀", "😮", "🙏", "🥰"}
 
 
 def escape_like(value: str) -> str:
