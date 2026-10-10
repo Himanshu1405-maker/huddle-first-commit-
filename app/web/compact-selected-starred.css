@@ -137,3 +137,6 @@
 @media(prefers-reduced-motion:reduce){
  #appScreen .h-selection-actions button{transition:none!important}
 }
+
+/* Informational toast notifications never block tapping the message composer. */
+#toastArea,#toastArea .toast{pointer-events:none!important}
