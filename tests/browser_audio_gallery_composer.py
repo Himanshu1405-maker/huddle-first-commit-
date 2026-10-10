@@ -36,13 +36,13 @@ def run():
         with wave.open(sound,'wb') as wav:
             wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(16000)
             wav.writeframes(b'\0\0'*int(16000*2.4))
-        sent=alice.post(base+f'/api/conversations/{room}/attachments',content=sound.getvalue(),
+        sent=alice.post(base+f'/api/conversations/{room}/attachments',data=sound.getvalue(),
             headers={'content-type':'audio/wav','x-huddle-filename':'voice-note.wav'})
         assert sent.status_code==201,sent.text
         assert sent.json()['message']['attachments'][0]['duration_ms']==2400
         picture=BytesIO()
         Image.new('RGB',(500,620),'#7b61c4').save(picture,format='PNG')
-        image=alice.post(base+f'/api/conversations/{room}/attachments',content=picture.getvalue(),
+        image=alice.post(base+f'/api/conversations/{room}/attachments',data=picture.getvalue(),
             headers={'content-type':'image/png','x-huddle-filename':'portrait.png'})
         assert image.status_code==201,image.text
         opts=webdriver.ChromeOptions()
