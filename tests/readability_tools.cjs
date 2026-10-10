@@ -1,0 +1,18 @@
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const html=fs.readFileSync('app/web/index.html','utf8');
+const prefs=fs.readFileSync('app/web/chat-themes.js','utf8');
+const css=fs.readFileSync('app/web/readability-tool-centering.css','utf8');
+assert(html.includes('id="vTextSize" type="range" min="90" max="135" step="5"'));
+assert(html.includes('id="vTextSizeValue"')&&html.includes('id="vTextDefault"'));
+assert(html.includes('href="/assets/readability-tool-centering.css"'));
+assert(prefs.includes('textSize:100'));
+assert(prefs.includes('saved.textSize'));
+assert(prefs.includes('config.textSize=value;persist();apply()'));
+assert(prefs.includes('config.textSize=100;persist();apply()'));
+assert(prefs.includes("app.style.setProperty('--h-text-scale'"));
+assert(css.includes('.chat-top .header-identity .header-name'));
+assert(css.includes('calc(17px * var(--h-text-scale))'));
+assert(css.includes('.h-composer-toolset :is('));
+assert(css.includes('align-items:center!important'));
+assert(css.includes('justify-content:center!important'));
+console.log('HUDDLE_READABILITY_PASS: persistent font slider, enlarged names and centered attachment tools');
