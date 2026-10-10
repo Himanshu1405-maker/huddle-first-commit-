@@ -844,7 +844,7 @@ def create_app(database_path: str | None = None):
             msg = cx.execute("SELECT * FROM messages WHERE id=?", (message_id,)).fetchone()
             if not msg or msg["sender_id"] != user["id"]:
                 fail(404, "Your message was not found")
-            cx.execute("UPDATE location_shares SET coordinates=NULL,accuracy_m=NULL,stopped_at=COALESCE(stopped_at,?) WHERE message_id=? AND mode='live'", (now(), message_id))
+            cx.execute("UPDATE location_shares SET coordinates=NULL,accuracy_m=NULL,stopped_at=COALESCE(stopped_at,?) WHERE message_id=?", (now(), message_id))
             cx.execute("UPDATE messages SET body='',deleted_at=COALESCE(deleted_at,?) WHERE id=?", (now(), message_id))
             cx.execute("DELETE FROM reactions WHERE message_id=?", (message_id,))
             updated = serialize_message(cx, cx.execute("SELECT * FROM messages WHERE id=?", (message_id,)).fetchone())
