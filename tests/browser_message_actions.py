@@ -102,7 +102,8 @@ def main():
                 browser.find_element(By.ID,'sendBtn').click()
                 WebDriverWait(browser,9).until(lambda b:
                     len(b.find_elements(By.CSS_SELECTOR,'#messages .h-inline-quote'))>=1)
-                assert 'Original Huddle message' in browser.find_element(By.CSS_SELECTOR,'.h-inline-quote').text
+                WebDriverWait(browser,8).until(lambda b: 'Original Huddle message' in
+                    b.execute_script("return document.querySelector('.h-inline-quote')?.textContent || ''"))
                 fresh=alice.get(base+f'/api/conversations/{conversation}/messages').json()['messages']
                 assert fresh[-1]['reply_to']['id']==first['id']
                 browser.execute_script("""
