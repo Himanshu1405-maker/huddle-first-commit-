@@ -79,12 +79,23 @@ def main():
                 assert first['voiceTitle']=='Voice note' and first['progress']
                 assert first['cardHeight']<=110
                 assert first['waveformRadius'] != '50%'
-                browser.execute_script("""
+                status=browser.execute_script("""
+                    return document.querySelector('#headerIdentity .header-meta')?.textContent || '';
+                """)
+                assert '@' not in status,status
+                transition=browser.execute_script("""
                     const input=document.getElementById('messageInput');
                     input.value=('This is an intentionally long message with more than enough words to make '
                       +'the typing area wrap properly on even large screens. ').repeat(8);
                     input.dispatchEvent(new Event('input',{bubbles:true}));
+                    return {
+                      ghostCount:document.querySelectorAll('.h-composer-ghost').length,
+                      expanded:window.HuddleComposerUI.isExpanded(),
+                      motion:document.querySelector('.h-composer-ghost')?.getAnimations()[0]?.playState
+                    };
                 """)
+                print('COLLAPSE_MOTION',width,transition,flush=True)
+                assert transition['expanded'] and transition['ghostCount']==4,transition
                 WebDriverWait(browser,6).until(lambda b:b.execute_script("""
                     return window.HuddleComposerUI?.isExpanded() &&
                       Number(getComputedStyle(document.querySelector('#hComposerMore')).opacity)>0.95;
@@ -109,20 +120,31 @@ def main():
                     const set=document.getElementById('hComposerToolset');
                     const cs=getComputedStyle(set);
                     return {open:window.HuddleComposerUI.isOpen(),visible:cs.visibility,
-                      labels:[...set.querySelectorAll('.h-tool-name')].map(n=>n.textContent),
+                      icons:[...set.querySelectorAll('button,label')].filter(n=>n.id||n.matches('label[for="mediaFileInput"]')).map(n=>({
+                          id:n.id||'attachLabel',accessible:n.getAttribute('aria-label'),width:n.getBoundingClientRect().width,
+                          icon:!!n.querySelector('svg')})),
+                      textLabels:set.querySelectorAll('.h-tool-name').length,
+                      layout:cs.display,
                       bounds:set.getBoundingClientRect().toJSON()};
                 """)
                 print('COMPOSER_MENU',width,popup,flush=True)
                 assert popup['open'] and popup['visible']=='visible'
-                assert popup['labels']==['Emojis','Attach','Location','Voice note']
+                assert popup['textLabels']==0 and popup['layout']=='grid',popup
+                assert len(popup['icons'])==4,popup
+                assert [item['accessible'] for item in popup['icons']]==['Emojis','Attach','Location','Voice note'],popup
+                assert all(item['icon'] and 35<=item['width']<=44 for item in popup['icons']),popup
                 assert popup['bounds']['left']>=-1 and popup['bounds']['right']<=width+2
                 browser.find_element(By.ID,'hComposerMore').click()
                 assert not browser.execute_script("return window.HuddleComposerUI.isOpen()")
                 # Reset to short text and verify all four original buttons reappear.
-                browser.execute_script("""
+                reversal=browser.execute_script("""
                     const input=document.getElementById('messageInput');
                     input.value='Hi';input.dispatchEvent(new Event('input',{bubbles:true}));
+                    return {ghostCount:document.querySelectorAll('.h-composer-ghost').length,
+                        restoring:document.querySelector('.composer').classList.contains('h-composer-restoring')};
                 """)
+                print('EXPAND_MOTION',width,reversal,flush=True)
+                assert reversal['ghostCount']>=3 and reversal['restoring'],reversal
                 WebDriverWait(browser,5).until(lambda b:not b.execute_script("return window.HuddleComposerUI.isExpanded()"))
                 again=browser.execute_script("""
                   const group=document.getElementById('hComposerToolset');
