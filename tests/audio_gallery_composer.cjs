@@ -21,7 +21,7 @@ assert(voice.includes('requestAnimationFrame(refreshLoop)'));
 assert(voice.includes('h-voice-heard'));
 assert(voice.includes('dataset.durationMs'));
 assert(voice.includes('const originalRender=renderMessages'));
-assert(comp.includes('const mirror=document.createElement(\\'textarea\\')'));
+assert(comp.includes("const mirror=document.createElement('textarea')"));
 assert(comp.includes('mirror.scrollHeight'));
 assert(comp.includes("composer.classList.remove('h-composer-expanded','h-tools-open')"));
 assert(img.includes("event.preventDefault();event.stopPropagation();"));
