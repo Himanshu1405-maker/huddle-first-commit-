@@ -95,6 +95,48 @@ def main():
                 assert abs(selection['bubbleWidth']-selection['highlightWidth'])<3
                 assert selection['rowBackground']=='rgba(0, 0, 0, 0)'
                 assert selection['forwardFilled']=='currentColor'
+                # User's screenshot: one row, no selection summary, no X,
+                # no sideways-scrolling toolbar; ALL available actions show.
+                compact=browser.execute_script("""
+                    const bar=document.querySelector('#hSelectedBar');
+                    const action=bar.querySelector('.h-selection-actions');
+                    const ids=[...action.querySelectorAll('button:not([hidden])')].map(b=>b.id);
+                    const bounds=bar.getBoundingClientRect();
+                    return {summary:!!bar.querySelector('.h-selection-summary'),
+                      actions:ids,barWidth:bounds.width,scrollWidth:action.scrollWidth,
+                      clientWidth:action.clientWidth,
+                      boxes:[...action.querySelectorAll('button:not([hidden])')].map(b=>b.getBoundingClientRect().toJSON()),
+                      rawSelection:window.getSelection()?.toString()||'',
+                      horizontalPageOverflow:document.documentElement.scrollWidth-innerWidth,
+                      nativeContextAllowed:(()=>{
+                        const bubble=document.querySelector('.message-row.h-msg-selected .bubble');
+                        const ev=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});
+                        bubble.dispatchEvent(ev);return !ev.defaultPrevented;
+                      })()};
+                """)
+                print('COMPACT_MESSAGE_ACTIONS',width,compact,flush=True)
+                assert not compact['summary'] and not compact['nativeContextAllowed'],compact
+                assert compact['actions']==['hTopReply','hTopForward','hTopCopy','hTopEdit','hTopStar','hTopDelete'],compact
+                assert compact['horizontalPageOverflow']<=2,compact
+                assert compact['scrollWidth']<=compact['clientWidth']+2,compact
+                assert all(box['left']>=-1 and box['right']<=width+2 for box in compact['boxes']),compact
+                browser.find_element(By.ID,'hTopStar').click()
+                WebDriverWait(browser,5).until(lambda b:b.execute_script("""
+                    return window.HuddleMessageUI.isStarred(arguments[0]) &&
+                      !!document.querySelector('.h-message-star');
+                """,first['id']))
+                browser.execute_script("window.HuddleMessageUI.openStarred()")
+                WebDriverWait(browser,6).until(lambda b:b.find_element(By.ID,'hStarsOverlay').is_displayed())
+                assert 'Original Huddle message' in browser.find_element(By.ID,'hStarsItems').text
+                browser.find_element(By.ID,'hStarsClose').click()
+                browser.execute_script("window.HuddleMessageUI.selectMessage(arguments[0])",first['id'])
+                assert browser.find_element(By.ID,'hTopStar').get_attribute('title')=='Unstar'
+                browser.find_element(By.ID,'hTopStar').click()
+                WebDriverWait(browser,5).until(lambda b:not b.execute_script("""
+                    return window.HuddleMessageUI.isStarred(arguments[0]);
+                """,first['id']))
+                browser.execute_script("window.HuddleMessageUI.selectMessage(arguments[0],true)",first['id'])
+                # Full actions remain available after star/unstar and refresh.
                 assert browser.find_element(By.ID,'hTopReply').is_displayed()
                 assert browser.find_element(By.ID,'hTopEdit').is_displayed()
                 assert browser.find_element(By.ID,'hTopDelete').is_displayed()

@@ -1,0 +1,142 @@
+/* One-line WhatsApp-style message actions: no selected count/preview/X.
+   All available actions stay visible at once, even on narrow Android screens. */
+#appScreen .h-selected-bar:not(.hidden){
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-content:stretch!important;
+  min-width:0!important;min-height:62px!important;height:auto!important;
+  padding:7px 9px!important;gap:0!important;
+  background:var(--v-surface)!important;
+}
+#appScreen .h-selection-summary{display:none!important}
+#appScreen .h-selection-actions{
+  display:flex!important;align-items:stretch!important;
+  justify-content:space-between!important;
+  flex:1 1 auto!important;min-width:0!important;
+  width:100%!important;gap:6px!important;
+  padding:0!important;margin:0!important;
+  overflow:visible!important;scrollbar-width:none!important;
+}
+#appScreen .h-selection-actions button:not([hidden]){
+  box-sizing:border-box!important;
+  display:flex!important;flex:1 1 0!important;min-width:0!important;
+  flex-direction:row!important;align-items:center!important;justify-content:center!important;
+  gap:5px!important;
+  padding:10px 5px!important;
+  height:44px!important;min-height:44px!important;
+  width:auto!important;max-width:none!important;
+  border-radius:12px!important;
+  font:800 12px/1.05 'DM Sans',system-ui,sans-serif!important;
+  overflow:hidden!important;white-space:nowrap!important;
+  transition:transform .16s,background .16s,border-color .16s!important;
+}
+#appScreen .h-selection-actions button[hidden]{display:none!important}
+#appScreen .h-selection-actions button svg{
+  display:block!important;flex:0 0 18px!important;
+  width:18px!important;height:18px!important;
+  margin:0!important;
+}
+#appScreen .h-selection-actions button span{
+  display:inline!important;font-size:12px!important;line-height:1.05!important;
+  font-weight:800!important;
+}
+#appScreen .h-selection-actions button.is-starred{
+  color:#ad7520!important;
+  border-color:#efd391!important;
+  background:#fff2d6!important;
+}
+#appScreen .h-selection-actions button.is-starred svg{fill:#f1b744}
+#appScreen .h-selection-actions button:active{transform:scale(.94)!important}
+#appScreen .message-row.h-msg-selected::before{content:none!important;display:none!important}
+#appScreen .message-row :where(.bubble,.bubble *,.media-card,.media-card *,.h-location-card,.h-location-card *){
+  user-select:none!important;-webkit-user-select:none!important;
+  -webkit-touch-callout:none!important;
+}
+#appScreen .message-row .h-message-visual .h-message-star{
+  position:absolute;top:-9px;right:-7px;z-index:5;
+  width:23px;height:23px;
+  background:#fff2d9;border:1px solid #eecb80;
+  border-radius:50%;box-shadow:0 3px 10px #0002;
+  color:#b9811f;display:grid;place-items:center;
+  pointer-events:none;
+}
+#appScreen .h-message-star svg{fill:#edb43d!important;stroke:#ad751b!important}
+/* Starred inbox: private to current account, tap to navigate to the message. */
+#appScreen .h-sidebar-starred{
+  display:flex;align-items:center;gap:10px;justify-content:flex-start;
+  margin:5px 22px 11px;padding:10px 13px;
+  border:1px solid var(--v-line);border-radius:12px;
+  background:var(--v-sheet);color:var(--v-title);
+  text-align:left;font:800 12px 'DM Sans',system-ui,sans-serif;cursor:pointer;
+}
+#appScreen .h-sidebar-starred span:first-child{color:#d29a2f;font-size:23px;line-height:1}
+#appScreen .h-sidebar-starred span:last-child{margin-left:auto;color:var(--v-muted);font-size:21px}
+#appScreen .h-sidebar-starred:hover{background:var(--v-accent-wash)}
+.h-stars-overlay{
+  position:fixed;inset:0;z-index:205;
+  padding:17px;display:flex;align-items:center;justify-content:center;
+  background:rgba(14,23,40,.56);backdrop-filter:blur(6px);
+}
+.h-stars-dialog{
+  width:min(510px,100%);max-height:min(76dvh,730px);
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--v-sheet,#fff);color:var(--v-title,#293548);
+  border:1px solid var(--v-line,#e4e2ee);border-radius:23px;
+  box-shadow:0 20px 70px rgba(10,20,46,.28);
+}
+.h-stars-dialog header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 22px 16px;border-bottom:1px solid var(--v-line,#e4e2ee);gap:10px;
+}
+.h-stars-dialog header small{font:850 10px system-ui;letter-spacing:1.5px;color:var(--v-accent,#7463c3)}
+.h-stars-dialog header h2{margin:5px 0 0;font:850 23px Manrope,system-ui,sans-serif;letter-spacing:-.7px}
+.h-stars-dialog #hStarsClose{
+  width:39px;height:39px;flex:0 0 39px;border-radius:12px;
+  display:grid;place-items:center;border:1px solid var(--v-line,#e4e2ee);
+  background:var(--v-accent-wash,#eeeaff);color:var(--v-accent,#7560c7);
+}
+.h-stars-dialog #hStarsClose svg{width:20px;height:20px}
+.h-stars-items{overflow-y:auto;overscroll-behavior:contain;padding:8px 13px 15px}
+.h-stars-items>button{
+  display:flex;align-items:center;gap:11px;width:100%;min-height:68px;
+  padding:13px 10px;border:0;border-bottom:1px solid var(--v-line,#e4e2ee);
+  background:transparent;text-align:left;color:inherit;cursor:pointer;
+}
+.h-stars-items>button:hover{background:var(--v-accent-wash,#f0ebff)}
+.h-stars-icon{
+  flex:0 0 38px;width:38px;height:38px;
+  display:grid;place-items:center;border-radius:12px;
+  background:#fff2d7;color:#bb8425;
+}
+.h-stars-icon svg{fill:#f3c05b}
+.h-star-list-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.h-star-list-copy strong{font:850 13px Manrope,system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h-star-list-copy small{font:500 12px/1.4 system-ui;color:var(--v-muted,#718092);
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.h-stars-chevron{color:var(--v-muted,#718092);font-size:23px}
+.h-stars-empty{padding:40px 20px;color:var(--v-muted,#718092);text-align:center;font-size:13px;line-height:1.6}
+@media(max-width:720px){
+ #appScreen .h-selected-bar:not(.hidden){min-height:60px!important;padding:6px 6px!important}
+ #appScreen .h-selection-actions{gap:3px!important}
+ #appScreen .h-selection-actions button:not([hidden]){
+   display:flex!important;flex-direction:column!important;
+   gap:4px!important;min-width:0!important;
+   padding:6px 1px!important;height:51px!important;min-height:51px!important;
+   border-radius:10px!important;
+ }
+ #appScreen .h-selection-actions button svg{width:19px!important;height:19px!important;flex:0 0 19px!important}
+ #appScreen .h-selection-actions button span{font-size:10px!important;letter-spacing:-.2px;white-space:nowrap}
+ #appScreen .h-sidebar-starred{margin:4px 16px 9px}
+ .h-stars-overlay{padding:11px}
+ .h-stars-dialog{max-height:85dvh}
+}
+@media(max-width:355px){
+ #appScreen .h-selection-actions{gap:2px!important}
+ #appScreen .h-selection-actions button span{font-size:9px!important}
+ #appScreen .h-selection-actions button:not([hidden]){padding:6px 0!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #appScreen .h-selection-actions button{transition:none!important}
+}
+
+/* Informational toast notifications never block tapping the message composer. */
+#toastArea,#toastArea .toast{pointer-events:none!important}

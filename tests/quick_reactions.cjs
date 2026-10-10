@@ -8,7 +8,9 @@ for(const id of ['hTopReply','hTopForward','hTopCopy','hTopEdit','hTopDelete','h
  assert(actions.includes('id="'+id+'"'),'Missing top action '+id);
 }
 assert(actions.includes('h-selection-actions'));
-assert(actions.includes('h-selection-summary'));
+assert(!actions.includes('class="h-selection-summary"'));
+assert(!actions.includes('id="hClearSelection"'));
+assert(actions.includes('id="hTopStar"'));
 assert(actions.includes("bar.querySelector('#hTopEdit').hidden=!editable"));
 assert(actions.includes("bar.querySelector('#hTopDelete').hidden=!mine"));
 assert(actions.includes("bar.querySelector('#hTopReport').hidden=mine"));
