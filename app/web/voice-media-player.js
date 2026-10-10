@@ -5,9 +5,10 @@
   if(!root)return;
   const playSvg='<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.54.84l10-6.5a1 1 0 0 0 0-1.68l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>';
   const pauseSvg='<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
-  const stamp=(time)=>{
+  const stamp=(time,duration=false)=>{
     if(!Number.isFinite(time)||time<0)return '0:00';
-    const seconds=Math.floor(time);
+    // Even an audible clip shorter than one second should not look empty.
+    const seconds=duration&&time>0?Math.max(1,Math.ceil(time)):Math.floor(time);
     return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
   };
   function cardFromAudio(audio){return audio?.closest('.voice-media');}
@@ -26,8 +27,9 @@
     }
     card.classList.toggle('h-voice-playing',playing);
     const length=Number.isFinite(audio.duration)&&audio.duration>0?audio.duration:0;
-    if(duration) duration.textContent=playing||audio.currentTime>0?stamp(audio.currentTime):stamp(length);
+    if(duration) duration.textContent=playing||audio.currentTime>0?stamp(audio.currentTime):stamp(length,true);
     if(seek){
+      card.style.setProperty('--h-progress',length?Math.min(100,Math.round(100*audio.currentTime/length))+'%':'0%');
       seek.value=length?String(Math.round(100*audio.currentTime/length)):'0';
       seek.setAttribute('aria-valuetext',stamp(audio.currentTime)+' of '+stamp(length));
       seek.disabled=!length;

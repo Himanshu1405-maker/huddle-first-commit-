@@ -19,6 +19,10 @@ on:
       - app/web/chat-inline-polish.css
       - app/web/voice-media-polish.css
       - app/web/quick-reactions-toolbar.css
+      - app/web/responsive-composer.js
+      - app/web/modern-composer-voice.css
+      - tests/browser_responsive_composer.py
+      - tests/responsive_composer.cjs
       - tests/quick_reactions.cjs
       - app/web/voice-media-player.js
       - tests/browser_voice_media_polish.py
@@ -52,6 +56,10 @@ on:
       - app/web/chat-inline-polish.css
       - app/web/voice-media-polish.css
       - app/web/quick-reactions-toolbar.css
+      - app/web/responsive-composer.js
+      - app/web/modern-composer-voice.css
+      - tests/browser_responsive_composer.py
+      - tests/responsive_composer.cjs
       - tests/quick_reactions.cjs
       - app/web/voice-media-player.js
       - tests/browser_voice_media_polish.py
@@ -87,6 +95,7 @@ jobs:
           node --check app/web/chat-themes.js
           node --check app/web/message-interactions.js
           node --check app/web/voice-media-player.js
+          node --check app/web/responsive-composer.js
       - name: Check new sign-in and registration design at desktop and mobile widths
         run: PYTHONPATH=. python tests/browser_auth.py
       - name: Check responsive themes and account-scoped chat wallpaper persistence
@@ -97,5 +106,7 @@ jobs:
         run: PYTHONPATH=. python tests/browser_message_actions.py
       - name: Verify compact images, voice controls and reaction layout on mobile
         run: PYTHONPATH=. python tests/browser_voice_media_polish.py
+      - name: Check responsive multiline composer and modern voice notes in Chrome
+        run: PYTHONPATH=. python tests/browser_responsive_composer.py
       - name: Verify real Chromium two-account multimedia behavior against isolated SQLite
         run: PYTHONPATH=. python tests/browser_media.py
