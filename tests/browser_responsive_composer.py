@@ -85,7 +85,10 @@ def main():
                       +'the typing area wrap properly on even large screens. ').repeat(8);
                     input.dispatchEvent(new Event('input',{bubbles:true}));
                 """)
-                WebDriverWait(browser,6).until(lambda b:b.execute_script("return window.HuddleComposerUI?.isExpanded()"))
+                WebDriverWait(browser,6).until(lambda b:b.execute_script("""
+                    return window.HuddleComposerUI?.isExpanded() &&
+                      Number(getComputedStyle(document.querySelector('#hComposerMore')).opacity)>0.95;
+                """))
                 long=browser.execute_script("""
                     const composer=document.querySelector('#conversationView .composer'),
                     btn=document.getElementById('hComposerMore'),
