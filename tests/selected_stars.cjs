@@ -14,7 +14,7 @@ assert(actions.includes("window.HuddleMessageUI={"));
 assert(actions.includes("e.preventDefault(); // Android WebView"));
 assert(actions.includes("if(e.target.closest('.bubble,.h-location-card,.media-card'))"));
 assert(actions.includes("await api('/messages/starred')"));
-assert(actions.includes("'star',{method}"));
+assert(actions.includes("+'/star',{method}"));
 assert(css.includes('overflow:visible!important'));
 assert(css.includes('flex:1 1 0!important'));
 assert(css.includes("button:not([hidden])"));
