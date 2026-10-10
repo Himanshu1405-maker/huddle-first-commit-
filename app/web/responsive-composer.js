@@ -50,7 +50,10 @@
   const close='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M5 5l14 14M19 5 5 19"/></svg>';
   const stop='<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>';
   more.innerHTML=plus;
-  group.after(more);
+  // IMPORTANT: The plus is a DIRECT flex child of the composer, not a child
+  // of the zero-width animated tools slot. Otherwise it overflows that slot
+  // and covers the first characters of multiline messages.
+  slot.after(more);
 
   const mirror=document.createElement('textarea');
   mirror.rows=1;
