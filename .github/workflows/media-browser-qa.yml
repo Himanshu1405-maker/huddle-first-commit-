@@ -9,6 +9,8 @@ on:
       - app/web/chat-enhancements.css
       - app/web/index.html
       - app/web/auth-bloom.css
+      - app/web/auth-luxe.css
+      - app/web/auth-luxe.js
       - tests/browser_auth.py
       - tests/browser_media.py
       - tests/test_media_ranges.py
@@ -22,6 +24,8 @@ on:
       - app/web/chat-enhancements.css
       - app/web/index.html
       - app/web/auth-bloom.css
+      - app/web/auth-luxe.css
+      - app/web/auth-luxe.js
       - tests/browser_auth.py
       - tests/browser_media.py
       - tests/test_media_ranges.py
@@ -41,7 +45,9 @@ jobs:
           node-version: '22'
       - run: python -m pip install -r requirements-dev.txt selenium==4.38.0 requests
       - name: Verify frontend JavaScript parses
-        run: node --check app/web/app.js
+        run: |
+          node --check app/web/app.js
+          node --check app/web/auth-luxe.js
       - name: Check new sign-in and registration design at desktop and mobile widths
         run: PYTHONPATH=. python tests/browser_auth.py
       - name: Verify real Chromium two-account multimedia behavior against isolated SQLite

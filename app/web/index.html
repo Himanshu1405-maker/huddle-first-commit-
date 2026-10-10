@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/assets/inbox-images.css" />
   <link rel="stylesheet" href="/assets/location-sharing.css" />
   <link rel="stylesheet" href="/assets/auth-bloom.css" />
+  <link rel="stylesheet" href="/assets/auth-luxe.css" />
 </head>
 <body>
   <div class="auth-screen" id="authScreen">
@@ -41,16 +42,16 @@
       <div class="mobile-brand brand"><span class="brand-logo">✳</span> huddle<span class="brand-period">.</span></div>
       <div class="auth-form-shell">
         <div class="welcome-icon" aria-hidden="true">👋</div><div class="auth-card-kicker">THE CONVERSATION STARTS HERE</div>
-        <h2 id="authTitle">Welcome back to Huddle<span class="accent">.</span></h2>
+        <h2 id="authTitle">Welcome back to<br> Huddle<span class="accent">.</span></h2>
         <p class="muted auth-sub" id="authSubtitle">Your favourite people are just a hello away.</p>
         <form id="authForm" autocomplete="on">
           <div id="registerNameField" class="form-field hidden">
             <label for="authName">What should we call you?</label>
-            <input id="authName" type="text" maxlength="60" placeholder="Your full name" autocomplete="name" />
+            <div class="field-icon h-luxe-field"><span aria-hidden="true">✧</span><input id="authName" type="text" maxlength="60" placeholder=" " autocomplete="name" /><span class="h-float-caption" aria-hidden="true">Your full name</span></div>
           </div>
-          <div id="registerEmailField" class="form-field hidden"><label for="authEmail">Email address</label><input id="authEmail" type="email" maxlength="254" placeholder="you@example.com" autocomplete="email"/><small class="small-hint">We'll send a 6-digit code to verify your email.</small></div>
-          <div class="form-field"><label for="authHandle">Your username</label><div class="field-icon"><span>@</span><input id="authHandle" type="text" minlength="3" maxlength="22" placeholder="your_username" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required /></div><small class="small-hint">3–22 letters, numbers or _. No spaces or @ signs.</small></div>
-          <div class="form-field"><div class="label-line"><label for="authPassword">Password</label><span class="small-hint" id="passwordHint"></span></div><div class="field-icon"><span id="lockGlyph">✦</span><input id="authPassword" type="password" minlength="8" maxlength="128" placeholder="Enter your password" autocomplete="current-password" required /><button class="field-eye" type="button" id="togglePassword" aria-label="Toggle password visibility">◉</button></div></div>
+          <div id="registerEmailField" class="form-field hidden"><label for="authEmail">Email address</label><div class="field-icon h-luxe-field"><span aria-hidden="true">✉</span><input id="authEmail" type="email" maxlength="254" placeholder=" " autocomplete="email"/><span class="h-float-caption" aria-hidden="true">you@example.com</span></div><small class="small-hint">We'll send a 6-digit code to verify your email.</small></div>
+          <div class="form-field"><label for="authHandle">Your username</label><div class="field-icon h-luxe-field"><span aria-hidden="true">@</span><input id="authHandle" type="text" minlength="3" maxlength="22" placeholder=" " autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required /><span class="h-float-caption" aria-hidden="true">Enter your username</span></div><small class="small-hint">3–22 letters, numbers or _. No spaces or @ signs.</small></div>
+          <div class="form-field"><div class="label-line"><label for="authPassword">Password</label><span class="small-hint" id="passwordHint"></span></div><div class="field-icon h-luxe-field"><span id="lockGlyph" aria-hidden="true">✦</span><input id="authPassword" type="password" minlength="8" maxlength="128" placeholder=" " autocomplete="current-password" required /><span class="h-float-caption" aria-hidden="true">Enter your password</span><button class="field-eye" type="button" id="togglePassword" aria-label="Toggle password visibility">◉</button></div><div id="authPasswordStrength" class="h-auth-strength" hidden aria-live="polite"><span class="h-strength-track"><span id="authStrengthFill"></span></span><span id="authStrengthText">Password strength</span></div></div>
           <div class="form-error" role="alert" id="authError"></div>
           <button class="btn btn-primary btn-wide" type="submit" id="authSubmit">Sign in <span>↗</span></button>
         </form>
@@ -140,6 +141,7 @@
   <div class="mobile-scrim hidden" id="mobileScrim"></div>
   <script src="/assets/app.js" defer></script>
   <script src="/assets/chat-enhancements.js" defer></script>
+  <script src="/assets/auth-luxe.js" defer></script>
   <script src="/assets/location-sharing.js" defer></script>
   <script src="/assets/puter-ai.js" defer></script>
 </body>

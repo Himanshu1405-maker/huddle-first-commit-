@@ -18,6 +18,8 @@ jobs:
       - run: node tests/chat_enhancements.cjs
       - run: node tests/frontend_smoke.cjs
       - run: node tests/auth_bloom.cjs
+      - run: node tests/auth_luxe.cjs
+      - run: node --check app/web/auth-luxe.js
       - run: node tests/frontend_otp_ai.cjs
       - run: node tests/google_mobile_ux.cjs
       - run: node tests/google_sdk_upgrade.cjs
