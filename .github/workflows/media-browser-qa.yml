@@ -15,6 +15,11 @@ on:
       - tests/browser_themes.py
       - app/web/chat-themes.css
       - app/web/message-interactions.js
+      - app/web/moments.js
+      - app/web/moments.css
+      - app/moments.py
+      - tests/test_moments.py
+      - tests/moments_static.cjs
       - app/web/message-interactions.css
       - app/web/chat-inline-polish.css
       - app/web/voice-media-polish.css
@@ -66,6 +71,11 @@ on:
       - tests/browser_themes.py
       - app/web/chat-themes.css
       - app/web/message-interactions.js
+      - app/web/moments.js
+      - app/web/moments.css
+      - app/moments.py
+      - tests/test_moments.py
+      - tests/moments_static.cjs
       - app/web/message-interactions.css
       - app/web/chat-inline-polish.css
       - app/web/voice-media-polish.css
@@ -122,6 +132,7 @@ jobs:
           node --check app/web/auth-luxe.js
           node --check app/web/chat-themes.js
           node --check app/web/message-interactions.js
+          node --check app/web/moments.js
           node --check app/web/voice-media-player.js
           node --check app/web/responsive-composer.js
           node --check app/web/image-lightbox.js
