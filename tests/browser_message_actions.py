@@ -87,9 +87,7 @@ def main():
                 fresh=alice.get(base+f'/api/conversations/{conversation}/messages').json()['messages']
                 assert fresh[-1]['reply_to']['id']==first['id']
                 browser.execute_script("""
-                    const m=[...document.querySelectorAll('.bubble[data-huddle-message-id]')]
-                      .find(x=>x.dataset.huddleMessageId===arguments[0]);
-                    m.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+                    window.HuddleMessageUI.selectMessage(arguments[0],true);
                 """,first['id'])
                 WebDriverWait(browser,5).until(lambda b:
                     len(b.find_elements(By.CSS_SELECTOR,'.h-message-menu [data-h-command="forward"]'))==1)
