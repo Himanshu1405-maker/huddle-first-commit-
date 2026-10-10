@@ -97,11 +97,20 @@ def main():
             assert a.execute_script("return getComputedStyle(document.querySelector('.message-actions')).display") == "none"
             a.find_element(By.ID, "emojiBtn").click()
             WebDriverWait(a, 6).until(lambda d:d.find_element(By.ID, "emojiPicker").is_displayed())
-            a.execute_script("document.querySelector('[data-emoji-tab=People]').click()")
+            # Tabs can be offscreen inside the picker’s horizontal scroller;
+            # scroll to the real control before testing the click interaction.
+            def choose_emoji_tab(name):
+                selector='[data-emoji-tab="'+name+'"]'
+                element=a.find_element(By.CSS_SELECTOR,selector)
+                a.execute_script("arguments[0].scrollIntoView({inline:'center',block:'nearest'})",element)
+                WebDriverWait(a,6).until(lambda browser:
+                    browser.execute_script("return arguments[0].getBoundingClientRect().width>0",element))
+                element.click()
+            choose_emoji_tab('People')
             assert len(a.find_elements(By.CSS_SELECTOR, '#emojiPicker [data-emoji]')) > 60
-            a.find_element(By.CSS_SELECTOR, '[data-emoji-tab="Flags"]').click()
+            choose_emoji_tab('Flags')
             assert len(a.find_elements(By.CSS_SELECTOR, '#emojiPicker [data-emoji]')) > 30
-            a.find_element(By.CSS_SELECTOR, '[data-emoji-tab="Stickers"]').click()
+            choose_emoji_tab('Stickers')
             a.find_element(By.CSS_SELECTOR, '[data-sticker="🚀"]').click()
             WebDriverWait(c, 12).until(lambda browser:
                 len(browser.find_elements(By.CSS_SELECTOR, "#messages .h-animated-sticker")) >= 1)
