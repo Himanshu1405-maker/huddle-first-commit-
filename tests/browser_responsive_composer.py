@@ -4,6 +4,7 @@ Uses isolated temporary users, SQLite and a tiny test-only WAV audio attachment.
 import tempfile,threading,time,wave
 from io import BytesIO
 from pathlib import Path
+from PIL import Image
 import requests,uvicorn
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -291,6 +292,21 @@ def main():
                 WebDriverWait(browser,6).until(lambda b:b.find_element(By.ID,'hMomentViewer').is_displayed())
                 assert len(browser.find_elements(By.CSS_SELECTOR,'.h-moment-progress-rail'))>=1
                 browser.find_element(By.ID,'hMomentViewerClose').click()
+                if width==390:
+                    photo=Path(folder)/'story.jpg'
+                    Image.new('RGB',(65,88),'#7d67d9').save(photo,'JPEG')
+                    browser.find_element(By.ID,'hMomentCreate').click()
+                    browser.find_element(By.CSS_SELECTOR,'[data-moment-type="media"]').click()
+                    browser.find_element(By.ID,'hMomentFile').send_keys(str(photo))
+                    WebDriverWait(browser,5).until(lambda b:
+                        len(b.find_elements(By.CSS_SELECTOR,'#hMomentMediaPreview img'))==1)
+                    browser.find_element(By.ID,'hMomentPublish').click()
+                    WebDriverWait(browser,9).until(lambda b:
+                        not b.find_element(By.ID,'hMomentComposeOverlay').is_displayed())
+                    images=[m for m in alice.get(base+'/api/moments').json()['moments']
+                            if m['kind']=='image' and m['has_media']]
+                    assert images,'Moments image upload failed'
+                    assert bob.get(base+'/api/moments/'+images[0]['id']+'/media').status_code==200
                 browser.execute_script("showWelcome()")
             print('MODERN_COMPOSER_BROWSER_PASS',flush=True)
         finally:
