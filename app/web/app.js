@@ -63,9 +63,9 @@ function renderInboxHome(){
  $$('.inbox-filters button').forEach(btn=>btn.classList.toggle('selected',btn.dataset.homeFilter===filter));
 }
 $('#homeSearch').addEventListener('input',renderInboxHome);
-$('.inbox-filters').addEventListener('click',e=>{const btn=e.target.closest('[data-home-filter]');if(!btn)return;state.homeFilter=btn.dataset.homeFilter;renderInboxHome()});
+$('.inbox-filters').addEventListener('click',e=>{const btn=e.target.closest('[data-home-filter]');if(!btn)return;state.homeFilter=btn.dataset.homeFilter;renderInboxHome();$('#homeChatList').scrollTop=0});
 $('#homeChatList').addEventListener('click',e=>{const btn=e.target.closest('[data-home-conversation]');if(btn)openConversation(btn.dataset.homeConversation)});
-$('#inboxOpenAI').addEventListener('click',()=>openAI());
+
 $('#conversationList').addEventListener('click',e=>{const btn=e.target.closest('[data-conversation]');if(btn)openConversation(btn.dataset.conversation)});
 $('#sidebarSearch').addEventListener('input',renderSidebar);
 $$('.filter').forEach(btn=>btn.addEventListener('click',()=>{state.filter=btn.dataset.filter;$$('.filter').forEach(b=>b.classList.toggle('selected',b===btn));renderSidebar()}));
