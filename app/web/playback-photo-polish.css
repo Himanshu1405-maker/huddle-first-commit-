@@ -1,0 +1,129 @@
+/* Playback-connected waveform, compact progress thumb and in-chat photo gallery. */
+#appScreen .voice-media .h-voice-waves i{
+  opacity:.27!important;
+  background:var(--v-accent)!important;
+  transition:opacity .13s linear,filter .13s linear,background .13s linear!important;
+}
+#appScreen .voice-media .h-voice-waves i.h-voice-heard{
+  opacity:1!important;
+  filter:saturate(1.28) brightness(.79)!important;
+}
+#appScreen .voice-media.h-voice-playing .h-voice-waves i:not(.h-voice-heard){opacity:.27!important}
+#appScreen .voice-media .h-voice-duration{
+  min-width:31px!important;
+  font-variant-numeric:tabular-nums;
+}
+#appScreen .voice-media .h-voice-progress{
+  touch-action:pan-x;
+}
+/* Accurate scrollbar-free one-line text measurement; mirror never affects layout. */
+#appScreen .composer textarea.h-composer-measure{
+ position:absolute!important;top:0!important;left:0!important;
+ display:block!important;
+ min-height:0!important;max-height:none!important;
+ min-width:0!important;max-width:none!important;
+ height:1px!important;margin:0!important;box-shadow:none!important;
+ visibility:hidden!important;opacity:0!important;
+ pointer-events:none!important;resize:none!important;overflow:hidden!important;
+ z-index:-1!important;flex:none!important;
+}
+#appScreen .composer.h-composer-expanded{
+ transition:background .2s ease,border-color .2s ease,box-shadow .2s ease!important;
+}
+#appScreen .composer .h-composer-toolset{
+ transition:opacity .17s ease,transform .22s cubic-bezier(.22,.75,.23,1)!important;
+}
+#appScreen .composer.h-composer-expanded .h-composer-more{
+ transition:opacity .16s ease,transform .22s cubic-bezier(.22,.75,.23,1),
+  max-width .22s ease!important;
+}
+/* Photo viewer is a true in-app overlay rather than a new browser tab. */
+html.h-photo-viewing{overflow:hidden!important}
+.h-photo-viewer{
+ position:fixed;inset:0;z-index:390;
+ display:flex;flex-direction:column;
+ background:rgba(12,17,33,.96);color:#fff;
+ opacity:0;visibility:hidden;
+ transform:scale(1.012);
+ backdrop-filter:blur(14px);
+ transition:opacity .21s ease,transform .21s ease,visibility .21s;
+}
+.h-photo-viewer.h-photo-open{
+ opacity:1;visibility:visible;transform:scale(1);
+}
+.h-photo-viewer-head{
+ flex:0 0 auto;display:flex;align-items:center;gap:13px;
+ padding:calc(11px + env(safe-area-inset-top)) 15px 11px;
+ min-height:64px;background:rgba(255,255,255,.055);
+ border-bottom:1px solid rgba(255,255,255,.12);
+}
+.h-photo-viewer-head button,.h-photo-viewer-head a{
+ width:39px;height:39px;min-width:39px;
+ display:grid;place-items:center;border-radius:13px;
+ border:1px solid rgba(255,255,255,.15);
+ background:rgba(255,255,255,.11);color:#fff;
+ cursor:pointer;text-decoration:none;
+}
+.h-photo-viewer-head svg{width:20px;height:20px}
+.h-photo-viewer-head button:hover,.h-photo-viewer-head a:hover{background:rgba(255,255,255,.23)}
+.h-photo-viewer-heading{min-width:0;display:flex;flex-direction:column;gap:4px;flex:1}
+.h-photo-viewer-heading strong{font:850 14px 'DM Sans',sans-serif}
+.h-photo-viewer-heading small{
+ font:500 11px 'DM Sans',sans-serif;opacity:.65;
+ overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.h-photo-viewer-count{font-size:12px;font-variant-numeric:tabular-nums;opacity:.65}
+.h-photo-canvas{
+ display:flex;align-items:center;justify-content:center;flex:1;min-height:0;
+ width:100%;position:relative;overflow:hidden;
+}
+.h-photo-canvas #hPhotoFull{
+ display:block;width:auto;height:auto;
+ max-width:100%;max-height:100%;object-fit:contain;
+ border-radius:5px;
+ box-shadow:0 18px 65px rgba(0,0,0,.34);
+ cursor:zoom-in;user-select:none;
+ transform:scale(1);
+ transition:transform .24s cubic-bezier(.17,.78,.27,1),opacity .2s ease,filter .2s ease;
+}
+.h-photo-canvas #hPhotoFull.h-photo-loading{opacity:.5;filter:blur(5px)}
+.h-photo-canvas #hPhotoFull.h-photo-zoomed{
+ transform:scale(1.55);cursor:zoom-out;
+}
+.h-photo-navigate{
+ flex:0 0 auto;position:absolute;top:50%;z-index:2;
+ transform:translateY(-50%);
+ display:grid;place-items:center;
+ width:41px;height:41px;border:1px solid rgba(255,255,255,.18);
+ border-radius:50%;background:rgba(11,20,39,.54);color:#fff;
+ cursor:pointer;backdrop-filter:blur(5px);
+}
+#hPhotoPrev{left:16px}
+#hPhotoNext{right:16px}
+.h-photo-navigate svg{width:21px;height:21px}
+.h-photo-navigate[hidden]{display:none!important}
+.h-photo-viewer-help{
+ text-align:center;font:550 11px 'DM Sans',sans-serif;
+ color:rgba(255,255,255,.58);
+ padding:13px 12px calc(15px + env(safe-area-inset-bottom));
+ margin:0;
+}
+.h-photo-viewer button:focus-visible,.h-photo-viewer a:focus-visible,.h-photo-canvas #hPhotoFull:focus-visible{
+ outline:2px solid #c7b8ff;outline-offset:3px;
+}
+@media(max-width:720px){
+ .h-photo-viewer-head{padding:calc(9px + env(safe-area-inset-top)) 12px 9px}
+ .h-photo-viewer-head button,.h-photo-viewer-head a{width:37px;height:37px;min-width:37px}
+ .h-photo-viewer-help{font-size:10px}
+ .h-photo-navigate{width:33px;height:33px}
+ #hPhotoPrev{left:7px}
+ #hPhotoNext{right:7px}
+}
+@media(prefers-reduced-motion:reduce){
+ .h-photo-viewer,.h-photo-canvas #hPhotoFull,
+ #appScreen .voice-media .h-voice-waves i,
+ #appScreen .composer .h-composer-toolset,
+ #appScreen .composer.h-composer-expanded .h-composer-more{
+  transition:none!important;
+ }
+}
