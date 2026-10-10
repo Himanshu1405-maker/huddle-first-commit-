@@ -30,6 +30,7 @@ from pydantic import BaseModel, Field
 from .extras import mail_ready, text_ready, ai_provider, image_ready, google_ready, verify_google_credential, firebase_ready, firebase_web_config, verify_firebase_credential, send_verification_email, ask_ai, generate_ai_image
 from .security import encrypt_text, decrypt_text
 from .extensions import install_extensions
+from .location import install_location, serialize_location
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
@@ -341,6 +342,7 @@ def create_app(database_path: str | None = None):
             "created_at": msg["created_at"], "edited_at": msg["edited_at"],
             "deleted_at": msg["deleted_at"], "seen_by": [r["user_id"] for r in readers],
             "attachments": [dict(attachment)] if attachment and not msg["deleted_at"] else [],
+            "location": serialize_location(cx, msg),
             "reactions": [{"emoji": r["emoji"], "count": r["count"], "users": r["users"].split(",")} for r in reactions]
         }
 
@@ -419,7 +421,7 @@ def create_app(database_path: str | None = None):
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
         response.headers["Cache-Control"] = "no-store"
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=()"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=(self)"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
@@ -427,7 +429,7 @@ def create_app(database_path: str | None = None):
             "worker-src 'self'; "
             "style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; "
             "font-src 'self' data: https://fonts.gstatic.com; "
-            "frame-src https://accounts.google.com https://*.firebaseapp.com https://puter.com https://*.puter.com; "
+            "frame-src https://accounts.google.com https://*.firebaseapp.com https://puter.com https://*.puter.com https://www.openstreetmap.org; "
             "img-src 'self' data: blob: https:; "
             "media-src 'self' blob:; "
             "connect-src 'self' ws: wss: https://accounts.google.com https://apis.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co https://*.xethub.hf.co https://*.xethub.huggingface.co https://api.puter.com https://*.puter.com wss://*.puter.com"
@@ -828,6 +830,8 @@ def create_app(database_path: str | None = None):
             msg = cx.execute("SELECT * FROM messages WHERE id=?", (message_id,)).fetchone()
             if not msg or msg["sender_id"] != user["id"] or msg["deleted_at"]:
                 fail(404, "Your message was not found")
+            if cx.execute("SELECT 1 FROM location_shares WHERE message_id=?", (message_id,)).fetchone():
+                fail(409, "Location cards cannot be edited")
             cx.execute("UPDATE messages SET body=?, edited_at=? WHERE id=?", (encrypt_text(content), now(), message_id))
             new_msg = serialize_message(cx, cx.execute("SELECT * FROM messages WHERE id=?", (message_id,)).fetchone())
         await hub.notify(member_ids(new_msg["conversation_id"]), {"type": "message:update", "message": new_msg})
@@ -840,6 +844,7 @@ def create_app(database_path: str | None = None):
             msg = cx.execute("SELECT * FROM messages WHERE id=?", (message_id,)).fetchone()
             if not msg or msg["sender_id"] != user["id"]:
                 fail(404, "Your message was not found")
+            cx.execute("UPDATE location_shares SET coordinates=NULL,accuracy_m=NULL,stopped_at=COALESCE(stopped_at,?) WHERE message_id=? AND mode='live'", (now(), message_id))
             cx.execute("UPDATE messages SET body='',deleted_at=COALESCE(deleted_at,?) WHERE id=?", (now(), message_id))
             cx.execute("DELETE FROM reactions WHERE message_id=?", (message_id,))
             updated = serialize_message(cx, cx.execute("SELECT * FROM messages WHERE id=?", (message_id,)).fetchone())
@@ -1064,6 +1069,7 @@ def create_app(database_path: str | None = None):
                 await hub.notify(list(hub.sockets), {"type": "presence:update", "user_id": uid, "online": False})
 
     install_extensions(app, db, hub, require_user, serialize_message, send_message, member_ids, ensure_membership, now, new_id)
+    install_location(app, db, hub, require_user, serialize_message, member_ids, ensure_membership, now, new_id)
     # Lazy migration of legacy plaintext message records after installing a stable
     # Fernet key. Existing conversation text remains readable; new writes encrypt.
     if os.getenv("HUDDLE_MESSAGE_KEY"):
