@@ -31,6 +31,7 @@ from .extras import mail_ready, text_ready, ai_provider, image_ready, google_rea
 from .security import encrypt_text, decrypt_text
 from .extensions import install_extensions
 from .location import install_location, serialize_location
+from .message_context import install_message_context, serialize_context
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
@@ -343,6 +344,7 @@ def create_app(database_path: str | None = None):
             "deleted_at": msg["deleted_at"], "seen_by": [r["user_id"] for r in readers],
             "attachments": [dict(attachment)] if attachment and not msg["deleted_at"] else [],
             "location": serialize_location(cx, msg),
+            **serialize_context(cx, msg),
             "reactions": [{"emoji": r["emoji"], "count": r["count"], "users": r["users"].split(",")} for r in reactions]
         }
 
@@ -1070,6 +1072,7 @@ def create_app(database_path: str | None = None):
 
     install_extensions(app, db, hub, require_user, serialize_message, send_message, member_ids, ensure_membership, now, new_id)
     install_location(app, db, hub, require_user, serialize_message, member_ids, ensure_membership, now, new_id)
+    install_message_context(app, db, hub, require_user, serialize_message, send_message, member_ids, ensure_membership, now, new_id)
     # Lazy migration of legacy plaintext message records after installing a stable
     # Fernet key. Existing conversation text remains readable; new writes encrypt.
     if os.getenv("HUDDLE_MESSAGE_KEY"):
