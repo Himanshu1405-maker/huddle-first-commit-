@@ -49,7 +49,13 @@ def install_message_stars(app, db, require_user, ensure_membership, serialize_me
     async def list_starred_messages(request: Request):
         user=require_user(request)
         with db.connection() as cx:
-            rows=cx.execute("""SELECT m.*,c.name AS conversation_name,c.kind AS conversation_kind,
+            rows=cx.execute("""SELECT m.*,
+                CASE WHEN c.kind='dm' THEN COALESCE((
+                  SELECT u.name FROM members other JOIN users u ON u.id=other.user_id
+                  WHERE other.conversation_id=m.conversation_id AND other.user_id<>s.user_id
+                  ORDER BY u.name LIMIT 1),'Direct message')
+                ELSE c.name END AS conversation_name,
+                c.kind AS conversation_kind,
                 s.created_at AS starred_at
                 FROM message_stars s JOIN messages m ON m.id=s.message_id
                 JOIN conversations c ON c.id=m.conversation_id
