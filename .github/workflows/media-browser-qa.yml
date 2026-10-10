@@ -14,6 +14,11 @@ on:
       - tests/browser_auth.py
       - tests/browser_themes.py
       - app/web/chat-themes.css
+      - app/web/message-interactions.js
+      - app/web/message-interactions.css
+      - app/message_context.py
+      - tests/browser_message_actions.py
+      - tests/test_message_context.py
       - app/web/chat-themes.js
       - app/web/chat-doodle.svg
       - tests/browser_media.py
@@ -33,6 +38,11 @@ on:
       - tests/browser_auth.py
       - tests/browser_themes.py
       - app/web/chat-themes.css
+      - app/web/message-interactions.js
+      - app/web/message-interactions.css
+      - app/message_context.py
+      - tests/browser_message_actions.py
+      - tests/test_message_context.py
       - app/web/chat-themes.js
       - app/web/chat-doodle.svg
       - tests/browser_media.py
@@ -57,9 +67,12 @@ jobs:
           node --check app/web/app.js
           node --check app/web/auth-luxe.js
           node --check app/web/chat-themes.js
+          node --check app/web/message-interactions.js
       - name: Check new sign-in and registration design at desktop and mobile widths
         run: PYTHONPATH=. python tests/browser_auth.py
       - name: Check responsive themes and account-scoped chat wallpaper persistence
         run: PYTHONPATH=. python tests/browser_themes.py
+      - name: Check desktop and mobile message actions
+        run: PYTHONPATH=. python tests/browser_message_actions.py
       - name: Verify real Chromium two-account multimedia behavior against isolated SQLite
         run: PYTHONPATH=. python tests/browser_media.py
