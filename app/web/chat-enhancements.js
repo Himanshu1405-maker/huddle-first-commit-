@@ -52,7 +52,7 @@ function handleEmojiPickerClick(e){
   if(!btn)return;
   if(btn.dataset.emojiTab){emojiTab=btn.dataset.emojiTab;drawEmojiPicker();return}
   const emoji=btn.dataset.emoji;
-  if(emoji){addRecentEmoji(emoji);const input=$('#messageInput');input.setRangeText(emoji,input.selectionStart,input.selectionEnd,'end');resizeComposer();input.focus();return;}
+  if(emoji){addRecentEmoji(emoji);const input=$('#messageInput');input.setRangeText(emoji,input.selectionStart,input.selectionEnd,'end');resizeComposer();$('#emojiPicker').classList.add('hidden');input.focus();return;}
   if(btn.dataset.sticker){addRecentEmoji(btn.dataset.sticker);sendSticker(btn.dataset.sticker);}
 }
 async function sendSticker(emoji){
@@ -65,6 +65,13 @@ async function sendSticker(emoji){
   }catch(error){toast(error.message,true);}
 }
 drawEmojiPicker();
+// Dismiss picker on outside tap / Escape, just like the normal composer.
+document.addEventListener('pointerdown',e=>{
+  if(!e.target.closest('#emojiPicker,#emojiBtn'))$('#emojiPicker')?.classList.add('hidden');
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')$('#emojiPicker')?.classList.add('hidden');
+});
 
 function decorateHuddleMessages(){
   if(!state.active||!state.me)return;
