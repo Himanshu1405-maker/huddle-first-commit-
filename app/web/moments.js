@@ -342,8 +342,11 @@
      $('hMomentTextInput').dataset.palette=palette;
    }));
    $('hMomentFile')?.addEventListener('change',event=>{
-     clearPreview();
-     const file=event.target.files?.[0];if(!file)return;
+     const file=event.target.files?.[0];
+     // Revoke only the previous blob preview; keep the newly selected File.
+     if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null}
+     $('hMomentMediaPreview').replaceChildren();
+     if(!file)return;
      if(file.size>12*1024*1024){errorMessage('Use a file under 12 MB');return}
      pendingFile=file;previewUrl=URL.createObjectURL(file);
      const el=document.createElement(file.type.startsWith('video/')?'video':'img');
