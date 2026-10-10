@@ -1,0 +1,381 @@
+/* Huddle message interactions — full bubble selection, reply, forward, swipe,
+   selected-message action bar, better timestamps and clean vector composer tools.
+   Hooks the existing chat and media code; original IDs and endpoints stay intact. */
+'use strict';
+(() => {
+  const root=document.getElementById('messages');
+  const view=document.getElementById('conversationView');
+  const composer=document.querySelector('#conversationView .composer');
+  if(!root||!view||!composer)return;
+
+  const vector=(name)=>({
+    smile:'<circle cx="12" cy="12" r="9"/><path d="M8 15c2 2.6 6 2.6 8 0M9 9.5h.01M15 9.5h.01"/>',
+    clip:'<path d="m20.5 11-8.8 8.8a5.3 5.3 0 0 1-7.5-7.5l9-9a3.5 3.5 0 0 1 5 5l-9 9a1.5 1.5 0 1 1-2.1-2.1l8-8"/>',
+    mic:'<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/>',
+    pin:'<path d="M20 10c0 5.2-8 11-8 11S4 15.2 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
+    send:'<path d="M12 19V5m-7 7 7-7 7 7"/>',
+    reply:'<path d="m10 8-5 4 5 4M5 12h9c4 0 6 2.5 6 6"/>',
+    forward:'<path d="m14 8 5 4-5 4m5 0h-9c-4 0-6 2.5-6 6"/>',
+    copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    edit:'<path d="m15 5 4 4M4 20l4.5-1 11-11a2.5 2.5 0 0 0-3.5-3.5l-11 11L4 20Z"/>',
+    trash:'<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5m4-5v5"/>',
+    close:'<path d="m5 5 14 14M19 5 5 19"/>',
+    check:'<path d="m4 12 5 5L20 6"/>',
+    double:'<path d="m2 12 5 5L18 6m-5 11 3 0 6-8"/>',
+    arrow:'<path d="M4 12h16m-7-7 7 7-7 7"/>'
+  })[name]||'';
+  const svg=(name,size=21)=>'<svg aria-hidden="true" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+vector(name)+'</svg>';
+  const getMsg=id=>(typeof state!=='undefined'&&state.messages||[]).find(m=>m.id===id);
+  const getRow=el=>el?.closest?.('.message-row[id^="msg-"]')||null;
+  const messageFromRow=row=>row?getMsg(row.id.slice(4)):null;
+  const activeConv=()=>typeof state!=='undefined'?state.active?.id:null;
+  let selectedId=null;
+  let replyTo=null;
+  let touch=null;
+  let holdTimer=null;
+  let longPressed=false;
+  let lastTouchHandled=0;
+  const clearTimer=()=>{if(holdTimer!==null)clearTimeout(holdTimer);holdTimer=null;};
+
+  const bar=document.createElement('div');
+  bar.id='hSelectedBar';
+  bar.className='h-selected-bar hidden';
+  bar.setAttribute('role','toolbar');
+  bar.setAttribute('aria-label','Selected message actions');
+  bar.innerHTML='<button type="button" id="hClearSelection" aria-label="Deselect message">'+svg('close')+'</button>'+
+   '<span class="h-selection-name"><strong>1 selected</strong><small id="hSelectionDetail">Message options</small></span>'+
+   '<button type="button" id="hTopReply" aria-label="Reply to selected message" title="Reply">'+svg('reply')+'</button>'+
+   '<button type="button" id="hTopForward" aria-label="Forward selected message" title="Forward">'+svg('forward')+'</button>'+
+   '<button type="button" id="hTopCopy" aria-label="Copy selected message" title="Copy">'+svg('copy')+'</button>';
+  view.insertBefore(bar,view.querySelector('.chat-banner'));
+  const replyBox=document.createElement('div');
+  replyBox.id='hReplyPreview';
+  replyBox.className='h-reply-preview hidden';
+  replyBox.setAttribute('aria-live','polite');
+  composer.parentNode.insertBefore(replyBox,composer);
+
+  function visibleSelection(){
+    for(const row of root.querySelectorAll('.h-msg-selected'))row.classList.remove('h-msg-selected');
+    if(!selectedId){bar.classList.add('hidden');return;}
+    const row=document.getElementById('msg-'+selectedId);
+    const msg=getMsg(selectedId);
+    if(!msg||msg.deleted_at||!row){clearSelection();return;}
+    row.classList.add('h-msg-selected');
+    const body=msg.location?'Location':msg.attachments?.length?'Media message':msg.body;
+    bar.querySelector('#hSelectionDetail').textContent=(body||'Message').slice(0,55);
+    bar.querySelector('#hTopCopy').disabled=!!msg.location;
+    bar.querySelector('#hTopForward').disabled=!!msg.location;
+    bar.classList.remove('hidden');
+  }
+  function clearSelection(){
+    selectedId=null;
+    bar.classList.add('hidden');
+    for(const row of root.querySelectorAll('.h-msg-selected'))row.classList.remove('h-msg-selected');
+    if(typeof closeHuddleContextMenu==='function')closeHuddleContextMenu();
+  }
+  function selectMessage(id,showMenu=false,anchor=null){
+    const message=getMsg(id);
+    if(!message||message.deleted_at)return;
+    selectedId=id;
+    visibleSelection();
+    if(showMenu)openHuddleContextMenu(id,anchor||document.getElementById('msg-'+id)?.querySelector('.bubble'));
+  }
+  function clearReply(){
+    replyTo=null;
+    replyBox.classList.add('hidden');
+    replyBox.innerHTML='';
+  }
+  function startReply(id){
+    const msg=getMsg(id);
+    if(!msg||msg.deleted_at||!activeConv())return;
+    replyTo={id,conversation_id:activeConv()};
+    const member=state.active.members.find(m=>m.id===msg.sender_id);
+    const author=msg.sender_id===state.me.id?'You':member?.name||'Someone';
+    const preview=msg.location?'📍 Location':msg.attachments?.length?'📎 '+msg.attachments[0].filename:msg.body||'Message';
+    replyBox.innerHTML='<div class="h-reply-line">'+svg('reply')+'<div class="h-reply-text"><strong>'+esc('Replying to '+author)+'</strong><span>'+esc(preview.slice(0,140))+'</span></div></div>'+
+      '<button id="hCancelReply" type="button" title="Cancel reply" aria-label="Cancel reply">'+svg('close')+'</button>';
+    replyBox.classList.remove('hidden');
+    clearSelection();
+    $('#messageInput').focus();
+  }
+  replyBox.addEventListener('click',e=>{if(e.target.closest('#hCancelReply'))clearReply()});
+
+  // Existing click listeners resolve sendMessage at event-time: override only
+  // when a reply is being sent; leave ordinary websocket sends unchanged.
+  const previousSend=sendMessage;
+  sendMessage=async function(...args){
+    const reply=replyTo;
+    if(!reply)return previousSend.apply(this,args);
+    const text=$('#messageInput').value.trim();
+    if(!text||reply.conversation_id!==activeConv())return;
+    const button=$('#sendBtn');button.disabled=true;
+    try{
+      const result=await post('/conversations/'+encodeURIComponent(reply.conversation_id)+
+        '/messages/context',{action:'reply',source_message_id:reply.id,body:text,
+        client_nonce:crypto.randomUUID?.()||String(Date.now())+Math.random()});
+      $('#messageInput').value='';
+      resizeComposer();clearReply();
+      if(!state.connected&&state.active?.id===reply.conversation_id)await openConversation(reply.conversation_id);
+      return result;
+    }catch(err){toast(err.message,true);}
+    finally{button.disabled=false;}
+  };
+
+  function formatStamp(iso){
+    const date=new Date(iso);
+    return Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'}).format(date);
+  }
+  function decorateMessages(){
+    const current=activeConv();
+    if(!current){clearSelection();return;}
+    for(const msg of state.messages){
+      const row=document.getElementById('msg-'+msg.id);
+      if(!row)continue;
+      row.dataset.messageId=msg.id;
+      if(msg.deleted_at)continue;
+      const stack=row.querySelector('.message-stack');
+      const bubble=stack?.querySelector('.bubble');
+      if(!stack)continue;
+      if(bubble){
+        bubble.setAttribute('aria-label','Message. Double click or hold for actions, swipe right to reply');
+      }
+      if(msg.forwarded){
+        const badge=document.createElement('div');
+        badge.className='h-forwarded-flag';
+        badge.textContent='➦ Forwarded';
+        if(bubble)stack.insertBefore(badge,bubble);
+      }
+      if(msg.reply_to){
+        const quote=document.createElement('button');
+        quote.type='button';
+        quote.className='h-inline-quote';
+        quote.dataset.replyTarget=msg.reply_to.id;
+        quote.innerHTML='<strong>'+esc(msg.reply_to.name)+'</strong><span>'+esc(msg.reply_to.preview)+'</span>';
+        if(bubble)stack.insertBefore(quote,bubble);
+      }
+      const meta=stack.querySelector('.bubble-meta');
+      if(meta){
+        const time=document.createElement('time');time.dateTime=msg.created_at;
+        time.title=new Date(msg.created_at).toLocaleString();
+        time.textContent=formatStamp(msg.created_at);
+        meta.replaceChildren(time);
+        if(msg.edited_at){const edited=document.createElement('span');edited.className='edit-label';edited.textContent='edited';meta.append(edited);}
+        if(msg.sender_id===state.me?.id){
+          const isRead=(msg.seen_by||[]).length>0;
+          const tick=document.createElement('span');
+          tick.className='h-read-ticks'+(isRead?' is-read':'');
+          tick.title=isRead?'Read by at least one member':'Sent';
+          tick.setAttribute('aria-label',tick.title);
+          tick.innerHTML=svg(isRead?'double':'check',17);
+          meta.append(tick);
+        }
+      }
+    }
+    if(selectedId)visibleSelection();
+  }
+  const previousRender=renderMessages;
+  renderMessages=function(...args){
+    const result=previousRender.apply(this,args);
+    decorateMessages();
+    return result;
+  };
+  root.addEventListener('click',e=>{
+    const quote=e.target.closest('[data-reply-target]');
+    if(quote){const target=quote.dataset.replyTarget;scrollToMessage(target);}
+  });
+
+  async function copyMessage(){
+    const m=getMsg(selectedId);
+    if(!m||m.location)return;
+    try{await navigator.clipboard.writeText(m.body||'');toast('Message copied');clearSelection();}
+    catch{toast('Clipboard unavailable',true);}
+  }
+
+  function closeForwardDialog(){
+    document.getElementById('hForwardOverlay')?.remove();
+  }
+  function forwardMessage(id){
+    const msg=getMsg(id);
+    if(!msg||msg.deleted_at||msg.location)return;
+    clearSelection();
+    closeForwardDialog();
+    const overlay=document.createElement('div');
+    overlay.id='hForwardOverlay';
+    overlay.className='h-forward-overlay';
+    overlay.setAttribute('role','presentation');
+    const dialog=document.createElement('section');
+    dialog.className='h-forward-dialog';dialog.setAttribute('role','dialog');
+    dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','hForwardTitle');
+    dialog.innerHTML='<div class="h-forward-head"><div><small>HUDDLE / SHARE</small><h2 id="hForwardTitle">Forward message</h2></div>'+
+      '<button type="button" id="hForwardClose" aria-label="Cancel forwarding">'+svg('close')+'</button></div>'+
+      '<p class="h-forward-intro">Choose a conversation. Your message will be sent as a forward.</p>'+
+      '<input id="hForwardSearch" type="search" maxlength="80" placeholder="Search chats and circles…" aria-label="Search destination conversations"/>'+
+      '<div id="hForwardList" class="h-forward-list"></div>';
+    overlay.append(dialog);document.body.append(overlay);
+    const conversations=(state.conversations||[]).filter(c=>c.id && c.members?.some(m=>m.id===state.me?.id));
+    const draw=(term='')=>{
+      const filtered=conversations.filter(c=>c.name.toLocaleLowerCase().includes(term.toLocaleLowerCase()));
+      dialog.querySelector('#hForwardList').innerHTML=filtered.length?filtered.map(c=>'<button type="button" class="h-forward-target" data-h-forward-to="'+esc(c.id)+'">'+
+        '<span class="h-forward-avatar">'+esc((c.name||'?').slice(0,1).toUpperCase())+'</span><span><strong>'+esc(c.name)+'</strong><small>'+esc(c.kind==='group'?'Group chat':'Direct message')+'</small></span><span class="h-forward-arrow">'+svg('arrow')+'</span></button>').join(''):
+        '<p class="h-forward-empty">No matching conversations.</p>';
+    };
+    draw();
+    const close=()=>{closeForwardDialog();};
+    overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+    dialog.querySelector('#hForwardClose').addEventListener('click',close);
+    dialog.querySelector('#hForwardSearch').addEventListener('input',e=>draw(e.target.value.trim()));
+    dialog.querySelector('#hForwardList').addEventListener('click',async e=>{
+      const btn=e.target.closest('[data-h-forward-to]');
+      if(!btn)return;
+      btn.disabled=true;
+      try{
+        await post('/conversations/'+encodeURIComponent(btn.dataset.hForwardTo)+
+          '/messages/context',{action:'forward',source_message_id:id});
+        close();
+        toast('Message forwarded');
+      }catch(err){toast(err.message,true);btn.disabled=false;}
+    });
+    dialog.querySelector('#hForwardSearch').focus();
+    const escape=e=>{if(e.key==='Escape'){close();document.removeEventListener('keydown',escape);}};
+    document.addEventListener('keydown',escape);
+    // Ensure later dialogs don't accumulate old Escape handlers.
+    overlay.addEventListener('click',()=>{if(!document.getElementById('hForwardOverlay'))document.removeEventListener('keydown',escape)});
+  }
+
+  // Replace the old menu *at its existing binding*: legacy dblclick and
+  // keyboard handlers continue to use this improved implementation.
+  openHuddleContextMenu=function(messageId,anchor){
+    const msg=getMsg(messageId);
+    if(!msg||msg.deleted_at)return;
+    selectMessage(messageId);
+    closeHuddleContextMenu();
+    const mine=msg.sender_id===state.me?.id;
+    const location=!!msg.location;
+    const menu=document.createElement('div');
+    menu.className='h-message-menu h-message-menu-polished';
+    menu.setAttribute('role','menu');
+    menu.setAttribute('aria-label','Message actions');
+    const emojis=['❤️','😂','😮','👍','🙏','🔥','🥰','🎉'];
+    menu.innerHTML='<div class="h-message-reactions">'+emojis.map(emoji=>
+      '<button type="button" data-h-reaction="'+esc(emoji)+'" aria-label="React '+esc(emoji)+'">'+esc(emoji)+'</button>').join('')+'</div>'+
+      '<div class="h-message-commands">'+
+      '<button type="button" data-h-command="reply">'+svg('reply')+' Reply</button>'+
+      (!location?'<button type="button" data-h-command="forward">'+svg('forward')+' Forward</button>':'')+
+      (!location?'<button type="button" data-h-command="copy">'+svg('copy')+' Copy text</button>':'')+
+      (mine?(!location?'<button type="button" data-h-command="edit">'+svg('edit')+' Edit message</button>':'')+
+        '<button type="button" class="danger" data-h-command="delete">'+svg('trash')+' Delete for everyone</button>':
+        '<button type="button" data-h-command="report">⚑ Report message</button>')+'</div>';
+    document.body.append(menu);
+    huddleContextMenu=menu;
+    const rect=(anchor?.getBoundingClientRect?.()||document.getElementById('msg-'+messageId)?.getBoundingClientRect())||{left:0,top:140};
+    const width=menu.offsetWidth,height=menu.offsetHeight;
+    menu.style.left=Math.max(9,Math.min(innerWidth-width-9,rect.left))+'px';
+    menu.style.top=Math.max(9,Math.min(innerHeight-height-9,rect.top-height-9))+'px';
+    menu.addEventListener('click',async e=>{
+      const emoji=e.target.closest('[data-h-reaction]')?.dataset.hReaction;
+      if(emoji){closeHuddleContextMenu();clearSelection();await applyReaction(messageId,emoji);return;}
+      const cmd=e.target.closest('[data-h-command]')?.dataset.hCommand;
+      if(!cmd)return;
+      closeHuddleContextMenu();
+      if(cmd==='reply'){startReply(messageId);return;}
+      if(cmd==='forward'){forwardMessage(messageId);return;}
+      if(cmd==='copy'){await copyMessage();return;}
+      clearSelection();
+      const action=document.getElementById('msg-'+messageId)?.querySelector('[data-action="'+cmd+'"]');
+      action?.click();
+    });
+  };
+
+  // Whole-row selection on long touch and horizontal swipe to reply.
+  // Capture touch pointerdown before older bubble-only handlers run, avoiding
+  // competing hold timers and native text selection.
+  root.addEventListener('pointerdown',e=>{
+    if(e.pointerType!=='touch'||e.button!==0)return;
+    const row=getRow(e.target);const m=messageFromRow(row);
+    if(!m||m.deleted_at||e.target.closest('button,audio,video,.reactions'))return;
+    e.stopPropagation();
+    clearTimer();longPressed=false;
+    touch={pointerId:e.pointerId,x:e.clientX,y:e.clientY,row,id:m.id};
+    holdTimer=setTimeout(()=>{
+      if(!touch)return;
+      longPressed=true;
+      lastTouchHandled=Date.now();
+      const bubble=touch.row.querySelector('.bubble:not([hidden])')||
+                   touch.row.querySelector('.media-card')||touch.row;
+      selectMessage(touch.id,true,bubble);
+      navigator.vibrate?.(15);
+      try{getSelection()?.removeAllRanges();}catch{}
+    },460);
+  },true);
+  root.addEventListener('pointermove',e=>{
+    if(!touch||touch.pointerId!==e.pointerId)return;
+    const dx=e.clientX-touch.x,dy=e.clientY-touch.y;
+    if(Math.hypot(dx,dy)>13)clearTimer();
+    // Only right swipes trigger reply; vertical scrolling stays native.
+    if(Math.abs(dy)>35){touch=null;return;}
+    if(dx>20&&dx<110)touch.row.style.setProperty('--h-swipe-x',Math.round(dx*.42)+'px');
+  },true);
+  function finishTouch(e){
+    if(!touch||touch.pointerId!==e.pointerId)return;
+    const {x,y,id,row}=touch;const dx=e.clientX-x,dy=e.clientY-y;
+    clearTimer();touch=null;row.style.removeProperty('--h-swipe-x');
+    if(e.type==='pointerup'&&!longPressed&&dx>72&&Math.abs(dy)<40){
+      lastTouchHandled=Date.now();startReply(id);navigator.vibrate?.(10);
+      e.preventDefault();e.stopPropagation();
+    }
+    longPressed=false;
+  }
+  root.addEventListener('pointerup',finishTouch,true);
+  root.addEventListener('pointercancel',finishTouch,true);
+  root.addEventListener('contextmenu',e=>{
+    if(Date.now()-lastTouchHandled<850){e.preventDefault();e.stopImmediatePropagation();}
+  },true);
+  root.addEventListener('selectstart',e=>{
+    if(e.target.closest('.message-row'))e.preventDefault();
+  },true);
+  root.addEventListener('click',e=>{
+    if(Date.now()-lastTouchHandled<650 && e.target.closest('.message-row')){
+      e.preventDefault();e.stopImmediatePropagation();
+    }
+  },true);
+  // The existing message context menu on desktop is kept; outside click clears
+  // the selection only when no menu is visible.
+  document.addEventListener('pointerdown',e=>{
+    if(!selectedId || e.target.closest('.h-message-menu,#hSelectedBar,.message-row,.h-forward-overlay'))return;
+    clearSelection();
+  });
+  bar.addEventListener('click',async e=>{
+    const btn=e.target.closest('button');
+    if(!btn)return;
+    const id=selectedId;
+    if(btn.id==='hClearSelection'){clearSelection();return;}
+    if(btn.id==='hTopReply')startReply(id);
+    if(btn.id==='hTopForward')forwardMessage(id);
+    if(btn.id==='hTopCopy')await copyMessage();
+  });
+
+  const olderOpen=openConversation;
+  openConversation=async function(id,...rest){
+    if(activeConv()!==id){clearSelection();clearReply();}
+    return olderOpen.call(this,id,...rest);
+  };
+  const olderWelcome=showWelcome;
+  showWelcome=function(...args){clearSelection();clearReply();return olderWelcome.apply(this,args);};
+
+  function installIcons(){
+    const pairs=[['emojiBtn','smile'],['voiceNoteBtn','mic'],['shareLocationBtn','pin'],['sendBtn','send']];
+    for(const [id,name] of pairs){
+      const element=document.getElementById(id);
+      if(!element||element.dataset.hIcon===name)continue;
+      element.dataset.hIcon=name;
+      element.innerHTML=svg(name,21);
+      element.classList.add('h-tool-icon');
+    }
+    const file=document.querySelector('.composer label[for="mediaFileInput"]');
+    if(file&&!file.dataset.hIcon){file.dataset.hIcon='clip';file.innerHTML=svg('clip',21);file.classList.add('h-tool-icon');}
+  }
+  installIcons();
+
+  // Help automated interaction checks without exposing conversation content.
+  window.HuddleMessageUI={selectMessage,startReply,clearReply,getReply:()=>replyTo,clearSelection};
+})();
