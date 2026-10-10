@@ -96,7 +96,8 @@ def main():
 
             assert a.execute_script("return getComputedStyle(document.querySelector('.message-actions')).display") == "none"
             a.find_element(By.ID, "emojiBtn").click()
-            a.find_element(By.CSS_SELECTOR, '[data-emoji-tab="People"]').click()
+            WebDriverWait(a, 6).until(lambda d:d.find_element(By.ID, "emojiPicker").is_displayed())
+            a.execute_script("document.querySelector('[data-emoji-tab=People]').click()")
             assert len(a.find_elements(By.CSS_SELECTOR, '#emojiPicker [data-emoji]')) > 60
             a.find_element(By.CSS_SELECTOR, '[data-emoji-tab="Flags"]').click()
             assert len(a.find_elements(By.CSS_SELECTOR, '#emojiPicker [data-emoji]')) > 30
