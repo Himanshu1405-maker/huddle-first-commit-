@@ -18,6 +18,8 @@ on:
       - app/web/message-interactions.css
       - app/web/chat-inline-polish.css
       - app/web/voice-media-polish.css
+      - app/web/quick-reactions-toolbar.css
+      - tests/quick_reactions.cjs
       - app/web/voice-media-player.js
       - tests/browser_voice_media_polish.py
       - tests/voice_media_polish.cjs
@@ -49,6 +51,8 @@ on:
       - app/web/message-interactions.css
       - app/web/chat-inline-polish.css
       - app/web/voice-media-polish.css
+      - app/web/quick-reactions-toolbar.css
+      - tests/quick_reactions.cjs
       - app/web/voice-media-player.js
       - tests/browser_voice_media_polish.py
       - tests/voice_media_polish.cjs
