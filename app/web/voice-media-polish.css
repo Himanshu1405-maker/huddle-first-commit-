@@ -16,7 +16,7 @@
    never cover the final line of the original message. */
 #appScreen .h-message-visual:has(>.reactions){
   margin-bottom:0!important;
-  padding-bottom:24px!important;
+  padding-bottom:31px!important;
 }
 #appScreen .h-message-visual>.reactions{
   bottom:3px!important;
@@ -148,7 +148,7 @@
  #appScreen .h-photo-overlay{bottom:9px;left:9px;right:9px}
  #appScreen .media-card.voice-media{min-width:min(238px,100%);width:min(270px,100%);gap:9px}
  #appScreen .h-voice-status{padding:8px 10px;min-height:49px}
- #appScreen .h-message-visual:has(>.reactions){padding-bottom:25px!important}
+ #appScreen .h-message-visual:has(>.reactions){padding-bottom:31px!important}
  #appScreen .h-message-visual>.reactions{bottom:3px!important}
 }
 @media(max-width:360px){
