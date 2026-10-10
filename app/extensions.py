@@ -151,6 +151,10 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
             );
             CREATE INDEX IF NOT EXISTS idx_reports_status ON message_reports(status);
         """)
+        # Add the optional millisecond duration to existing installations safely.
+        cols={row["name"] for row in cx.execute("PRAGMA table_info(attachments)")}
+        if "duration_ms" not in cols:
+            cx.execute("ALTER TABLE attachments ADD COLUMN duration_ms INTEGER")
 
     @app.post("/api/conversations/{conversation_id}/attachments", status_code=201)
     async def upload_attachment(conversation_id: str, request: Request):
@@ -162,6 +166,10 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         filename=Path(unquote(request.headers.get("x-huddle-filename","attachment"))).name
         filename="".join(c for c in filename if c.isprintable() and c not in '<>:"/\\|?*')[:95] or "attachment"
         media_type=request.headers.get("content-type","").lower()
+        raw_duration=request.headers.get("x-huddle-duration-ms","")
+        duration_ms=int(raw_duration) if raw_duration.isascii() and raw_duration.isdecimal() and len(raw_duration)<=8 else None
+        if duration_ms is not None and not (100<=duration_ms<=3600000):
+            duration_ms=None
         chunks=bytearray()
         async for piece in request.stream():
             if len(chunks)+len(piece)>upload_limit:
@@ -170,6 +178,18 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         data=bytes(chunks)
         try: media_type=validate_media(data, filename, media_type)
         except ValueError as exc: fail(422,str(exc))
+        if not media_type.startswith("audio/"):
+            duration_ms=None
+        if media_type=="audio/wav":
+            # WAV duration is determinable from bytes for uploaded legacy files.
+            import wave
+            from io import BytesIO
+            try:
+                with wave.open(BytesIO(data),"rb") as reader:
+                    if reader.getframerate()>0:
+                        duration_ms=max(100,round(reader.getnframes()/reader.getframerate()*1000))
+            except (wave.Error,EOFError,ValueError):
+                pass
         storage=Path(db.path).resolve().parent / "media" if db.path!=":memory:" else Path("/tmp/huddle-media")
         storage.mkdir(parents=True, exist_ok=True, mode=0o700)
         aid=new_id()
@@ -185,8 +205,8 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
             text=f"{marker} {filename}"+("\n"+caption if caption else "")
             message,created=send_message(conversation_id,user["id"],text)
             with db.connection() as cx:
-                cx.execute("""INSERT INTO attachments(id,message_id,filename,content_type,byte_size,storage_name,created_at)
-                   VALUES(?,?,?,?,?,?,?)""",(aid,message["id"],filename,media_type,len(data),aid,now()))
+                cx.execute("""INSERT INTO attachments(id,message_id,filename,content_type,byte_size,storage_name,created_at,duration_ms)
+                   VALUES(?,?,?,?,?,?,?,?)""",(aid,message["id"],filename,media_type,len(data),aid,now(),duration_ms))
                 fresh=cx.execute("SELECT * FROM messages WHERE id=?",(message["id"],)).fetchone()
                 message=serialize_message(cx,fresh)
             await hub.notify(member_ids(conversation_id),{"type":"message:new","message":message})
