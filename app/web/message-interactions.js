@@ -15,7 +15,7 @@
     pin:'<path d="M20 10c0 5.2-8 11-8 11S4 15.2 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
     send:'<path d="M12 19V5m-7 7 7-7 7 7"/>',
     reply:'<path d="m10 8-5 4 5 4M5 12h9c4 0 6 2.5 6 6"/>',
-    forward:'<path d="m14 8 5 4-5 4m5 0h-9c-4 0-6 2.5-6 6"/>',
+    forward:'<path fill="currentColor" stroke="none" d="M13.2 3.1c-.5-.4-1.2 0-1.2.6v3.5C5 7.6 1.9 12.3 1.3 19.5c-.1.9 1.1 1.3 1.5.5 2.3-4.2 4.7-5.8 9.2-5.9v3.8c0 .7.8 1 1.3.6l9-7.1a.8.8 0 0 0 0-1.3l-9.1-7Z"/>',
     copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     edit:'<path d="m15 5 4 4M4 20l4.5-1 11-11a2.5 2.5 0 0 0-3.5-3.5l-11 11L4 20Z"/>',
     trash:'<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5m4-5v5"/>',
@@ -54,13 +54,23 @@
   replyBox.setAttribute('aria-live','polite');
   composer.parentNode.insertBefore(replyBox,composer);
 
+  function selectionTarget(row){
+    // Highlight only actual message content, never the flex row's empty width.
+    return [...(row?.querySelectorAll('.bubble:not(.deleted),.h-location-card,.media-card')||[])]
+      .find(element=>element.getClientRects().length>0 && getComputedStyle(element).visibility!=='hidden'
+        && getComputedStyle(element).display!=='none');
+  }
   function visibleSelection(){
     for(const row of root.querySelectorAll('.h-msg-selected'))row.classList.remove('h-msg-selected');
+    for(const element of root.querySelectorAll('.h-selected-target'))element.classList.remove('h-selected-target');
     if(!selectedId){bar.classList.add('hidden');return;}
     const row=document.getElementById('msg-'+selectedId);
     const msg=getMsg(selectedId);
     if(!msg||msg.deleted_at||!row){clearSelection();return;}
+    const bubble=selectionTarget(row);
+    if(!bubble){clearSelection();return;}
     row.classList.add('h-msg-selected');
+    bubble.classList.add('h-selected-target');
     const body=msg.location?'Location':msg.attachments?.length?'Media message':msg.body;
     bar.querySelector('#hSelectionDetail').textContent=(body||'Message').slice(0,55);
     bar.querySelector('#hTopCopy').disabled=!!msg.location;
@@ -71,6 +81,7 @@
     selectedId=null;
     bar.classList.add('hidden');
     for(const row of root.querySelectorAll('.h-msg-selected'))row.classList.remove('h-msg-selected');
+    for(const element of root.querySelectorAll('.h-selected-target'))element.classList.remove('h-selected-target');
     if(typeof closeHuddleContextMenu==='function')closeHuddleContextMenu();
   }
   function selectMessage(id,showMenu=false,anchor=null){
@@ -78,7 +89,7 @@
     if(!message||message.deleted_at)return;
     selectedId=id;
     visibleSelection();
-    if(showMenu)openHuddleContextMenu(id,anchor||document.getElementById('msg-'+id)?.querySelector('.bubble'));
+    if(showMenu)openHuddleContextMenu(id,anchor||selectionTarget(document.getElementById('msg-'+id)));
   }
   function clearReply(){
     replyTo=null;
@@ -286,23 +297,28 @@
     });
   };
 
-  // Whole-row selection on long touch and horizontal swipe to reply.
-  // Capture touch pointerdown before older bubble-only handlers run, avoiding
-  // competing hold timers and native text selection.
+  // WhatsApp-like gestures start ONLY on a bubble/media card, not blank chat-row
+  // space. The stack itself follows a rightward drag with a spring return.
+  function clearSwipe(row){
+    if(!row)return;
+    row.style.removeProperty('--h-swipe-x');
+    row.classList.remove('h-swiping');
+  }
   root.addEventListener('pointerdown',e=>{
     if(e.pointerType!=='touch'||e.button!==0)return;
-    const row=getRow(e.target);const m=messageFromRow(row);
-    if(!m||m.deleted_at||e.target.closest('button,audio,video,.reactions'))return;
-    e.stopPropagation();
+    const content=e.target.closest('.bubble:not(.deleted),.h-location-card,.media-card');
+    const row=getRow(content);
+    const msg=messageFromRow(row);
+    if(!content||!row||!msg||msg.deleted_at||
+       e.target.closest('button,audio,video,.reactions,.h-inline-quote'))return;
+    e.stopPropagation(); // suppress old bubble-only hold listener
     clearTimer();longPressed=false;
-    touch={pointerId:e.pointerId,x:e.clientX,y:e.clientY,row,id:m.id};
+    touch={pointerId:e.pointerId,x:e.clientX,y:e.clientY,row,id:msg.id,content};
     holdTimer=setTimeout(()=>{
       if(!touch)return;
       longPressed=true;
       lastTouchHandled=Date.now();
-      const bubble=touch.row.querySelector('.bubble:not([hidden])')||
-                   touch.row.querySelector('.media-card')||touch.row;
-      selectMessage(touch.id,true,bubble);
+      selectMessage(touch.id,true,touch.content);
       navigator.vibrate?.(15);
       try{getSelection()?.removeAllRanges();}catch{}
     },460);
@@ -311,16 +327,28 @@
     if(!touch||touch.pointerId!==e.pointerId)return;
     const dx=e.clientX-touch.x,dy=e.clientY-touch.y;
     if(Math.hypot(dx,dy)>13)clearTimer();
-    // Only right swipes trigger reply; vertical scrolling stays native.
-    if(Math.abs(dy)>35){touch=null;return;}
-    if(dx>20&&dx<110)touch.row.style.setProperty('--h-swipe-x',Math.round(dx*.42)+'px');
+    if(Math.abs(dy)>34&&Math.abs(dy)>Math.abs(dx)){
+      clearSwipe(touch.row);touch=null;return;
+    }
+    if(dx>9 && dx>Math.abs(dy)*1.2 && !longPressed){
+      touch.row.classList.add('h-swiping');
+      touch.row.style.setProperty('--h-swipe-x',Math.round(Math.min(72,dx*.66))+'px');
+      // Mark the intent when the reply threshold is reached.
+      touch.row.classList.toggle('h-swipe-ready',dx>=65);
+    }else if(dx<=0){
+      clearSwipe(touch.row);
+      touch.row.classList.remove('h-swipe-ready');
+    }
   },true);
   function finishTouch(e){
     if(!touch||touch.pointerId!==e.pointerId)return;
-    const {x,y,id,row}=touch;const dx=e.clientX-x,dy=e.clientY-y;
-    clearTimer();touch=null;row.style.removeProperty('--h-swipe-x');
-    if(e.type==='pointerup'&&!longPressed&&dx>72&&Math.abs(dy)<40){
-      lastTouchHandled=Date.now();startReply(id);navigator.vibrate?.(10);
+    const {x,y,id,row}=touch;
+    const dx=e.clientX-x,dy=e.clientY-y;
+    clearTimer();touch=null;
+    clearSwipe(row);row.classList.remove('h-swipe-ready');
+    if(e.type==='pointerup'&&!longPressed&&dx>=65&&Math.abs(dy)<42){
+      lastTouchHandled=Date.now();
+      startReply(id);navigator.vibrate?.(10);
       e.preventDefault();e.stopPropagation();
     }
     longPressed=false;
@@ -331,7 +359,7 @@
     if(Date.now()-lastTouchHandled<850){e.preventDefault();e.stopImmediatePropagation();}
   },true);
   root.addEventListener('selectstart',e=>{
-    if(e.target.closest('.message-row'))e.preventDefault();
+    if(e.target.closest('.bubble,.h-location-card,.media-card'))e.preventDefault();
   },true);
   root.addEventListener('click',e=>{
     if(Date.now()-lastTouchHandled<650 && e.target.closest('.message-row')){

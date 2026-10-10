@@ -158,16 +158,6 @@ $('#voiceNoteBtn').addEventListener('click',async()=>{
     toast('Could not record: '+(error.message||'microphone unavailable'),true);
   }
 });
-$('#chatRecapBtn').addEventListener('click',async()=>{
-  const c=state.active;if(!c)return;
-  try{
-    const recap=await api('/conversations/'+encodeURIComponent(c.id)+'/recap');
-    $('#modalOverlay').classList.remove('hidden');
-    setModalHeading('CHAT RECAP','Recent discussion');
-    $('#modalContent').innerHTML='<p class="modal-helper">Private recent-message highlights for participants. This is not an AI-generated summary.</p>'+
-      (recap.items.length?recap.items.map(m=>'<div class="recap-item"><strong>'+esc(m.speaker)+'</strong><p>'+esc(m.text)+'</p></div>').join(''):'<p class="modal-helper">No recent text messages to recap yet.</p>');
-  }catch(err){toast(err.message,true);}
-});
 function notificationPreference(){try{return localStorage.getItem('huddle-notify-opt-in')==='yes';}catch{return false;}}
 $('#notificationsBtn').addEventListener('click',async()=>{
   if(!('Notification' in window)){toast('This browser does not support notifications.',true);return;}

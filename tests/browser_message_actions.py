@@ -77,13 +77,33 @@ def main():
                     b.find_element(By.ID,'hSelectedBar').is_displayed() and
                     len(b.find_elements(By.CSS_SELECTOR,'.h-message-menu [data-h-command="reply"]'))==1)
                 assert browser.find_element(By.CSS_SELECTOR,'.message-row.h-msg-selected')
+                # No surrounding empty space should be selected; only the bubble.
+                selection=browser.execute_script("""
+                    const row=document.querySelector('.message-row.h-msg-selected');
+                    const selected=row?.querySelector('.h-selected-target');
+                    const bubble=row?.querySelector('.bubble');
+                    const icon=document.querySelector('[data-h-command="forward"] svg path');
+                    return {rowWidth:row?.getBoundingClientRect().width,
+                        bubbleWidth:bubble?.getBoundingClientRect().width,
+                        highlightWidth:selected?.getBoundingClientRect().width,
+                        rowBackground:getComputedStyle(row).backgroundColor,
+                        outline:getComputedStyle(selected).outlineWidth,
+                        forwardFilled:icon?.getAttribute('fill')};
+                """)
+                print('BUBBLE_SELECTION',width,selection,flush=True)
+                assert selection['rowWidth'] > selection['highlightWidth']+25
+                assert abs(selection['bubbleWidth']-selection['highlightWidth'])<3
+                assert selection['rowBackground']=='rgba(0, 0, 0, 0)'
+                assert selection['forwardFilled']=='currentColor'
+                assert float(selection['outline'].replace('px',''))>=2
                 browser.find_element(By.CSS_SELECTOR,'.h-message-menu [data-h-command="reply"]').click()
                 assert browser.find_element(By.ID,'hReplyPreview').is_displayed()
                 browser.find_element(By.ID,'messageInput').send_keys('A reply from the test')
                 browser.find_element(By.ID,'sendBtn').click()
                 WebDriverWait(browser,9).until(lambda b:
                     len(b.find_elements(By.CSS_SELECTOR,'#messages .h-inline-quote'))>=1)
-                assert 'Original Huddle message' in browser.find_element(By.CSS_SELECTOR,'.h-inline-quote').text
+                WebDriverWait(browser,8).until(lambda b: 'Original Huddle message' in
+                    b.execute_script("return document.querySelector('.h-inline-quote')?.textContent || ''"))
                 fresh=alice.get(base+f'/api/conversations/{conversation}/messages').json()['messages']
                 assert fresh[-1]['reply_to']['id']==first['id']
                 browser.execute_script("""
@@ -101,6 +121,31 @@ def main():
                 sent=carl.get(base+f'/api/conversations/{destination}/messages').json()['messages']
                 assert sent[-1]['forwarded'] and sent[-1]['body']=='Original Huddle message'
                 assert not browser.find_element(By.ID,'hSelectedBar').is_displayed()
+                # Swipe the actual bubble to the right like WhatsApp. Empty row
+                # space is ignored and the bubble translates during the drag.
+                swipe=browser.execute_script("""
+                    const bubble=document.querySelector('#msg-'+arguments[0]+' .bubble');
+                    const row=bubble.closest('.message-row');
+                    const stack=row.querySelector('.message-stack');
+                    const r=bubble.getBoundingClientRect();
+                    const x=r.left+Math.min(25,r.width/2), y=r.top+Math.min(12,r.height/2);
+                    const fire=(type,dx)=>bubble.dispatchEvent(new PointerEvent(type,{
+                        bubbles:true,cancelable:true,pointerId:47,pointerType:'touch',
+                        button:0,clientX:x+dx,clientY:y}));
+                    fire('pointerdown',0);fire('pointermove',91);
+                    const moving=row.classList.contains('h-swiping') &&
+                        getComputedStyle(stack).transform!=='none';
+                    fire('pointerup',91);
+                    return {moving,reply:window.HuddleMessageUI.getReply()?.id,
+                        visible:!document.getElementById('hReplyPreview').classList.contains('hidden'),
+                        recapRemoved:!document.getElementById('chatRecapBtn'),
+                        uploadStatusPresent:!!document.getElementById('mediaProgress')};
+                """,first['id'])
+                print('SWIPE_REPLY',width,swipe,flush=True)
+                assert swipe['moving'] and swipe['reply']==first['id'] and swipe['visible']
+                assert swipe['recapRemoved'] and swipe['uploadStatusPresent']
+                browser.find_element(By.ID,'hCancelReply').click()
+                assert not browser.find_element(By.ID,'hReplyPreview').is_displayed()
             print('MESSAGE_INTERACTIONS_BROWSER_PASS',flush=True)
         finally:
             browser.quit();server.should_exit=True
