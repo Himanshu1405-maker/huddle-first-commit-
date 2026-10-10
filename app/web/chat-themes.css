@@ -1,0 +1,368 @@
+/* Huddle Bloom Chat — scoped to signed-in Huddle, never the login page.
+   Native CSS wallpapers and original local doodle SVG; no third-party wallpaper tracking. */
+#appScreen{
+ --v-bg:#f3faf7;--v-surface:#fffefa;--v-sheet:#ffffff;
+ --v-title:#1f3c44;--v-muted:#6e868c;--v-line:#dbeae5;
+ --v-accent:#168d7d;--v-accent-wash:#dff6eb;--v-bubble:#d8f7df;
+ --v-incoming:#ffffff;--v-pattern:#a5c9c2;--v-input:#f5faf8;
+ --v-ink:#29414d;--v-shadow:0 9px 32px rgba(28,88,71,.075);
+ background:var(--v-bg);color:var(--v-title);
+ color-scheme:light;
+}
+#appScreen[data-v-theme="peach"]{
+ --v-bg:#fff6ee;--v-surface:#fffaf5;--v-sheet:#fffefd;--v-title:#503c40;
+ --v-muted:#907781;--v-line:#f1dfdc;--v-accent:#b65b76;
+ --v-accent-wash:#ffebe4;--v-bubble:#ffe2d7;--v-incoming:#fffefa;
+ --v-pattern:#e0b7a9;--v-input:#fff3ed;--v-ink:#513c47;
+ --v-shadow:0 10px 32px rgba(149,78,95,.09);
+}
+#appScreen[data-v-theme="lavender"]{
+ --v-bg:#f6f3ff;--v-surface:#f9f7ff;--v-sheet:#fff;
+ --v-title:#352f56;--v-muted:#817d98;--v-line:#e9e1f6;
+ --v-accent:#7661c6;--v-accent-wash:#ece5ff;--v-bubble:#e7ddff;
+ --v-incoming:#fff;--v-pattern:#c9b7e6;--v-input:#f6f0ff;
+ --v-ink:#352f56;--v-shadow:0 10px 32px rgba(96,81,151,.09);
+}
+#appScreen[data-v-theme="ocean"]{
+ --v-bg:#ecf5ff;--v-surface:#f5fbff;--v-sheet:#fff;
+ --v-title:#1d415c;--v-muted:#6b88a0;--v-line:#d9e6f3;
+ --v-accent:#2987b0;--v-accent-wash:#dff1ff;--v-bubble:#d9edfc;
+ --v-incoming:#fff;--v-pattern:#a8cadc;--v-input:#eff7ff;
+ --v-ink:#21435e;--v-shadow:0 10px 32px rgba(48,105,151,.09);
+}
+#appScreen[data-v-theme="midnight"]{
+ --v-bg:#131d2a;--v-surface:#1b2938;--v-sheet:#263749;
+ --v-title:#eff8fc;--v-muted:#a8b8c7;--v-line:#35495b;
+ --v-accent:#68ddbd;--v-accent-wash:#294b4c;--v-bubble:#205547;
+ --v-incoming:#2d3d4c;--v-pattern:#5b8490;--v-input:#293b4b;
+ --v-ink:#f3f9fc;--v-shadow:0 10px 34px rgba(0,0,0,.23);
+ color-scheme:dark;
+}
+#appScreen .chat-main{background:var(--v-bg)}
+#appScreen .chat-top{
+ background:var(--v-surface);color:var(--v-title);
+ border-bottom:1px solid var(--v-line);box-shadow:0 5px 22px rgba(29,66,61,.04);
+}
+#appScreen .chat-top .header-placeholder,#appScreen .header-meta{color:var(--v-muted)}
+#appScreen .header-name{color:var(--v-title)}
+#appScreen .toolbar-btn{
+ background:var(--v-sheet);border:1px solid var(--v-line);color:var(--v-accent);
+ box-shadow:0 3px 11px rgba(32,74,71,.045);
+}
+#appScreen .toolbar-btn:hover{background:var(--v-accent-wash);color:var(--v-accent)}
+#appScreen .toolbar-ai{background:var(--v-accent-wash)}
+#appScreen .toolbar-theme{font-size:20px;line-height:1}
+#appScreen .sidebar{
+ background:linear-gradient(155deg,var(--v-surface),var(--v-bg));
+ border-right:1px solid var(--v-line);color:var(--v-title)
+}
+#appScreen .side-top,#appScreen .side-intro,#appScreen .side-bottom{background:transparent}
+#appScreen .sidebar .brand,#appScreen .side-intro h2,#appScreen .conv-name,#appScreen .profile-info strong{color:var(--v-title)}
+#appScreen .side-intro p,#appScreen .profile-info small,#appScreen .conv-preview,#appScreen .conv-time{color:var(--v-muted)}
+#appScreen .searchbox{
+ background:var(--v-sheet);border-color:var(--v-line);
+ box-shadow:0 5px 14px rgba(35,70,64,.04);
+}
+#appScreen .searchbox input{color:var(--v-title)}
+#appScreen .filter-nav,#appScreen .side-bottom{border-color:var(--v-line)}
+#appScreen .filter{color:var(--v-muted)}
+#appScreen .filter.selected{background:var(--v-accent-wash);color:var(--v-accent)}
+#appScreen .conv-item{border-radius:16px}
+#appScreen .conv-item:hover,#appScreen .conv-item.active{background:var(--v-accent-wash)}
+#appScreen .profile-button{background:var(--v-sheet);border-color:var(--v-line)}
+#appScreen .notifications-btn{color:var(--v-accent)}
+
+/* Lively inbox: background, decorative soft shapes and easy-to-scan conversation cards. */
+#appScreen .inbox-home{
+ background:radial-gradient(ellipse at 88% 7%,color-mix(in srgb,var(--v-accent-wash) 75%,transparent),transparent 44%),
+ linear-gradient(165deg,var(--v-surface),var(--v-bg))!important;
+ color:var(--v-title);
+}
+#appScreen .inbox-home-header{position:relative;padding-top:24px;padding-bottom:21px}
+#appScreen .inbox-title h1{
+ color:var(--v-title);font-size:clamp(32px,4vw,43px);letter-spacing:-1.8px
+}
+#appScreen .inbox-title p{color:var(--v-muted);font-size:13px}
+#appScreen .inbox-eyebrow{color:var(--v-accent);font-size:11px}
+#appScreen .inbox-new-btn{
+ background:var(--v-accent);color:#fff;border-radius:15px;
+ box-shadow:0 9px 21px color-mix(in srgb,var(--v-accent) 25%,transparent);
+}
+#appScreen .inbox-theme-btn{
+ min-height:43px;padding:10px 15px;font-size:12px;font-weight:800;white-space:nowrap;
+ background:var(--v-sheet);color:var(--v-accent);border:1px solid var(--v-line);
+ border-radius:15px;box-shadow:var(--v-shadow);
+}
+#appScreen .inbox-theme-btn:hover{transform:translateY(-1px);background:var(--v-accent-wash)}
+#appScreen .inbox-home-actions{display:flex;align-items:center;gap:9px;flex-shrink:0}
+#appScreen .inbox-search-wrap{
+ background:var(--v-sheet);border:1px solid var(--v-line);border-radius:19px;
+ box-shadow:var(--v-shadow);padding:0 17px;min-height:58px;
+}
+#appScreen .inbox-search-wrap>span{color:var(--v-accent)}
+#appScreen .inbox-search-wrap input{color:var(--v-title);font-size:15px}
+#appScreen .inbox-search-wrap input::placeholder{color:var(--v-muted)}
+#appScreen .inbox-search-wrap:focus-within{border-color:var(--v-accent);box-shadow:0 0 0 3px var(--v-accent-wash)}
+#appScreen .inbox-filters{border-bottom-color:var(--v-line);gap:8px}
+#appScreen .inbox-filters button{
+ background:var(--v-sheet);border:1px solid var(--v-line);color:var(--v-muted);
+ min-height:39px;border-radius:99px;padding:9px 16px;transition:transform .18s,background .18s;
+}
+#appScreen .inbox-filters button.selected{
+ background:var(--v-accent-wash);color:var(--v-accent);
+ border-color:color-mix(in srgb,var(--v-accent) 30%,var(--v-line));
+}
+#appScreen .inbox-filters button:hover{transform:translateY(-1px)}
+#appScreen .inbox-list{padding-top:11px;padding-bottom:11px}
+#appScreen .inbox-chat{
+ border:1px solid var(--v-line);border-radius:20px;background:var(--v-sheet);
+ margin:5px 0 11px;min-height:86px;box-shadow:var(--v-shadow);
+ transition:background .18s,transform .18s,box-shadow .18s;
+}
+#appScreen .inbox-chat:hover,#appScreen .inbox-chat:focus-visible{
+ background:var(--v-accent-wash);border-color:var(--v-accent);
+ transform:translateY(-2px);box-shadow:0 12px 34px rgba(22,88,73,.13);
+ outline:2px solid transparent;
+}
+#appScreen .inbox-chat-top strong{color:var(--v-title);font-size:16px}
+#appScreen .inbox-chat-top time,#appScreen .inbox-chat-bottom>span{color:var(--v-muted)}
+#appScreen .inbox-chat .avatar{box-shadow:0 5px 17px rgba(51,90,87,.11);border:2px solid var(--v-surface)}
+#appScreen .inbox-unread{background:var(--v-accent)}
+#appScreen .inbox-home-footer{
+ background:var(--v-surface);border-color:var(--v-line);color:var(--v-muted);
+}
+#appScreen .inbox-home-footer button{
+ background:var(--v-accent-wash);color:var(--v-accent);border-radius:13px
+}
+#appScreen .inbox-zero{color:var(--v-muted)}
+#appScreen .inbox-zero strong{color:var(--v-title)}
+#appScreen .inbox-zero span{background:var(--v-accent-wash)}
+
+/* Conversation wallpapers apply only to the message scroller, not menus or AI. */
+#appScreen .conversation-view{background:var(--v-bg)}
+#appScreen .chat-banner{
+ background:var(--v-surface);color:var(--v-muted);padding:10px 14px;
+ font-size:11px;border-bottom:1px solid var(--v-line);
+}
+#appScreen .chat-banner strong{color:var(--v-title)}
+#appScreen #messageScroller{
+ background-color:var(--v-bg);background-position:center center;
+ background-attachment:local;position:relative;
+}
+#appScreen[data-v-wallpaper="plain"] #messageScroller{background-image:none}
+#appScreen[data-v-wallpaper="doodles"] #messageScroller{
+ background-image:url('/assets/chat-doodle.svg'),
+ radial-gradient(ellipse at 10% 16%,var(--v-accent-wash),transparent 54%);
+ background-size:260px 245px,100% 100%;
+}
+#appScreen[data-v-wallpaper="dots"] #messageScroller{
+ background-image:radial-gradient(circle,var(--v-pattern) 1.25px,transparent 1.4px);
+ background-size:23px 23px;
+}
+#appScreen[data-v-wallpaper="waves"] #messageScroller{
+ background-image:radial-gradient(ellipse at 0 100%,transparent 24px,var(--v-pattern) 25px,transparent 27px),
+ radial-gradient(ellipse at 100% 0,transparent 24px,var(--v-pattern) 25px,transparent 27px);
+ background-size:110px 64px;
+}
+#appScreen[data-v-wallpaper="grid"] #messageScroller{
+ background-image:linear-gradient(to right,color-mix(in srgb,var(--v-pattern) 58%,transparent) 1px,transparent 1px),
+ linear-gradient(to bottom,color-mix(in srgb,var(--v-pattern) 58%,transparent) 1px,transparent 1px);
+ background-size:32px 32px;
+}
+#appScreen[data-v-wallpaper="petals"] #messageScroller{
+ background-image:radial-gradient(ellipse 12px 21px at 16px 20px,var(--v-pattern) 5%,transparent 65%),
+ radial-gradient(ellipse 12px 21px at 43px 38px,var(--v-accent-wash) 5%,transparent 65%);
+ background-size:76px 83px;
+}
+#appScreen[data-v-wallpaper="sunset"] #messageScroller{
+ background-image:radial-gradient(circle at 88% 14%,#ffdcc7,transparent 41%),
+ radial-gradient(circle at 5% 88%,#e2d8ff,transparent 49%),linear-gradient(160deg,#fff9ec,#fff1eb);
+}
+#appScreen[data-v-wallpaper="stars"] #messageScroller{
+ background-color:#17283b;
+ background-image:radial-gradient(circle,#c8dbfa87 1px,transparent 2px),
+ radial-gradient(circle,#9dafff77 1px,transparent 2px),
+ radial-gradient(circle at 70% 20%,#3a496d,transparent 75%);
+ background-size:49px 49px,87px 87px,100% 100%;
+}
+#appScreen[data-v-wallpaper="stars"] .chat-banner{background:#21324b;color:#d6e1f5}
+#appScreen[data-v-wallpaper="stars"] .chat-banner strong{color:#fff}
+#appScreen .date-divider{
+ color:var(--v-muted);background:var(--v-surface);border:1px solid var(--v-line);
+ box-shadow:0 2px 12px rgba(29,73,76,.06);margin:17px 0;
+}
+/* Cleaner WhatsApp-inspired message rhythm; keep existing media and reactions working. */
+#appScreen .message-row{margin:3px 0 7px;gap:8px}
+#appScreen .message-stack{max-width:min(77%,560px)}
+#appScreen .message-row .avatar{width:27px;height:27px}
+#appScreen .message-row .avatar-placeholder{width:27px}
+#appScreen .sender-label{color:var(--v-accent)}
+#appScreen .message-row .bubble:not(.h-animated-sticker){
+ font-size:14px;line-height:1.58;letter-spacing:.08px;
+ border:1px solid var(--v-line);color:var(--v-ink);
+ background:var(--v-incoming);border-radius:17px 17px 17px 5px;
+ padding:10px 14px;box-shadow:0 3px 13px rgba(21,67,66,.07);
+}
+#appScreen .message-row.mine .bubble:not(.h-animated-sticker){
+ background:var(--v-bubble);color:var(--v-ink);
+ border:1px solid color-mix(in srgb,var(--v-accent) 25%,var(--v-line));
+ border-radius:17px 17px 5px 17px;
+}
+#appScreen .message-row .bubble.deleted{color:var(--v-muted)!important;background:var(--v-surface)!important}
+#appScreen .bubble-meta{font-size:10px;color:var(--v-muted)}
+#appScreen .seen-check{color:var(--v-accent)}
+#appScreen .media-card{border-color:var(--v-line);background:var(--v-surface);color:var(--v-title);box-shadow:var(--v-shadow)}
+#appScreen .reaction{border-color:var(--v-line);background:var(--v-surface);color:var(--v-title)}
+#appScreen .reaction.reacted{background:var(--v-accent-wash);border-color:var(--v-accent)}
+
+/* Chat composer and its own tools. Phone keyboard is controlled by Android. */
+#appScreen .composer-area{
+ background:var(--v-surface);border-top:1px solid var(--v-line);
+ box-shadow:0 -5px 27px rgba(25,71,61,.035);
+}
+#appScreen .composer{
+ background:var(--v-sheet);border:1px solid var(--v-line);
+ border-radius:22px;min-height:60px;
+ box-shadow:var(--v-shadow);
+}
+#appScreen .composer:focus-within{border-color:var(--v-accent);box-shadow:0 0 0 3px var(--v-accent-wash)}
+#appScreen .composer textarea{
+ font-size:15px;background:transparent;color:var(--v-title);
+}
+#appScreen .composer textarea::placeholder{color:var(--v-muted)}
+#appScreen .composer-emoji,#appScreen .composer-media{
+ background:var(--v-accent-wash);border:1px solid transparent;
+ border-radius:14px;color:var(--v-accent);
+}
+#appScreen .composer-emoji:hover,#appScreen .composer-media:hover{border-color:var(--v-accent)}
+#appScreen .send-btn{background:var(--v-accent);color:#fff;border-radius:14px}
+#appScreen .send-btn:hover{filter:brightness(.91)}
+#appScreen .chat-extras button{color:var(--v-accent)}
+#appScreen .composer-hint{color:var(--v-muted)}
+#appScreen .composer-hint kbd{color:var(--v-title)}
+#appScreen[data-v-composer="glass"] .composer{
+ background:color-mix(in srgb,var(--v-sheet) 75%,transparent);
+ backdrop-filter:blur(14px);border:1px solid var(--v-accent);
+}
+#appScreen[data-v-composer="glass"] .composer-area{
+ background:color-mix(in srgb,var(--v-surface) 85%,transparent);
+ backdrop-filter:blur(16px);
+}
+#appScreen[data-v-composer="compact"] .composer{min-height:49px;border-radius:15px;padding:5px}
+#appScreen[data-v-composer="compact"] .composer-media{height:36px;flex-basis:35px;width:35px;border-radius:10px}
+#appScreen[data-v-composer="compact"] .composer-emoji{height:36px}
+#appScreen[data-v-composer="compact"] .send-btn{height:36px;width:36px}
+#appScreen .emoji-picker,#appScreen .h-message-menu{
+ background:var(--v-sheet);color:var(--v-title);border-color:var(--v-line)
+}
+#appScreen .h-emoji-tabs button{background:var(--v-accent-wash);color:var(--v-accent)}
+#appScreen .h-emoji-search input{background:var(--v-input);color:var(--v-title);border-color:var(--v-line)}
+#appScreen .h-message-commands button{color:var(--v-title)}
+#appScreen .h-message-commands button:hover{background:var(--v-accent-wash)}
+/* Theme drawer - actual CSS-based previews, radio-like pressed states and clear scope. */
+.v-theme-scrim{position:fixed;inset:0;background:rgba(10,20,28,.54);z-index:180;backdrop-filter:blur(4px)}
+.v-theme-scrim[hidden]{display:none!important}
+.v-theme-panel{
+ position:fixed;right:0;top:0;bottom:0;z-index:181;
+ width:min(430px,100vw);height:100dvh;
+ display:flex;flex-direction:column;overflow:hidden;
+ background:var(--v-surface);color:var(--v-title);
+ border-left:1px solid var(--v-line);box-shadow:-20px 0 70px rgba(13,35,45,.28);
+}
+.v-theme-panel[hidden]{display:none!important}
+.v-panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:23px 23px 15px;border-bottom:1px solid var(--v-line)}
+.v-panel-head h2{margin:4px 0 0;font:800 23px Manrope,sans-serif;letter-spacing:-.7px;color:var(--v-title)}
+.v-panel-kicker{font-size:10px;letter-spacing:1.5px;font-weight:800;color:var(--v-accent)}
+.v-panel-close{width:39px;height:39px;border-radius:13px;border:1px solid var(--v-line);background:var(--v-sheet);color:var(--v-title);font-size:23px}
+.v-panel-scroll{overflow-y:auto;padding:17px 23px 30px}
+.v-panel-description{font-size:12px;line-height:1.6;color:var(--v-muted);margin:0 0 17px}
+.v-theme-section{margin:0 0 25px}
+.v-theme-section-heading{display:flex;justify-content:space-between;align-items:baseline;gap:9px;margin-bottom:11px}
+.v-theme-section-heading h3{margin:0;font:800 14px Manrope,sans-serif;color:var(--v-title)}
+.v-theme-section-heading small{font-size:10px;color:var(--v-muted)}
+.v-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.v-choice{
+ display:flex;flex-direction:column;align-items:stretch;gap:7px;text-align:left;
+ border:2px solid transparent;border-radius:17px;padding:6px;background:var(--v-sheet);
+ color:var(--v-title);min-width:0;box-shadow:0 2px 10px rgba(23,69,72,.05);
+}
+.v-choice:hover{transform:translateY(-2px);box-shadow:var(--v-shadow)}
+.v-choice[aria-pressed="true"]{border-color:var(--v-accent);background:var(--v-accent-wash)}
+.v-choice:focus-visible,.v-panel-close:focus-visible,.inbox-theme-btn:focus-visible{
+ outline:3px solid var(--v-accent);outline-offset:2px;
+}
+.v-choice-preview{display:block;height:80px;position:relative;border-radius:12px;overflow:hidden;border:1px solid rgba(105,129,136,.12)}
+.v-choice-label{font-size:11px;font-weight:800;text-align:center;padding:0 2px 3px;line-height:1.35}
+.v-choice-preview:after{content:"";position:absolute;left:14%;right:14%;top:19%;height:11px;border-radius:9px;background:#fff9;box-shadow:7px 21px 0 1px #fff9,-2px 43px 0 0 #fff7}
+.v-choice-preview[data-preview-theme="mint"]{background:linear-gradient(140deg,#d0f1e1,#f5fff8)}
+.v-choice-preview[data-preview-theme="peach"]{background:linear-gradient(140deg,#ffddd3,#fff8ea)}
+.v-choice-preview[data-preview-theme="lavender"]{background:linear-gradient(140deg,#e5d9ff,#fbf7ff)}
+.v-choice-preview[data-preview-theme="ocean"]{background:linear-gradient(140deg,#bee5fa,#f2faff)}
+.v-choice-preview[data-preview-theme="midnight"]{background:linear-gradient(140deg,#192a3f,#47617a)}
+.v-choice-preview[data-preview-theme="system"]{background:linear-gradient(110deg,#e2f5ef 49%,#23374a 50%)}
+.v-choice-preview[data-preview-wallpaper="plain"]{background:#f5faf7}
+.v-choice-preview[data-preview-wallpaper="doodles"]{background:#e9f7f0 url('/assets/chat-doodle.svg') center/135px 127px}
+.v-choice-preview[data-preview-wallpaper="dots"]{background:radial-gradient(#a9c4be 1.2px,transparent 1.3px) 0 0/14px 14px,#f5faf7}
+.v-choice-preview[data-preview-wallpaper="waves"]{background:repeating-radial-gradient(circle at 15% 120%,transparent 0 13px,#bdd7d5 14px 15px,transparent 16px 29px),#f6f9fd}
+.v-choice-preview[data-preview-wallpaper="grid"]{background:linear-gradient(#bfdad6 1px,transparent 1px) 0 0/18px 18px,linear-gradient(90deg,#bfdad6 1px,transparent 1px) 0 0/18px 18px,#f6fbf8}
+.v-choice-preview[data-preview-wallpaper="petals"]{background:radial-gradient(ellipse at 25% 25%,#debecf,transparent 45%),radial-gradient(ellipse at 90% 90%,#d6e9de,transparent 52%),#fffafa}
+.v-choice-preview[data-preview-wallpaper="sunset"]{background:linear-gradient(145deg,#ffebd0,#ffcfc7,#ddd9ff)}
+.v-choice-preview[data-preview-wallpaper="stars"]{background:radial-gradient(#bcd8f8 1.2px,transparent 2px) 0 0/19px 19px,#243c56}
+.v-choice-preview[data-preview-composer="soft"]{background:linear-gradient(140deg,#dff4ed,#fff)}
+.v-choice-preview[data-preview-composer="glass"]{background:linear-gradient(135deg,#d7e9ff,#c6d7e6)}
+.v-choice-preview[data-preview-composer="compact"]{background:linear-gradient(140deg,#f3eee7,#e2e9f7)}
+.v-choice-preview[data-preview-composer]:after{
+ left:7%;right:7%;top:auto;bottom:18px;height:31px;background:#fffdfd;border-radius:15px;box-shadow:0 3px 9px #142e3c22
+}
+.v-choice-preview[data-preview-composer="glass"]:after{background:#ffffffaa;border:1px solid #fff}
+.v-choice-preview[data-preview-composer="compact"]:after{height:22px;bottom:22px;border-radius:8px}
+.v-wallpaper-scope{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap}
+.v-scope{
+ padding:9px 13px;border:1px solid var(--v-line);border-radius:999px;background:var(--v-sheet);
+ color:var(--v-muted);font-weight:800;font-size:12px;
+}
+.v-scope[aria-pressed="true"]{background:var(--v-accent-wash);color:var(--v-accent);border-color:var(--v-accent)}
+.v-theme-note{font-size:11px;line-height:1.55;color:var(--v-muted);border-top:1px solid var(--v-line);padding-top:13px}
+.v-reset-btn{border:1px solid var(--v-line);background:var(--v-sheet);color:var(--v-title);padding:11px 17px;border-radius:12px;font-weight:800}
+@media(max-width:720px){
+ #appScreen .chat-top{gap:3px}
+ #appScreen .toolbar-btn{width:37px;height:39px;border-radius:12px}
+ #appScreen .header-actions{gap:3px}
+ #appScreen .header-placeholder{font-size:10px}
+ #appScreen .inbox-home-header{padding:17px 15px 16px}
+ #appScreen .inbox-title h1{font-size:33px}
+ #appScreen .inbox-title p{font-size:12px;max-width:270px}
+ #appScreen .inbox-home-actions{gap:7px}
+ #appScreen .inbox-theme-btn{font-size:0;padding:0;width:42px;height:42px;display:grid;place-items:center}
+ #appScreen .inbox-theme-btn .v-theme-emoji{font-size:20px}
+ #appScreen .inbox-search-wrap{margin:8px 14px 12px;min-height:54px}
+ #appScreen .inbox-filters{padding:0 14px 12px}
+ #appScreen .inbox-list{padding:8px 13px 18px}
+ #appScreen .inbox-chat{padding:12px 11px;min-height:81px;margin-bottom:8px;border-radius:17px}
+ #appScreen .inbox-chat .avatar{width:48px;height:48px;min-width:48px}
+ #appScreen .inbox-chat-top strong{font-size:15px}
+ #appScreen .inbox-home-footer{gap:10px;padding:10px 13px}
+ #appScreen .message-stack{max-width:83%}
+ #appScreen .message-row .bubble:not(.h-animated-sticker){font-size:14px}
+ #appScreen .composer-area{padding:8px 9px max(10px,env(safe-area-inset-bottom))}
+ #appScreen .composer{gap:4px;padding:6px;min-height:55px}
+ #appScreen .composer-emoji,#appScreen .composer-media{width:34px;min-width:30px;flex-basis:34px;height:37px;border-radius:11px}
+ #appScreen .composer textarea{font-size:16px}
+ #appScreen .send-btn{width:38px;height:38px;border-radius:12px}
+ .v-theme-panel{top:auto;left:0;right:0;bottom:0;width:100%;height:min(88dvh,780px);border-radius:25px 25px 0 0;border-left:0;border-top:1px solid var(--v-line)}
+ .v-panel-head{padding:19px 19px 14px}
+ .v-panel-scroll{padding:17px 19px 26px}
+ .v-choice-preview{height:70px}
+}
+@media(max-width:365px){
+ #appScreen .toolbar-btn{width:33px;height:36px}
+ #appScreen .inbox-home-header{padding-left:12px;padding-right:12px}
+ #appScreen .inbox-new-btn{width:39px;min-width:39px}
+ #appScreen .inbox-theme-btn{width:38px;height:39px}
+ #appScreen .inbox-chat{gap:8px}
+ #appScreen .composer-emoji,#appScreen .composer-media{width:30px;flex-basis:30px}
+}
+@media(prefers-reduced-motion:reduce){
+ #appScreen .inbox-chat,#appScreen .inbox-filters button,.v-choice{transition:none}
+ .v-choice:hover,#appScreen .inbox-chat:hover{transform:none}
+}
