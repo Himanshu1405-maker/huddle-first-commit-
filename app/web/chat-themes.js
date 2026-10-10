@@ -121,6 +121,7 @@
     document.body.classList.add('v-customize-open');
     $('#vPanelClose')?.focus();
   }
+  window.HuddleOpenAppearanceSettings=openDrawer;
   function closeDrawer() {
     drawer.hidden=true;scrim.hidden=true;
     document.body.classList.remove('v-customize-open');
