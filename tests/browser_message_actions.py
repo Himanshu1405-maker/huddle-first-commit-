@@ -75,14 +75,14 @@ def main():
                 """,bubble)
                 WebDriverWait(browser,5).until(lambda b:
                     b.find_element(By.ID,'hSelectedBar').is_displayed() and
-                    len(b.find_elements(By.CSS_SELECTOR,'.h-message-menu [data-h-command="reply"]'))==1)
+                    len(b.find_elements(By.CSS_SELECTOR,'.h-message-menu [data-h-reaction]'))==8)
                 assert browser.find_element(By.CSS_SELECTOR,'.message-row.h-msg-selected')
                 # No surrounding empty space should be selected; only the bubble.
                 selection=browser.execute_script("""
                     const row=document.querySelector('.message-row.h-msg-selected');
                     const selected=row?.querySelector('.h-selected-target');
                     const bubble=row?.querySelector('.bubble');
-                    const icon=document.querySelector('[data-h-command="forward"] svg path');
+                    const icon=document.querySelector('#hTopForward svg path');
                     return {rowWidth:row?.getBoundingClientRect().width,
                         bubbleWidth:bubble?.getBoundingClientRect().width,
                         highlightWidth:selected?.getBoundingClientRect().width,
@@ -95,8 +95,12 @@ def main():
                 assert abs(selection['bubbleWidth']-selection['highlightWidth'])<3
                 assert selection['rowBackground']=='rgba(0, 0, 0, 0)'
                 assert selection['forwardFilled']=='currentColor'
+                assert browser.find_element(By.ID,'hTopReply').is_displayed()
+                assert browser.find_element(By.ID,'hTopEdit').is_displayed()
+                assert browser.find_element(By.ID,'hTopDelete').is_displayed()
+                assert len(browser.find_elements(By.CSS_SELECTOR,'.h-message-menu [data-h-command]'))==0
                 assert float(selection['outline'].replace('px',''))>=2
-                browser.find_element(By.CSS_SELECTOR,'.h-message-menu [data-h-command="reply"]').click()
+                browser.find_element(By.ID,'hTopReply').click()
                 assert browser.find_element(By.ID,'hReplyPreview').is_displayed()
                 browser.find_element(By.ID,'messageInput').send_keys('A reply from the test')
                 browser.find_element(By.ID,'sendBtn').click()
@@ -106,12 +110,28 @@ def main():
                     b.execute_script("return document.querySelector('.h-inline-quote')?.textContent || ''"))
                 fresh=alice.get(base+f'/api/conversations/{conversation}/messages').json()['messages']
                 assert fresh[-1]['reply_to']['id']==first['id']
+                # Emoji picker must close after inserting and after sending,
+                # leaving the composer in its normal compact messaging layout.
+                browser.find_element(By.ID,'emojiBtn').click()
+                WebDriverWait(browser,5).until(lambda b:b.find_element(By.ID,'emojiPicker').is_displayed())
+                browser.find_element(By.CSS_SELECTOR,'#emojiPicker [data-emoji]').click()
+                assert not browser.find_element(By.ID,'emojiPicker').is_displayed()
+                assert browser.find_element(By.ID,'messageInput').get_attribute('value')!=''
+                browser.find_element(By.ID,'emojiBtn').click()
+                assert browser.find_element(By.ID,'emojiPicker').is_displayed()
+                browser.find_element(By.ID,'sendBtn').click()
+                WebDriverWait(browser,7).until(lambda b:not b.find_element(By.ID,'emojiPicker').is_displayed())
+                browser.find_element(By.ID,'emojiBtn').click()
+                assert browser.find_element(By.ID,'emojiPicker').is_displayed()
+                browser.find_element(By.ID,'messageInput').click()
+                assert not browser.find_element(By.ID,'emojiPicker').is_displayed()
                 browser.execute_script("""
                     window.HuddleMessageUI.selectMessage(arguments[0],true);
                 """,first['id'])
                 WebDriverWait(browser,5).until(lambda b:
-                    len(b.find_elements(By.CSS_SELECTOR,'.h-message-menu [data-h-command="forward"]'))==1)
-                browser.find_element(By.CSS_SELECTOR,'.h-message-menu [data-h-command="forward"]').click()
+                    b.find_element(By.ID,'hTopForward').is_displayed() and
+                    len(b.find_elements(By.CSS_SELECTOR,'.h-message-menu [data-h-reaction]'))==8)
+                browser.find_element(By.ID,'hTopForward').click()
                 assert browser.find_element(By.ID,'hForwardOverlay').is_displayed()
                 browser.find_element(By.ID,'hForwardSearch').send_keys('Carl')
                 destination_button=browser.find_element(By.CSS_SELECTOR,'[data-h-forward-to="'+destination+'"]')
