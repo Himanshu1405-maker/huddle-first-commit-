@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');
+const html=fs.readFileSync('app/web/index.html','utf8');
+const js=fs.readFileSync('app/web/moments.js','utf8');
+const css=fs.readFileSync('app/web/moments.css','utf8');
+const py=fs.readFileSync('app/moments.py','utf8');
+for(const id of ['hMomentsNav','hMomentsHome','hMomentsStrip','hMomentCreate','hMomentTextInput','hMomentFile','hMomentViewer','hMomentHeart'])assert(html.includes('id="'+id+'"'),id);
+assert(html.includes('/assets/moments.js')&&html.includes('/assets/moments.css'));
+assert(js.includes('window.HuddleMoments='));
+assert(js.includes('window.HuddleMoments')||js.includes('HuddleMoments'));
+assert(js.includes('/moments/media')&&js.includes('/moments/'+"'"));
+assert(py.includes('expires_at>?'));
+assert(py.includes('other.conversation_id=m.conversation_id'));
+assert(py.includes('Cache-Control'));
+assert(py.includes('MAX_MEDIA')||py.includes('MEDIA_LIMIT'));
+assert(css.includes('.h-moment-stage'));
+console.log('MOMENTS_STATIC_PASS');
