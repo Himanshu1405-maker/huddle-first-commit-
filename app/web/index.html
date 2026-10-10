@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="/assets/playback-photo-polish.css" />
   <link rel="stylesheet" href="/assets/composer-icon-motion.css" />
   <link rel="stylesheet" href="/assets/readability-tool-centering.css" />
+  <link rel="stylesheet" href="/assets/compact-selected-starred.css" />
 </head>
 <body>
   <div class="auth-screen" id="authScreen">
@@ -92,6 +93,7 @@
       <div class="side-intro"><span class="side-eyebrow">YOUR SPACE</span><h2>Chats <em>✦</em></h2><p>All your people, one happy place.</p></div>
       <div class="side-actions"><button id="newChatBtn" class="btn btn-new"><span data-icon="plus"></span> New chat <span class="new-chevron">↗</span></button><button id="aiSidebarBtn" class="btn ai-sidebar-btn" type="button"><span class="ai-sparkle">✦</span> Huddle AI <span class="ai-new-tag">STUDY & CREATE</span></button></div>
       <div class="searchbox"><span data-icon="search"></span><input id="sidebarSearch" placeholder="Search your chats" aria-label="Find a conversation" /><span class="search-shortcut">⌕</span></div>
+      <button type="button" id="hOpenStarred" class="h-sidebar-starred" title="View your starred messages" aria-label="View starred messages"><span aria-hidden="true">☆</span> Starred messages <span aria-hidden="true">›</span></button>
       <nav class="filter-nav" aria-label="Conversation filters"><button class="filter selected" data-filter="all">All <span id="allCount">0</span></button><button class="filter" data-filter="dm">Messages</button><button class="filter" data-filter="group">Circles</button></nav>
       <div class="conversation-list" id="conversationList" aria-label="Your conversations"></div>
       <div class="side-bottom"><button id="notificationsBtn" type="button" class="notifications-btn">🔔 Enable message alerts</button><button class="profile-button" id="profileButton"><span id="selfAvatar"></span><span class="profile-info"><strong id="selfName"></strong><small id="selfHandle"></small></span><span class="profile-more" data-icon="settings"></span></button></div>
