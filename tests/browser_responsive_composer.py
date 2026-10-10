@@ -138,7 +138,7 @@ def main():
                     const composer=document.querySelector('#conversationView .composer');
                     const input=document.querySelector('#messageInput');
                     const plus=document.querySelector('#hComposerMore');
-                    input.value='Hi hid\nibbdubhjsbhsjbsnnsjsjjisjjsjh';
+                    input.value='Hi hid\\nibbdubhjsbhsjbsnnsjsjjisjjsjh';
                     input.dispatchEvent(new Event('input',{bubbles:true}));
                     const text=input.getBoundingClientRect();
                     const button=plus.getBoundingClientRect();
