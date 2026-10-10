@@ -1,0 +1,18 @@
+const fs=require("node:fs"), assert=require("node:assert/strict");
+const html=fs.readFileSync("app/web/index.html","utf8");
+const js=fs.readFileSync("app/web/app.js","utf8");
+const actions=fs.readFileSync("app/web/message-interactions.js","utf8");
+const css=fs.readFileSync("app/web/chat-inline-polish.css","utf8");
+assert(html.includes('href="/assets/chat-inline-polish.css"'));
+assert(js.includes("$('#messageInput').placeholder='Message'"));
+assert(!js.includes("$('#messageInput').placeholder=\`Message "));
+assert(js.includes('class="h-message-visual"'));
+assert(js.includes('aria-label="Reactions on this message"'));
+assert(js.includes('class="reaction-count"'));
+assert(js.includes('data-reaction-message='));
+assert(!js.includes('</div>\${reactions}\${actions}</div></div>'));
+assert(actions.includes("bubble.closest('.h-message-visual')||bubble"));
+assert(css.includes("#appScreen:has(#conversationView:not(.hidden)) #profileQuickBtn"));
+assert(css.includes(".h-message-visual > .reactions"));
+assert(css.includes(".header-identity > span:not(.avatar)"));
+console.log("HEADER_REACTIONS_PASS: bounded mobile name, three chat actions, inline badge reactions and Message placeholder");
