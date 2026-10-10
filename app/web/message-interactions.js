@@ -469,7 +469,12 @@
     overlay.querySelector('#hStarsClose').focus();
   }
   document.getElementById('hOpenStarred')?.addEventListener('click',openStarred);
-  document.getElementById('hProfileStars')?.addEventListener('click',openStarred);
+  document.addEventListener('click',event=>{
+    if(event.target.closest('#profileStarredMessages')){
+      document.getElementById('closeModal')?.click();
+      openStarred();
+    }
+  });
   // Account-specific storage is kept server-side; reload when account changes.
   const originalOpenStars=openConversation;
   openConversation=async function(...args){
