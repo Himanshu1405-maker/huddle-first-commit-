@@ -1,0 +1,28 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const app=fs.readFileSync('app/web/app.js','utf8');
+const chat=fs.readFileSync('app/web/chat-enhancements.js','utf8');
+const actions=fs.readFileSync('app/web/message-interactions.js','utf8');
+const css=fs.readFileSync('app/web/quick-reactions-toolbar.css','utf8');
+const html=fs.readFileSync('app/web/index.html','utf8');
+for(const id of ['hTopReply','hTopForward','hTopCopy','hTopEdit','hTopDelete','hTopReport']){
+ assert(actions.includes('id="'+id+'"'),'Missing top action '+id);
+}
+assert(actions.includes('h-selection-actions'));
+assert(actions.includes('h-selection-summary'));
+assert(actions.includes("bar.querySelector('#hTopEdit').hidden=!editable"));
+assert(actions.includes("bar.querySelector('#hTopDelete').hidden=!mine"));
+assert(actions.includes("bar.querySelector('#hTopReport').hidden=mine"));
+assert(actions.includes('h-quick-reactions'));
+assert(!actions.includes('data-h-command="reply"'));
+assert(!actions.includes('data-h-command="forward"'));
+assert(actions.includes("document.getElementById('msg-'+id)?.querySelector"));
+assert(css.includes('.h-quick-reactions .h-message-reactions'));
+assert(css.includes('.h-selection-actions button[hidden]'));
+assert(css.includes('overflow-x:auto'));
+assert(html.includes('href="/assets/quick-reactions-toolbar.css"'));
+assert(chat.includes("resizeComposer();$('#emojiPicker').classList.add('hidden');input.focus()"));
+assert(app.includes("async function sendMessage(){const textarea=$('#messageInput');"));
+assert(app.includes("if(!cid||!text)return;$('#emojiPicker').classList.add('hidden');"));
+assert(actions.includes("$('#emojiPicker').classList.add('hidden');"));
+assert(chat.includes("if(!e.target.closest('#emojiPicker,#emojiBtn'))"));
+console.log('QUICK_REACTIONS_PASS: reaction-only tray, labeled top actions, emoji picker dismisses after selection and sending');

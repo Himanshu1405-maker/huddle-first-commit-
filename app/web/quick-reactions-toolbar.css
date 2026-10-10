@@ -1,0 +1,105 @@
+/* WhatsApp-inspired reaction-only long press + clearly labeled top actions.
+   Applied after prior message styles, without changing chat or message APIs. */
+#appScreen .h-selected-bar{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ justify-content:center!important;gap:7px!important;
+ padding:9px 12px 10px!important;min-height:92px!important;height:auto!important;
+ background:var(--v-surface)!important;
+ border-bottom:1px solid var(--v-line)!important;
+ box-shadow:0 7px 21px rgba(18,45,59,.09);
+}
+#appScreen .h-selected-bar.hidden{display:none!important}
+#appScreen .h-selection-summary{
+ display:flex;align-items:center;gap:10px;min-width:0;
+}
+#appScreen .h-selection-summary #hClearSelection{
+ width:30px!important;height:30px!important;flex:0 0 30px!important;
+ border-radius:10px!important;background:var(--v-accent-wash)!important;
+ color:var(--v-accent)!important;
+}
+#appScreen .h-selection-summary #hClearSelection svg{width:18px;height:18px}
+#appScreen .h-selection-summary .h-selection-name{min-width:0;flex:1}
+#appScreen .h-selection-name strong{font-size:13px!important}
+#appScreen .h-selection-name small{font-size:10px!important;max-width:100%}
+#appScreen .h-selected-hint{font-size:10px;font-weight:850;letter-spacing:1.1px;color:var(--v-muted)}
+#appScreen .h-selection-actions{
+ display:flex;align-items:stretch;justify-content:flex-start;
+ gap:7px;width:100%;overflow-x:auto;overflow-y:hidden;
+ scrollbar-width:none;-webkit-overflow-scrolling:touch;
+ padding:2px 0 3px;
+}
+#appScreen .h-selection-actions::-webkit-scrollbar{display:none!important}
+#appScreen .h-selection-actions button{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ gap:6px!important;min-height:40px!important;
+ padding:8px 12px!important;flex:0 0 auto!important;
+ width:auto!important;height:auto!important;min-width:0!important;
+ border-radius:12px!important;border:1px solid var(--v-line)!important;
+ background:var(--v-accent-wash)!important;
+ color:var(--v-accent)!important;
+ font:800 12px/1.1 'DM Sans',sans-serif!important;
+ white-space:nowrap;box-shadow:0 2px 8px rgba(27,63,74,.045);
+}
+#appScreen .h-selection-actions button span{display:inline!important;font-size:12px}
+#appScreen .h-selection-actions button svg{flex:0 0 18px;width:18px;height:18px}
+#appScreen .h-selection-actions button:hover{
+ background:var(--v-sheet)!important;
+ border-color:var(--v-accent)!important;
+}
+#appScreen .h-selection-actions button[hidden]{display:none!important}
+#appScreen .h-selection-actions button:disabled{opacity:.38!important;cursor:not-allowed}
+#appScreen .h-selection-actions .h-action-danger{
+ background:color-mix(in srgb,#d64a70 10%,var(--v-sheet))!important;
+ color:#c7476e!important;
+ border-color:color-mix(in srgb,#d64a70 25%,var(--v-line))!important;
+}
+#appScreen .h-selection-actions button:focus-visible{outline:2px solid var(--v-accent);outline-offset:2px}
+/* The only floating surface near the selected message is a compact emoji tray. */
+.h-message-menu.h-message-menu-polished.h-quick-reactions{
+ display:block!important;position:fixed!important;
+ width:min(326px,calc(100vw - 18px))!important;
+ max-height:none!important;height:auto!important;
+ padding:5px 7px!important;
+ border:1px solid #dfe6ef!important;border-radius:999px!important;
+ overflow:visible!important;
+ background:#fff!important;color:#26354a!important;
+ box-shadow:0 12px 35px rgba(24,33,60,.23)!important;
+ z-index:175!important;
+}
+.h-quick-reactions .h-message-reactions{
+ display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;
+ align-items:center;gap:2px!important;
+ border:0!important;padding:0!important;
+ margin:0!important;min-width:0;
+}
+.h-quick-reactions .h-message-reactions button{
+ display:grid!important;place-items:center!important;
+ background:transparent!important;border:0!important;
+ border-radius:50%!important;min-width:0!important;
+ height:35px!important;min-height:35px!important;
+ padding:2px 0!important;font-size:21px!important;
+ transition:background .15s,transform .15s;
+}
+.h-quick-reactions .h-message-reactions button:hover{
+ background:#e9f4fc!important;transform:scale(1.12);
+}
+.h-quick-reactions .h-message-reactions button:focus-visible{
+ outline:2px solid #7866cf;outline-offset:2px;
+}
+@media(max-width:720px){
+ #appScreen .h-selected-bar{padding:7px 10px 8px!important;gap:6px!important;min-height:87px!important}
+ #appScreen .h-selection-actions{gap:6px!important}
+ #appScreen .h-selection-actions button{min-height:38px!important;padding:7px 11px!important;font-size:11px!important}
+ #appScreen .h-selection-actions button span{font-size:11px!important}
+ .h-message-menu.h-quick-reactions{width:min(322px,calc(100vw - 18px))!important}
+ .h-quick-reactions .h-message-reactions button{height:34px!important;min-height:34px!important;font-size:21px!important}
+}
+@media(max-width:365px){
+ #appScreen .h-selected-hint{font-size:9px}
+ #appScreen .h-selection-actions button{padding:7px 10px!important}
+ .h-quick-reactions .h-message-reactions button{font-size:20px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .h-quick-reactions .h-message-reactions button{transition:none!important}
+ .h-quick-reactions .h-message-reactions button:hover{transform:none!important}
+}

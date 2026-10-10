@@ -42,11 +42,18 @@
   bar.className='h-selected-bar hidden';
   bar.setAttribute('role','toolbar');
   bar.setAttribute('aria-label','Selected message actions');
-  bar.innerHTML='<button type="button" id="hClearSelection" aria-label="Deselect message">'+svg('close')+'</button>'+
-   '<span class="h-selection-name"><strong>1 selected</strong><small id="hSelectionDetail">Message options</small></span>'+
-   '<button type="button" id="hTopReply" aria-label="Reply to selected message" title="Reply">'+svg('reply')+'</button>'+
-   '<button type="button" id="hTopForward" aria-label="Forward selected message" title="Forward">'+svg('forward')+'</button>'+
-   '<button type="button" id="hTopCopy" aria-label="Copy selected message" title="Copy">'+svg('copy')+'</button>';
+  bar.innerHTML='<div class="h-selection-summary">'+
+    '<button type="button" id="hClearSelection" aria-label="Deselect message" title="Deselect">'+svg('close')+'</button>'+
+    '<span class="h-selection-name"><strong>1 selected</strong><small id="hSelectionDetail">Message options</small></span>'+
+    '<span class="h-selected-hint">ACTIONS</span></div>'+
+    '<div class="h-selection-actions">'+
+    '<button type="button" id="hTopReply" aria-label="Reply to selected message" title="Reply">'+svg('reply')+'<span>Reply</span></button>'+
+    '<button type="button" id="hTopForward" aria-label="Forward selected message" title="Forward">'+svg('forward')+'<span>Forward</span></button>'+
+    '<button type="button" id="hTopCopy" aria-label="Copy selected message" title="Copy">'+svg('copy')+'<span>Copy</span></button>'+
+    '<button type="button" id="hTopEdit" aria-label="Edit selected message" title="Edit">'+svg('edit')+'<span>Edit</span></button>'+
+    '<button type="button" id="hTopDelete" class="h-action-danger" aria-label="Delete selected message for everyone" title="Delete">'+svg('trash')+'<span>Delete</span></button>'+
+    '<button type="button" id="hTopReport" aria-label="Report selected message" title="Report"><span aria-hidden="true">⚑</span><span>Report</span></button>'+
+    '</div>';
   view.insertBefore(bar,view.querySelector('.chat-banner'));
   const replyBox=document.createElement('div');
   replyBox.id='hReplyPreview';
@@ -73,8 +80,14 @@
     bubble.classList.add('h-selected-target');
     const body=msg.location?'Location':msg.attachments?.length?'Media message':msg.body;
     bar.querySelector('#hSelectionDetail').textContent=(body||'Message').slice(0,55);
-    bar.querySelector('#hTopCopy').disabled=!!msg.location;
+    const mine=msg.sender_id===state.me?.id;
+    const editable=mine && !msg.location && !(msg.attachments?.length);
+    const copyable=!msg.location && !msg.attachments?.length && !!msg.body;
+    bar.querySelector('#hTopCopy').disabled=!copyable;
     bar.querySelector('#hTopForward').disabled=!!msg.location;
+    bar.querySelector('#hTopEdit').hidden=!editable;
+    bar.querySelector('#hTopDelete').hidden=!mine;
+    bar.querySelector('#hTopReport').hidden=mine;
     bar.classList.remove('hidden');
   }
   function clearSelection(){
@@ -119,6 +132,7 @@
     if(!reply)return previousSend.apply(this,args);
     const text=$('#messageInput').value.trim();
     if(!text||reply.conversation_id!==activeConv())return;
+    $('#emojiPicker').classList.add('hidden');
     const button=$('#sendBtn');button.disabled=true;
     try{
       const result=await post('/conversations/'+encodeURIComponent(reply.conversation_id)+
@@ -253,47 +267,35 @@
     overlay.addEventListener('click',()=>{if(!document.getElementById('hForwardOverlay'))document.removeEventListener('keydown',escape)});
   }
 
-  // Replace the old menu *at its existing binding*: legacy dblclick and
-  // keyboard handlers continue to use this improved implementation.
+  // Long press opens a small reaction-only floating tray. Message actions
+  // appear in the clearly labeled selected-message toolbar above the chat.
+  // Legacy desktop double-click/contextmenu continues through this binding.
   openHuddleContextMenu=function(messageId,anchor){
     const msg=getMsg(messageId);
     if(!msg||msg.deleted_at)return;
     selectMessage(messageId);
     closeHuddleContextMenu();
-    const mine=msg.sender_id===state.me?.id;
-    const location=!!msg.location;
     const menu=document.createElement('div');
-    menu.className='h-message-menu h-message-menu-polished';
-    menu.setAttribute('role','menu');
-    menu.setAttribute('aria-label','Message actions');
+    menu.className='h-message-menu h-message-menu-polished h-quick-reactions';
+    menu.setAttribute('role','group');
+    menu.setAttribute('aria-label','React to selected message');
     const emojis=['❤️','😂','😮','👍','🙏','🔥','🥰','🎉'];
     menu.innerHTML='<div class="h-message-reactions">'+emojis.map(emoji=>
-      '<button type="button" data-h-reaction="'+esc(emoji)+'" aria-label="React '+esc(emoji)+'">'+esc(emoji)+'</button>').join('')+'</div>'+
-      '<div class="h-message-commands">'+
-      '<button type="button" data-h-command="reply">'+svg('reply')+' Reply</button>'+
-      (!location?'<button type="button" data-h-command="forward">'+svg('forward')+' Forward</button>':'')+
-      (!location?'<button type="button" data-h-command="copy">'+svg('copy')+' Copy text</button>':'')+
-      (mine?(!location?'<button type="button" data-h-command="edit">'+svg('edit')+' Edit message</button>':'')+
-        '<button type="button" class="danger" data-h-command="delete">'+svg('trash')+' Delete for everyone</button>':
-        '<button type="button" data-h-command="report">⚑ Report message</button>')+'</div>';
+      '<button type="button" data-h-reaction="'+esc(emoji)+'" aria-label="React '+esc(emoji)+'">'+esc(emoji)+'</button>').join('')+'</div>';
     document.body.append(menu);
     huddleContextMenu=menu;
-    const rect=(anchor?.getBoundingClientRect?.()||document.getElementById('msg-'+messageId)?.getBoundingClientRect())||{left:0,top:140};
+    const rect=(anchor?.getBoundingClientRect?.()||document.getElementById('msg-'+messageId)?.getBoundingClientRect())||{left:0,top:140,bottom:170};
     const width=menu.offsetWidth,height=menu.offsetHeight;
-    menu.style.left=Math.max(9,Math.min(innerWidth-width-9,rect.left))+'px';
-    menu.style.top=Math.max(9,Math.min(innerHeight-height-9,rect.top-height-9))+'px';
+    const left=Math.max(9,Math.min(innerWidth-width-9,rect.left+(rect.width-width)/2));
+    const top=rect.top-height-11>=10?rect.top-height-11:
+      Math.min(innerHeight-height-10,rect.bottom+11);
+    menu.style.left=left+'px';
+    menu.style.top=Math.max(10,top)+'px';
     menu.addEventListener('click',async e=>{
       const emoji=e.target.closest('[data-h-reaction]')?.dataset.hReaction;
-      if(emoji){closeHuddleContextMenu();clearSelection();await applyReaction(messageId,emoji);return;}
-      const cmd=e.target.closest('[data-h-command]')?.dataset.hCommand;
-      if(!cmd)return;
-      closeHuddleContextMenu();
-      if(cmd==='reply'){startReply(messageId);return;}
-      if(cmd==='forward'){forwardMessage(messageId);return;}
-      if(cmd==='copy'){await copyMessage();return;}
+      if(!emoji)return;
       clearSelection();
-      const action=document.getElementById('msg-'+messageId)?.querySelector('[data-action="'+cmd+'"]');
-      action?.click();
+      await applyReaction(messageId,emoji);
     });
   };
 
@@ -372,14 +374,23 @@
     if(!selectedId || e.target.closest('.h-message-menu,#hSelectedBar,.message-row,.h-forward-overlay'))return;
     clearSelection();
   });
+  function performOriginalAction(id,action){
+    const button=document.getElementById('msg-'+id)?.querySelector('[data-action="'+action+'"]');
+    clearSelection();
+    button?.click();  // Reuse existing edit/delete/report APIs and confirmations.
+  }
   bar.addEventListener('click',async e=>{
     const btn=e.target.closest('button');
-    if(!btn)return;
+    if(!btn || btn.disabled || btn.hidden)return;
     const id=selectedId;
     if(btn.id==='hClearSelection'){clearSelection();return;}
+    if(!id)return;
     if(btn.id==='hTopReply')startReply(id);
     if(btn.id==='hTopForward')forwardMessage(id);
     if(btn.id==='hTopCopy')await copyMessage();
+    if(btn.id==='hTopEdit')performOriginalAction(id,'edit');
+    if(btn.id==='hTopDelete')performOriginalAction(id,'delete');
+    if(btn.id==='hTopReport')performOriginalAction(id,'report');
   });
 
   const olderOpen=openConversation;

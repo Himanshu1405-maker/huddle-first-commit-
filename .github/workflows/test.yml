@@ -34,4 +34,5 @@ jobs:
       - run: node tests/header_reactions.cjs
       - run: node --check app/web/voice-media-player.js
       - run: node tests/voice_media_polish.cjs
+      - run: node tests/quick_reactions.cjs
       - run: node --check app/web/message-interactions.js
