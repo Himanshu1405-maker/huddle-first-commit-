@@ -31,3 +31,4 @@ jobs:
       - run: node tests/chat_layout.cjs
       - run: node --check app/web/chat-themes.js
       - run: node tests/chat_themes.cjs
+      - run: node --check app/web/message-interactions.js
