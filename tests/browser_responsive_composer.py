@@ -131,6 +131,27 @@ def main():
                 assert long['outerWidth']<=long['viewport']+3
                 assert long['expanded'] and float(long['moreVisible'])==1
                 assert long['toolsHidden']=='true'
+                # Reproduce reported Android screenshot: a visible plus sitting over
+                # first and second lines of a long draft. Assert the actual button
+                # occupies its OWN flex item, and text begins beyond its right edge.
+                overlap=browser.execute_script("""
+                    const composer=document.querySelector('#conversationView .composer');
+                    const input=document.querySelector('#messageInput');
+                    const plus=document.querySelector('#hComposerMore');
+                    input.value='Hi hid\\nibbdubhjsbhsjbsnnsjsjjisjjsjh';
+                    input.dispatchEvent(new Event('input',{bubbles:true}));
+                    const text=input.getBoundingClientRect();
+                    const button=plus.getBoundingClientRect();
+                    return {expanded:window.HuddleComposerUI.isExpanded(),
+                      plusParentIsComposer:plus.parentElement===composer,
+                      plusLeft:button.left,plusRight:button.right,plusWidth:button.width,
+                      inputLeft:text.left,inputRight:text.right,inputWidth:text.width,
+                      composerWidth:composer.getBoundingClientRect().width};
+                """)
+                print('COMPOSER_NO_OVERLAP',width,overlap,flush=True)
+                assert overlap['expanded'] and overlap['plusParentIsComposer'],overlap
+                assert overlap['plusWidth']>=34 and overlap['inputWidth']>=65,overlap
+                assert overlap['inputLeft']>=overlap['plusRight']-0.5,overlap
                 browser.find_element(By.ID,'hComposerMore').click()
                 WebDriverWait(browser,5).until(lambda d:d.execute_script("""
                     const menu=document.getElementById('hComposerToolset');
