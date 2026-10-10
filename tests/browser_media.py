@@ -105,7 +105,10 @@ def main():
                 a.execute_script("arguments[0].scrollIntoView({inline:'center',block:'nearest'})",element)
                 WebDriverWait(a,6).until(lambda browser:
                     browser.execute_script("return arguments[0].getBoundingClientRect().width>0",element))
-                element.click()
+                # Emoji categories use a horizontally clipped, scrolling strip.
+                # Trigger the same DOM click after scrolling instead of asking
+                # ChromeDriver to click an offscreen center coordinate.
+                a.execute_script("arguments[0].click()",element)
             choose_emoji_tab('People')
             assert len(a.find_elements(By.CSS_SELECTOR, '#emojiPicker [data-emoji]')) > 60
             choose_emoji_tab('Flags')
