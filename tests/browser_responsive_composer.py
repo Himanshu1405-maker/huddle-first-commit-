@@ -158,8 +158,8 @@ def main():
                     if(!menu||getComputedStyle(menu).visibility!=='visible')return false;
                     const bounds=menu.getBoundingClientRect();
                     const first=menu.querySelector('#emojiBtn')?.getBoundingClientRect();
-                    return !!first && Math.abs(first.width-(innerWidth<=365?40:innerWidth<=720?42:44))<1.5
-                       && Math.abs(bounds.width-(innerWidth<=365?56:innerWidth<=720?59:61))<1.5;
+                    return !!first && Math.abs(first.width-(innerWidth<=365?40:42))<1.5
+                       && Math.abs(bounds.width-(innerWidth<=365?56:58))<1.5;
                 """))
                 popup=browser.execute_script("""
                     const set=document.getElementById('hComposerToolset');
@@ -171,7 +171,10 @@ def main():
                       textLabels:set.querySelectorAll('.h-tool-name').length,
                       layout:cs.display,direction:cs.flexDirection,
                       positions:[...set.querySelectorAll('button,label')].filter(n=>n.id||n.matches('label[for="mediaFileInput"]')).map(n=>n.getBoundingClientRect().toJSON()),
-                      bounds:set.getBoundingClientRect().toJSON()};
+                      bounds:set.getBoundingClientRect().toJSON(),
+                      plus:document.getElementById('hComposerMore').getBoundingClientRect().toJSON(),
+                      menuGap:getComputedStyle(set).rowGap,
+                      menuPadding:getComputedStyle(set).padding};
                 """)
                 print('COMPOSER_MENU',width,popup,flush=True)
                 assert popup['open'] and popup['visible']=='visible'
@@ -179,9 +182,20 @@ def main():
                 rects=popup['positions']
                 assert len(rects)==4 and all(rects[i+1]['top']>rects[i]['bottom'] for i in range(3)),popup
                 assert max(abs(r['x']-rects[0]['x']) for r in rects)<2,popup
+                # Visual QA for screenshot: the tray is a tight vertical rail,
+                # precisely centered over the +, rather than a wide detached card.
+                mid=lambda rect:rect['left']+rect['width']/2
+                assert abs(mid(popup['bounds'])-mid(popup['plus']))<2.5,popup
+                assert max(abs(mid(rect)-mid(popup['plus'])) for rect in rects)<2.5,popup
+                assert max(r['height'] for r in rects)-min(r['height'] for r in rects)<1,popup
+                assert max(rect['width'] for rect in rects)-min(rect['width'] for rect in rects)<1,popup
+                assert popup['bounds']['height']<210,popup
+                assert 4<=rects[0]['top']-popup['bounds']['top']<=11,popup
+                assert 4<=popup['plus']['top']-popup['bounds']['bottom']<=18,popup
+                assert all(2<=rects[i+1]['top']-rects[i]['bottom']<=7 for i in range(3)),popup
                 assert len(popup['icons'])==4,popup
                 assert [item['accessible'] for item in popup['icons']]==['Emojis','Attach','Location','Voice note'],popup
-                assert all(item['icon'] and 38<=item['width']<=47 for item in popup['icons']),popup
+                assert all(item['icon'] and 38<=item['width']<=44 for item in popup['icons']),popup
                 assert popup['bounds']['left']>=-1 and popup['bounds']['right']<=width+2
                 browser.find_element(By.ID,'hComposerMore').click()
                 assert not browser.execute_script("return window.HuddleComposerUI.isOpen()")
