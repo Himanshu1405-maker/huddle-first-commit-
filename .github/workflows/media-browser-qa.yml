@@ -16,6 +16,9 @@ on:
       - app/web/chat-themes.css
       - app/web/message-interactions.js
       - app/web/message-interactions.css
+      - app/web/chat-inline-polish.css
+      - tests/browser_header_reactions.py
+      - tests/header_reactions.cjs
       - app/message_context.py
       - tests/browser_message_actions.py
       - tests/test_message_context.py
@@ -40,6 +43,9 @@ on:
       - app/web/chat-themes.css
       - app/web/message-interactions.js
       - app/web/message-interactions.css
+      - app/web/chat-inline-polish.css
+      - tests/browser_header_reactions.py
+      - tests/header_reactions.cjs
       - app/message_context.py
       - tests/browser_message_actions.py
       - tests/test_message_context.py
@@ -72,6 +78,8 @@ jobs:
         run: PYTHONPATH=. python tests/browser_auth.py
       - name: Check responsive themes and account-scoped chat wallpaper persistence
         run: PYTHONPATH=. python tests/browser_themes.py
+      - name: Check contact headers and inline reaction badges on mobile
+        run: PYTHONPATH=. python tests/browser_header_reactions.py
       - name: Check desktop and mobile message actions
         run: PYTHONPATH=. python tests/browser_message_actions.py
       - name: Verify real Chromium two-account multimedia behavior against isolated SQLite

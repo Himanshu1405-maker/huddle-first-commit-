@@ -154,7 +154,7 @@
         const badge=document.createElement('div');
         badge.className='h-forwarded-flag';
         badge.textContent='➦ Forwarded';
-        if(bubble)stack.insertBefore(badge,bubble);
+        if(bubble)stack.insertBefore(badge,bubble.closest('.h-message-visual')||bubble);
       }
       if(msg.reply_to){
         const quote=document.createElement('button');
@@ -162,7 +162,7 @@
         quote.className='h-inline-quote';
         quote.dataset.replyTarget=msg.reply_to.id;
         quote.innerHTML='<strong>'+esc(msg.reply_to.name)+'</strong><span>'+esc(msg.reply_to.preview)+'</span>';
-        if(bubble)stack.insertBefore(quote,bubble);
+        if(bubble)stack.insertBefore(quote,bubble.closest('.h-message-visual')||bubble);
       }
       const meta=stack.querySelector('.bubble-meta');
       if(meta){
