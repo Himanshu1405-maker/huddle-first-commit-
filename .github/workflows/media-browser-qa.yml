@@ -21,6 +21,13 @@ on:
       - app/web/quick-reactions-toolbar.css
       - app/web/responsive-composer.js
       - app/web/modern-composer-voice.css
+      - app/web/playback-photo-polish.css
+      - app/web/image-lightbox.js
+      - app/extensions.py
+      - app/message_context.py
+      - tests/browser_audio_gallery_composer.py
+      - tests/test_audio_duration.py
+      - tests/audio_gallery_composer.cjs
       - tests/browser_responsive_composer.py
       - tests/responsive_composer.cjs
       - tests/quick_reactions.cjs
@@ -58,6 +65,13 @@ on:
       - app/web/quick-reactions-toolbar.css
       - app/web/responsive-composer.js
       - app/web/modern-composer-voice.css
+      - app/web/playback-photo-polish.css
+      - app/web/image-lightbox.js
+      - app/extensions.py
+      - app/message_context.py
+      - tests/browser_audio_gallery_composer.py
+      - tests/test_audio_duration.py
+      - tests/audio_gallery_composer.cjs
       - tests/browser_responsive_composer.py
       - tests/responsive_composer.cjs
       - tests/quick_reactions.cjs
@@ -96,6 +110,7 @@ jobs:
           node --check app/web/message-interactions.js
           node --check app/web/voice-media-player.js
           node --check app/web/responsive-composer.js
+          node --check app/web/image-lightbox.js
       - name: Check new sign-in and registration design at desktop and mobile widths
         run: PYTHONPATH=. python tests/browser_auth.py
       - name: Check responsive themes and account-scoped chat wallpaper persistence
@@ -108,5 +123,7 @@ jobs:
         run: PYTHONPATH=. python tests/browser_voice_media_polish.py
       - name: Check responsive multiline composer and modern voice notes in Chrome
         run: PYTHONPATH=. python tests/browser_responsive_composer.py
+      - name: Check audio durations, waveform progress, image viewer and instant composer wrap
+        run: PYTHONPATH=. python tests/browser_audio_gallery_composer.py
       - name: Verify real Chromium two-account multimedia behavior against isolated SQLite
         run: PYTHONPATH=. python tests/browser_media.py
