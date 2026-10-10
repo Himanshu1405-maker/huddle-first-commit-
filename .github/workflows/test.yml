@@ -38,6 +38,7 @@ jobs:
       - run: node tests/selected_stars.cjs
       - run: node --check app/web/moments.js
       - run: node tests/moments_static.cjs
+      - run: node tests/inbox_moments_refinement.cjs
       - run: node --check app/web/responsive-composer.js
       - run: node tests/responsive_composer.cjs
       - run: node tests/readability_tools.cjs
