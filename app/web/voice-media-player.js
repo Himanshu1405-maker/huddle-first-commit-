@@ -107,9 +107,9 @@
       if(audio.readyState>=HTMLMediaElement.HAVE_METADATA)tryRecoverWebMDuration(audio);
     });
   }
-  const oldRender=renderMessages;
+  const originalRender=renderMessages;
   renderMessages=function(...args){
-    const result=oldRender.apply(this,args);
+    const result=originalRender.apply(this,args);
     if(current&&!current.isConnected){stopFrames();current=null;}
     decorate();
     return result;
