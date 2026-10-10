@@ -210,3 +210,13 @@
  #authScreen .h-luxe-field .h-float-caption{transition:none}
  #authScreen .h-luxe-field input{transition:none}
 }
+
+/* Register-only live feedback; visible only while explicitly creating an account. */
+#authScreen .h-auth-strength{margin:-5px 0 3px;display:flex;align-items:center;gap:11px}
+#authScreen .h-auth-strength[hidden]{display:none!important}
+#authScreen .h-strength-track{display:block;height:5px;min-width:0;flex:1;border-radius:30px;overflow:hidden;background:#ffffff25}
+#authScreen #authStrengthFill{display:block;height:100%;width:0;border-radius:30px;background:#f5a9bd;transition:width .22s,background .22s}
+#authScreen .h-auth-strength[data-level=medium] #authStrengthFill{background:#ffca81}
+#authScreen .h-auth-strength[data-level=strong] #authStrengthFill{background:#84efc0}
+#authScreen #authStrengthText{font-size:10px;color:#dfcde9;white-space:nowrap;font-weight:650}
+@media(prefers-reduced-motion:reduce){#authScreen #authStrengthFill{transition:none}}
