@@ -132,6 +132,14 @@ def main():
                 assert long['expanded'] and float(long['moreVisible'])==1
                 assert long['toolsHidden']=='true'
                 browser.find_element(By.ID,'hComposerMore').click()
+                WebDriverWait(browser,5).until(lambda d:d.execute_script("""
+                    const menu=document.getElementById('hComposerToolset');
+                    if(!menu||getComputedStyle(menu).visibility!=='visible')return false;
+                    const bounds=menu.getBoundingClientRect();
+                    const first=menu.querySelector('#emojiBtn')?.getBoundingClientRect();
+                    return !!first && Math.abs(first.width-(innerWidth<=365?40:innerWidth<=720?42:44))<1.5
+                       && Math.abs(bounds.width-(innerWidth<=365?56:innerWidth<=720?59:61))<1.5;
+                """))
                 popup=browser.execute_script("""
                     const set=document.getElementById('hComposerToolset');
                     const cs=getComputedStyle(set);
