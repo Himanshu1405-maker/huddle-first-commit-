@@ -10,7 +10,7 @@
   const themes = ['system','mint','peach','lavender','ocean','midnight'];
   const wallpapers = ['doodles','plain','dots','waves','grid','petals','sunset','stars'];
   const composers = ['soft','glass','compact'];
-  const defaults = () => ({theme:'system',wallpaper:'doodles',composer:'soft',chats:{}});
+  const defaults = () => ({theme:'system',wallpaper:'doodles',composer:'soft',textSize:100,chats:{}});
   const platformDark = window.matchMedia?.('(prefers-color-scheme: dark)');
   let config = defaults();
   let loadedUser = null;
@@ -31,6 +31,8 @@
       const saved = JSON.parse(localStorage.getItem(prefKey(id))||'null');
       if (!saved || typeof saved !== 'object') return defaults();
       const prefs=defaults();
+      const scale=Number(saved.textSize);
+      if(Number.isInteger(scale)&&scale>=90&&scale<=135&&scale%5===0) prefs.textSize=scale;
       for(const kind of ['theme','wallpaper','composer'])
         if(valid(kind,saved[kind])) prefs[kind]=saved[kind];
       if(saved.chats && typeof saved.chats==='object' && !Array.isArray(saved.chats)){
@@ -74,6 +76,17 @@
     app.dataset.vWallpaper=currentWallpaper();
     app.dataset.vComposer=config.composer;
     app.dataset.vThemeChoice=config.theme;
+    const value=Math.max(90,Math.min(135,config.textSize));
+    app.style.setProperty('--h-text-scale',String(value/100));
+    const slider=$('#vTextSize'),readout=$('#vTextSizeValue');
+    if(slider){
+      slider.value=String(value);
+      slider.setAttribute('aria-valuenow',String(value));
+      slider.setAttribute('aria-valuetext',value+' percent');
+    }
+    if(readout)readout.value=value+'%';
+    const preview=$('#vTextPreview');
+    if(preview)preview.style.fontSize=(14*value/100)+'px';
     const note=document.getElementById('vChatThemeHint');
     if(note) note.textContent=activeChatId()?'Only this chat, on this device':'Affects your default wallpaper for every chat';
     const choice=$('[data-v-scope="chat"]');
@@ -127,6 +140,14 @@
       if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
       else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
     }
+  });
+  $('#vTextSize')?.addEventListener('input',event=>{
+    const value=Number(event.target.value);
+    if(!Number.isInteger(value)||value<90||value>135||value%5!==0)return;
+    config.textSize=value;persist();apply();
+  });
+  $('#vTextDefault')?.addEventListener('click',()=>{
+    config.textSize=100;persist();apply();
   });
   drawer.addEventListener('click',event=>{
     const scope=event.target.closest('[data-v-scope]');
