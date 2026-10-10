@@ -29,3 +29,5 @@ jobs:
       - run: node tests/puter_ai.cjs
       - run: node tests/local_ai.cjs
       - run: node tests/chat_layout.cjs
+      - run: node --check app/web/chat-themes.js
+      - run: node tests/chat_themes.cjs
