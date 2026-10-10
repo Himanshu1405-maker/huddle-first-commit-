@@ -132,6 +132,7 @@
     if(!reply)return previousSend.apply(this,args);
     const text=$('#messageInput').value.trim();
     if(!text||reply.conversation_id!==activeConv())return;
+    $('#emojiPicker').classList.add('hidden');
     const button=$('#sendBtn');button.disabled=true;
     try{
       const result=await post('/conversations/'+encodeURIComponent(reply.conversation_id)+
