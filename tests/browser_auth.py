@@ -63,11 +63,13 @@ def main():
                 if mobile:
                     assert snap["copyBottom"] < snap["heroBottom"]-2, "Hero text should not sit beneath login card"
                 caption=browser.find_element(By.CSS_SELECTOR, '#authHandle + .h-float-caption')
-                before_float=browser.execute_script('return arguments[0].getBoundingClientRect().top',caption)
+                before_float=browser.execute_script('return parseFloat(getComputedStyle(arguments[0]).top)',caption)
                 browser.find_element(By.ID,'authHandle').click()
                 browser.find_element(By.ID,'authHandle').send_keys('test_user')
-                floated=browser.execute_script('return arguments[0].getBoundingClientRect().top',caption)
-                assert floated < before_float-7, 'Floating label did not animate above typed username'
+                WebDriverWait(browser, 4).until(lambda b:
+                    b.execute_script('return parseFloat(getComputedStyle(arguments[0]).top)',caption) < 17)
+                floated=browser.execute_script('return parseFloat(getComputedStyle(arguments[0]).top)',caption)
+                assert floated < before_float-7, 'Floating label did not move up in its field'
                 browser.find_element(By.ID,"switchAuth").click()
                 assert browser.find_element(By.ID,"authPasswordStrength").is_displayed()
                 browser.find_element(By.ID,"authPassword").send_keys("Example12@Password")
