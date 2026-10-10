@@ -17,6 +17,8 @@ on:
       - app/web/message-interactions.js
       - app/web/moments.js
       - app/web/moments.css
+      - app/web/inbox-moments-refinement.css
+      - tests/inbox_moments_refinement.cjs
       - app/moments.py
       - tests/test_moments.py
       - tests/moments_static.cjs
@@ -73,6 +75,8 @@ on:
       - app/web/message-interactions.js
       - app/web/moments.js
       - app/web/moments.css
+      - app/web/inbox-moments-refinement.css
+      - tests/inbox_moments_refinement.cjs
       - app/moments.py
       - tests/test_moments.py
       - tests/moments_static.cjs
