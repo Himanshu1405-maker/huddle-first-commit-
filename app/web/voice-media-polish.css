@@ -1,0 +1,162 @@
+/* Huddle refinements: concise chat, compact photos, accessible voice recorder + player.
+   Scoped to active chats, preserving the user's app theme and wallpapers. */
+#appScreen #chatBanner{display:none!important}
+#appScreen .conversation-view{min-height:0}
+#appScreen #messageScroller{padding-top:12px}
+/* Hide distracting native scrollbar in the growing message input, not text itself. */
+#appScreen #messageInput{
+  scrollbar-width:none!important;
+  -ms-overflow-style:none!important;
+  overflow-y:auto;
+}
+#appScreen #messageInput::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+#appScreen #composerCount:empty{display:none!important}
+#appScreen #composerCount:not(:empty){font-size:10px;white-space:nowrap;color:var(--v-muted)}
+/* Reactions live just BELOW the bubble corner: visible, clearly separate and
+   never cover the final line of the original message. */
+#appScreen .h-message-visual:has(>.reactions){
+  margin-bottom:0!important;
+  padding-bottom:31px!important;
+}
+#appScreen .h-message-visual>.reactions{
+  bottom:3px!important;
+  right:0!important;
+  left:auto!important;
+  position:absolute;
+  min-height:25px;
+  padding:2px 5px;
+  box-shadow:0 4px 13px rgba(32,49,65,.12);
+  border:1px solid var(--v-line);
+  transform:translateY(0);
+}
+#appScreen .h-message-visual>.reactions .reaction{
+  min-height:24px!important;height:24px!important;
+  font-size:15px!important;
+  padding:1px 6px!important;
+}
+#appScreen .message-row .bubble-meta{margin-top:2px;min-height:14px}
+/* Compact WhatsApp-inspired square-ish media card; a full image remains
+   available by tapping the preview (authenticated existing media endpoint). */
+#appScreen .message-stack:has(.image-media){max-width:min(77%,360px)}
+#appScreen .media-card.image-media{
+  position:relative;
+  display:block!important;overflow:hidden;
+  width:min(232px,100%)!important;max-width:100%!important;
+  height:211px!important;max-height:none!important;
+  padding:4px!important;margin:2px 0 3px!important;
+  background:var(--v-sheet);border:1px solid var(--v-line);
+  border-radius:16px!important;
+  box-shadow:0 7px 25px rgba(19,46,65,.115)!important;
+  text-decoration:none;isolation:isolate;
+}
+#appScreen .image-media img{
+  display:block!important;width:100%!important;height:100%!important;
+  max-height:none!important;object-fit:cover!important;
+  border-radius:12px!important;
+  transition:filter .17s,transform .2s;
+}
+#appScreen .image-media .h-photo-overlay{
+  position:absolute;bottom:10px;left:10px;right:10px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:9px;padding:7px 10px;
+  color:#fff!important;
+  background:linear-gradient(110deg,rgba(15,28,43,.79),rgba(20,42,56,.48))!important;
+  border-radius:10px;backdrop-filter:blur(7px);
+  font:750 11px/1.2 'DM Sans',sans-serif;
+  letter-spacing:.15px;pointer-events:none;
+}
+#appScreen .h-photo-overlay svg{flex:0 0 auto;width:15px;height:15px}
+#appScreen .image-media:focus-visible{outline:3px solid var(--v-accent);outline-offset:2px}
+#appScreen .image-media:hover img{filter:brightness(.93);transform:scale(1.015)}
+/* Modern compact voice card, real HTML audio underneath. */
+#appScreen .media-card.voice-media{
+  position:relative;
+  display:flex;flex-direction:row;align-items:center;
+  gap:10px;width:min(288px,100%);max-width:100%;
+  min-width:min(255px,100%);
+  padding:10px 11px;margin:3px 0;
+  border-radius:18px;
+  color:var(--v-title);border:1px solid var(--v-line);
+  background:linear-gradient(125deg,var(--v-sheet),var(--v-accent-wash));
+  box-shadow:0 5px 17px rgba(25,63,69,.09);
+}
+#appScreen .message-row.mine .voice-media{
+  background:linear-gradient(125deg,var(--v-bubble),var(--v-accent-wash))
+}
+#appScreen .voice-media .h-voice-play{
+  display:grid;place-items:center;flex:0 0 41px;
+  height:41px;width:41px;border:0;border-radius:50%;
+  color:#fff;background:var(--v-accent);box-shadow:0 3px 11px #0002;
+  cursor:pointer;
+}
+#appScreen .h-voice-play svg{width:19px;height:19px}
+#appScreen .h-voice-play:focus-visible{outline:2px solid var(--v-accent);outline-offset:3px}
+#appScreen .h-voice-details{display:flex;flex-direction:column;gap:7px;flex:1;min-width:0}
+#appScreen .h-voice-title{font-weight:800;font-size:12px;color:var(--v-title);letter-spacing:.07px}
+#appScreen .h-voice-track{display:flex;align-items:center;gap:7px;min-height:20px}
+#appScreen .h-voice-waves{display:flex;align-items:center;justify-content:space-between;gap:2px;height:19px;flex:1;min-width:0;overflow:hidden;color:var(--v-accent)}
+#appScreen .h-voice-waves i{
+ display:block;flex:1;min-width:2px;max-width:4px;border-radius:5px;
+ height:calc(5px + var(--height) * 1px);background:currentColor;opacity:.5;
+}
+#appScreen .h-voice-duration{font:750 10px/1 'DM Sans',sans-serif;color:var(--v-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+#appScreen .h-voice-progress{
+ display:block;width:100%;height:5px;margin:0;
+ border:0;border-radius:10px;background:var(--v-line);
+ accent-color:var(--v-accent);cursor:pointer;
+}
+#appScreen .voice-media.h-voice-ready audio{
+ position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;
+}
+#appScreen .voice-media.h-voice-playing .h-voice-waves i{opacity:.9}
+#appScreen .voice-media.h-voice-playing .h-voice-play{box-shadow:0 0 0 4px var(--v-accent-wash)}
+/* Voice recording stays visible after tapping the mic. Stop/send and cancel
+   are always separate, labelled controls. */
+#appScreen .h-voice-status{
+ display:flex;align-items:center;gap:10px;min-height:53px;
+ border:1px solid color-mix(in srgb,#e76588 50%,var(--v-line));
+ border-radius:16px;margin:0 0 8px;padding:9px 11px;
+ background:var(--v-sheet);box-shadow:var(--v-shadow);
+}
+#appScreen .h-voice-status[hidden]{display:none!important}
+#appScreen .h-rec-dot{
+ width:10px;height:10px;flex:0 0 10px;
+ border-radius:50%;background:#e65676;
+ box-shadow:0 0 0 5px rgba(230,86,118,.15);animation:h-voice-pulse 1.4s infinite;
+}
+#appScreen .h-rec-info{min-width:0;flex:1}
+#appScreen .h-rec-title{font-size:12px;color:var(--v-title);font-weight:850}
+#appScreen .h-rec-title span{color:#dc5273;font-variant-numeric:tabular-nums}
+#appScreen .h-rec-sub{font-size:10px;color:var(--v-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#appScreen .h-rec-cancel{
+ background:var(--v-accent-wash);border:1px solid var(--v-line);
+ color:var(--v-title);font-size:12px;font-weight:800;padding:9px 12px;border-radius:10px;
+}
+#appScreen #voiceNoteBtn.recording{
+ display:grid!important;place-items:center!important;
+ background:#ffe0e9!important;border:1px solid #f9adbe!important;
+ color:#b63b63!important;font-size:0!important;opacity:1!important;
+ animation:h-voice-pulse 1.4s infinite;
+}
+#appScreen #voiceNoteBtn.recording svg{display:block!important;width:19px!important;height:19px!important;flex:0 0 19px}
+#appScreen #voiceNoteBtn.recording:disabled{opacity:.6!important}
+@keyframes h-voice-pulse{50%{box-shadow:0 0 0 5px #e6567621}}
+@media(max-width:720px){
+ #appScreen #messageScroller{padding-top:8px}
+ #appScreen .message-stack:has(.image-media){max-width:min(77%,270px)}
+ #appScreen .media-card.image-media{width:min(206px,100%)!important;height:187px!important;border-radius:15px!important}
+ #appScreen .h-photo-overlay{bottom:9px;left:9px;right:9px}
+ #appScreen .media-card.voice-media{min-width:min(238px,100%);width:min(270px,100%);gap:9px}
+ #appScreen .h-voice-status{padding:8px 10px;min-height:49px}
+ #appScreen .h-message-visual:has(>.reactions){padding-bottom:31px!important}
+ #appScreen .h-message-visual>.reactions{bottom:3px!important}
+}
+@media(max-width:360px){
+ #appScreen .media-card.image-media{width:min(192px,100%)!important;height:176px!important}
+ #appScreen .media-card.voice-media{min-width:min(225px,100%);width:min(235px,100%);padding:8px}
+ #appScreen .h-voice-play{flex-basis:37px!important;width:37px!important;height:37px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #appScreen .h-rec-dot,#appScreen #voiceNoteBtn.recording{animation:none!important}
+ #appScreen .image-media img{transition:none}
+}

@@ -32,4 +32,6 @@ jobs:
       - run: node --check app/web/chat-themes.js
       - run: node tests/chat_themes.cjs
       - run: node tests/header_reactions.cjs
+      - run: node --check app/web/voice-media-player.js
+      - run: node tests/voice_media_polish.cjs
       - run: node --check app/web/message-interactions.js
