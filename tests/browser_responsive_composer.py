@@ -70,7 +70,17 @@ def main():
                       voiceTitle:card.querySelector('.h-voice-title').textContent,
                       waves:card.querySelectorAll('.h-voice-waves i').length,
                       waveformRadius:getComputedStyle(btn).borderRadius,
-                      progress:!!card.querySelector('.h-voice-progress')};
+                      progress:!!card.querySelector('.h-voice-progress'),
+                      alignment:(()=>{
+                        const group=document.querySelector('#hComposerToolset'),buttons=
+                         [...group.querySelectorAll('button,label')].filter(n=>n.id||n.matches('label[for="mediaFileInput"]'));
+                        const send=document.querySelector('#sendBtn');
+                        const rects=buttons.map(n=>n.getBoundingClientRect());
+                        return {heights:rects.map(r=>r.height),centers:rects.map(r=>r.top+r.height/2),
+                         gap:rects.slice(1).map((r,i)=>r.left-rects[i].right),
+                         sendCenter:send.getBoundingClientRect().top+send.getBoundingClientRect().height/2,
+                         slotWidth:document.querySelector('#hComposerSlot').getBoundingClientRect().width};
+                      })()};
                 """)
                 print('COMPOSER_SHORT',width,first,flush=True)
                 assert first['width']<=first['viewport']+3
@@ -79,6 +89,10 @@ def main():
                 assert first['voiceTitle']=='Voice note' and first['progress']
                 assert first['cardHeight']<=110
                 assert first['waveformRadius'] != '50%'
+                centers=first['alignment']['centers']
+                assert len(centers)==4 and max(centers)-min(centers)<2,first['alignment']
+                assert max(abs(x-first['alignment']['sendCenter']) for x in centers)<4,first['alignment']
+                assert all(0<=g<=8 for g in first['alignment']['gap']),first['alignment']
                 status=browser.execute_script("""
                     return document.querySelector('#headerIdentity .header-meta')?.textContent || '';
                 """)
@@ -109,13 +123,23 @@ def main():
                       toolsHidden:set.getAttribute('aria-hidden'),
                       caretWidth:document.getElementById('messageInput').getBoundingClientRect().width,
                       outerWidth:document.documentElement.scrollWidth,
-                      viewport:innerWidth};
+                      viewport:innerWidth,
+                      menuSlot:document.querySelector('#hComposerSlot').getBoundingClientRect().width,
+                      hasVerticalMenu:!!document.getElementById('hComposerToolset')};
                 """)
                 print('COMPOSER_LONG',width,long,flush=True)
                 assert long['outerWidth']<=long['viewport']+3
                 assert long['expanded'] and float(long['moreVisible'])==1
                 assert long['toolsHidden']=='true'
                 browser.find_element(By.ID,'hComposerMore').click()
+                WebDriverWait(browser,5).until(lambda d:d.execute_script("""
+                    const menu=document.getElementById('hComposerToolset');
+                    if(!menu||getComputedStyle(menu).visibility!=='visible')return false;
+                    const bounds=menu.getBoundingClientRect();
+                    const first=menu.querySelector('#emojiBtn')?.getBoundingClientRect();
+                    return !!first && Math.abs(first.width-(innerWidth<=365?40:innerWidth<=720?42:44))<1.5
+                       && Math.abs(bounds.width-(innerWidth<=365?56:innerWidth<=720?59:61))<1.5;
+                """))
                 popup=browser.execute_script("""
                     const set=document.getElementById('hComposerToolset');
                     const cs=getComputedStyle(set);
@@ -124,15 +148,19 @@ def main():
                           id:n.id||'attachLabel',accessible:n.getAttribute('aria-label'),width:n.getBoundingClientRect().width,
                           icon:!!n.querySelector('svg')})),
                       textLabels:set.querySelectorAll('.h-tool-name').length,
-                      layout:cs.display,
+                      layout:cs.display,direction:cs.flexDirection,
+                      positions:[...set.querySelectorAll('button,label')].filter(n=>n.id||n.matches('label[for="mediaFileInput"]')).map(n=>n.getBoundingClientRect().toJSON()),
                       bounds:set.getBoundingClientRect().toJSON()};
                 """)
                 print('COMPOSER_MENU',width,popup,flush=True)
                 assert popup['open'] and popup['visible']=='visible'
-                assert popup['textLabels']==0 and popup['layout']=='grid',popup
+                assert popup['textLabels']==0 and popup['layout']=='flex' and popup['direction']=='column',popup
+                rects=popup['positions']
+                assert len(rects)==4 and all(rects[i+1]['top']>rects[i]['bottom'] for i in range(3)),popup
+                assert max(abs(r['x']-rects[0]['x']) for r in rects)<2,popup
                 assert len(popup['icons'])==4,popup
                 assert [item['accessible'] for item in popup['icons']]==['Emojis','Attach','Location','Voice note'],popup
-                assert all(item['icon'] and 35<=item['width']<=44 for item in popup['icons']),popup
+                assert all(item['icon'] and 38<=item['width']<=47 for item in popup['icons']),popup
                 assert popup['bounds']['left']>=-1 and popup['bounds']['right']<=width+2
                 browser.find_element(By.ID,'hComposerMore').click()
                 assert not browser.execute_script("return window.HuddleComposerUI.isOpen()")

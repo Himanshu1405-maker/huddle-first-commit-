@@ -22,7 +22,13 @@
   group.className='h-composer-toolset';
   group.setAttribute('role','group');
   group.setAttribute('aria-label','Message attachments and tools');
-  composer.insertBefore(group,emoji);
+  // A persistent flex slot animates its WIDTH from four buttons to zero.
+  // The toolset itself can then float vertically without snapping the input.
+  const slot=document.createElement('div');
+  slot.id='hComposerSlot';
+  slot.className='h-composer-slot';
+  composer.insertBefore(slot,emoji);
+  slot.append(group);
   for(const el of [emoji,fileLabel,fileInput,location,mic])group.append(el);
   for(const [node,label] of [[emoji,'Emojis'],[fileLabel,'Attach'],[location,'Location'],[mic,'Voice note']]){
     node.dataset.hToolName=label;
@@ -57,11 +63,20 @@
   let normalInputWidth=0,measuredComposerWidth=0,normalPadding='8px 0px';
   let transitionVersion=0;
   const tools=[emoji,fileLabel,location,mic];
+  const ghostAnimations=new Set();
+  const slotWidth=()=>{
+    if(!expanded){
+      const width=Math.ceil(group.getBoundingClientRect().width);
+      if(width>0)slot.style.setProperty('--h-tools-width',width+'px');
+    }
+  };
   const isRecording=()=>mic.classList.contains('recording');
   const reduceMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function animateTransition(wasExpanded,willExpand,fromRects,fromMore){
     if(reduceMotion()||!document.body.contains(composer)||!app.getClientRects().length)return;
     const current=++transitionVersion;
+    for(const item of ghostAnimations){item.cancel();ghostAnimations.delete(item);}
+    document.querySelectorAll('.h-composer-ghost').forEach(node=>node.remove());
     if(!willExpand)composer.classList.add('h-composer-restoring');
     const target=willExpand?more.getBoundingClientRect():null;
     const finalRects=willExpand?[]:tools.map(node=>node.getBoundingClientRect());
@@ -97,7 +112,10 @@
         {transform:'translate3d(0,0,0) scale(1)',opacity:willExpand?1:0},
         {transform:`translate3d(${dx}px,${dy}px,0) scale(${scale})`,opacity:willExpand?0:1}
       ],{duration:245+17*i,delay:i*10,easing:'cubic-bezier(.2,.75,.22,1)',fill:'forwards'});
-      animation.finished.catch(()=>{}).finally(()=>{ghost.remove();done()});
+      ghostAnimations.add(animation);
+      animation.finished.catch(()=>{}).finally(()=>{
+        ghostAnimations.delete(animation);ghost.remove();done();
+      });
     });
     if(!tasks)composer.classList.remove('h-composer-restoring');
   }
@@ -138,6 +156,7 @@
   }
 
   function sync(){
+    if(!expanded)slotWidth();
     const next=measureIsMultiLine();
     const changed=next!==expanded;
     const fromRects=changed&&!expanded?tools.map(node=>node.getBoundingClientRect()):null;
