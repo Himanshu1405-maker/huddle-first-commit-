@@ -10,7 +10,7 @@ assert(js.includes("group.append(el)"));
 assert(js.includes("for(const el of [emoji,fileLabel,fileInput,location,mic])"));
 assert(js.includes("window.HuddleComposerUI={sync"));
 assert(js.includes("measureIsMultiLine()"));
-assert(js.includes("mirror.getBoundingClientRect().height"));
+assert(js.includes("mirror.scrollHeight"));
 assert(js.includes("composer.classList.toggle('h-composer-expanded',expanded)"));
 assert(js.includes("composer.classList.toggle('h-tools-open',expanded&&open)"));
 assert(js.includes("if(expanded&&isRecording()){"));
