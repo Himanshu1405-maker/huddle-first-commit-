@@ -222,7 +222,9 @@
      media.src=src;
      if(moment.kind==='video'){
        media.playsInline=true;media.autoplay=true;media.muted=false;
-       media.controls=false;media.preload='metadata';
+       media.controls=true;media.preload='metadata';
+       media.addEventListener('play',()=>{playing=true;lastTick=performance.now()});
+       media.addEventListener('pause',()=>{playing=false});
        media.addEventListener('loadedmetadata',()=>{
          if(current()?.id!==moment.id)return;
          const seconds=Number.isFinite(media.duration)?Math.min(30,Math.max(4,media.duration)):18;
@@ -243,7 +245,7 @@
    if(viewer.classList.contains('hidden')||current()?.id!==moment.id)return;
    playing=true;lastTick=performance.now();
    const video=content.querySelector('video');
-   if(video)video.play().catch(()=>{/* manual taps can still advance */});
+   if(video)video.play().catch(()=>{playing=false;/* browser requires user to tap Play */});
    loop=setInterval(()=>{
      if(!playing||viewer.classList.contains('hidden'))return;
      const momentNow=performance.now();
