@@ -36,6 +36,8 @@ jobs:
       - run: node tests/voice_media_polish.cjs
       - run: node tests/quick_reactions.cjs
       - run: node tests/selected_stars.cjs
+      - run: node --check app/web/moments.js
+      - run: node tests/moments_static.cjs
       - run: node --check app/web/responsive-composer.js
       - run: node tests/responsive_composer.cjs
       - run: node tests/readability_tools.cjs
