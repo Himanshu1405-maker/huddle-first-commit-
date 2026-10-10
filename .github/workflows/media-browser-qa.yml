@@ -23,6 +23,8 @@ on:
       - app/web/modern-composer-voice.css
       - app/web/playback-photo-polish.css
       - app/web/composer-icon-motion.css
+      - app/web/readability-tool-centering.css
+      - tests/readability_tools.cjs
       - app/web/image-lightbox.js
       - app/extensions.py
       - app/message_context.py
@@ -68,6 +70,8 @@ on:
       - app/web/modern-composer-voice.css
       - app/web/playback-photo-polish.css
       - app/web/composer-icon-motion.css
+      - app/web/readability-tool-centering.css
+      - tests/readability_tools.cjs
       - app/web/image-lightbox.js
       - app/extensions.py
       - app/message_context.py

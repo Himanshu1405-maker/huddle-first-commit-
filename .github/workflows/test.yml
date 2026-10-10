@@ -37,6 +37,7 @@ jobs:
       - run: node tests/quick_reactions.cjs
       - run: node --check app/web/responsive-composer.js
       - run: node tests/responsive_composer.cjs
+      - run: node tests/readability_tools.cjs
       - run: node tests/audio_gallery_composer.cjs
       - run: node --check app/web/image-lightbox.js
       - run: node --check app/web/message-interactions.js

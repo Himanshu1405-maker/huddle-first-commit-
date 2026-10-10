@@ -174,7 +174,15 @@ def main():
                       bounds:set.getBoundingClientRect().toJSON(),
                       plus:document.getElementById('hComposerMore').getBoundingClientRect().toJSON(),
                       menuGap:getComputedStyle(set).rowGap,
-                      menuPadding:getComputedStyle(set).padding};
+                      menuPadding:getComputedStyle(set).padding,
+                      glyphOffsets:[...set.querySelectorAll('button,label')].filter(n=>n.id||n.matches('label[for="mediaFileInput"]')).map(n=>{
+                        const box=n.getBoundingClientRect(),glyph=n.querySelector('svg');
+                        if(!glyph)return {name:n.dataset.hToolName,missing:true};
+                        const g=glyph.getBoundingClientRect();
+                        return {name:n.dataset.hToolName,missing:false,
+                          horizontal:Math.abs((box.left+box.right)/2-(g.left+g.right)/2),
+                          vertical:Math.abs((box.top+box.bottom)/2-(g.top+g.bottom)/2)};
+                      })};
                 """)
                 print('COMPOSER_MENU',width,popup,flush=True)
                 assert popup['open'] and popup['visible']=='visible'
@@ -196,6 +204,9 @@ def main():
                 assert len(popup['icons'])==4,popup
                 assert [item['accessible'] for item in popup['icons']]==['Emojis','Attach','Location','Voice note'],popup
                 assert all(item['icon'] and 38<=item['width']<=44 for item in popup['icons']),popup
+                # Test the SVG itself, not just the colored button's position.
+                assert all(not g['missing'] and g['horizontal']<=2.5 and g['vertical']<=2.5
+                    for g in popup['glyphOffsets']),popup
                 assert popup['bounds']['left']>=-1 and popup['bounds']['right']<=width+2
                 browser.find_element(By.ID,'hComposerMore').click()
                 assert not browser.execute_script("return window.HuddleComposerUI.isOpen()")
@@ -221,6 +232,45 @@ def main():
                 WebDriverWait(browser,5).until(lambda b:b.find_element(By.ID,'emojiPicker').is_displayed())
                 browser.find_element(By.CSS_SELECTOR,'#emojiPicker [data-emoji]').click()
                 assert not browser.find_element(By.ID,'emojiPicker').is_displayed()
+                # The theme/settings drawer now supports readable, persistent
+                # text sizing without colliding with three chat toolbar actions.
+                browser.find_element(By.ID,'vHeaderThemeBtn').click()
+                WebDriverWait(browser,5).until(lambda d:d.find_element(By.ID,'vThemePanel').is_displayed())
+                settings=browser.execute_script("""
+                    const slider=document.getElementById('vTextSize');
+                    const before=parseFloat(getComputedStyle(document.querySelector('.header-name')).fontSize);
+                    slider.value='125';slider.dispatchEvent(new Event('input',{bubbles:true}));
+                    const name=document.querySelector('.header-name').getBoundingClientRect();
+                    const buttons=document.querySelector('.header-actions').getBoundingClientRect();
+                    return {before,after:parseFloat(getComputedStyle(document.querySelector('.header-name')).fontSize),
+                      value:slider.value,readout:document.getElementById('vTextSizeValue').textContent,
+                      nameRight:name.right,actionsLeft:buttons.left,
+                      bubbleFont:getComputedStyle(document.querySelector('.bubble')).fontSize,
+                      saved:localStorage.getItem('huddle.visual.prefs.v1.'+state.me.id)};
+                """)
+                print('READABLE_SETTINGS',width,settings,flush=True)
+                assert settings['after']>settings['before']>=16,settings
+                assert settings['value']=='125',settings
+                assert '125%' in settings['readout'],settings
+                assert settings['nameRight']<=settings['actionsLeft']+1,settings
+                assert '"textSize":125' in settings['saved'],settings
+                browser.find_element(By.ID,'vPanelClose').click()
+                browser.refresh()
+                WebDriverWait(browser,10).until(lambda d:not d.find_element(By.ID,'appScreen').get_attribute('class').split().__contains__('hidden'))
+                result=browser.execute_async_script("""
+                    const done=arguments[arguments.length-1];
+                    openConversation(arguments[0]).then(()=>done(true)).catch(e=>done(e.message));
+                """,room)
+                assert result is True,result
+                restored=browser.execute_script("""
+                    return {scale:document.getElementById('appScreen').style.getPropertyValue('--h-text-scale'),
+                      font:parseFloat(getComputedStyle(document.querySelector('.header-name')).fontSize)};
+                """)
+                assert restored['scale']=='1.25' and abs(restored['font']-settings['after'])<1,restored
+                browser.find_element(By.ID,'vHeaderThemeBtn').click()
+                browser.find_element(By.ID,'vTextDefault').click()
+                assert browser.find_element(By.ID,'vTextSize').get_attribute('value')=='100'
+                browser.find_element(By.ID,'vPanelClose').click()
             print('MODERN_COMPOSER_BROWSER_PASS',flush=True)
         finally:
             browser.quit();server.should_exit=True
