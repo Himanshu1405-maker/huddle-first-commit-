@@ -33,6 +33,7 @@ from .extensions import install_extensions
 from .location import install_location, serialize_location
 from .message_context import install_message_context, serialize_context
 from .message_stars import install_message_stars
+from .moments import install_moments
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
@@ -1075,6 +1076,7 @@ def create_app(database_path: str | None = None):
     install_location(app, db, hub, require_user, serialize_message, member_ids, ensure_membership, now, new_id)
     install_message_context(app, db, hub, require_user, serialize_message, send_message, member_ids, ensure_membership, now, new_id)
     install_message_stars(app, db, require_user, ensure_membership, serialize_message, now)
+    install_moments(app, db, require_user, now, new_id)
     # Lazy migration of legacy plaintext message records after installing a stable
     # Fernet key. Existing conversation text remains readable; new writes encrypt.
     if os.getenv("HUDDLE_MESSAGE_KEY"):

@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="/assets/composer-icon-motion.css" />
   <link rel="stylesheet" href="/assets/readability-tool-centering.css" />
   <link rel="stylesheet" href="/assets/compact-selected-starred.css" />
+  <link rel="stylesheet" href="/assets/moments.css" />
 </head>
 <body>
   <div class="auth-screen" id="authScreen">
@@ -95,6 +96,7 @@
       <div class="searchbox"><span data-icon="search"></span><input id="sidebarSearch" placeholder="Search your chats" aria-label="Find a conversation" /><span class="search-shortcut">⌕</span></div>
       <button type="button" id="hOpenStarred" class="h-sidebar-starred" title="View your starred messages" aria-label="View starred messages"><span aria-hidden="true">☆</span> Starred messages <span aria-hidden="true">›</span></button>
       <nav class="filter-nav" aria-label="Conversation filters"><button class="filter selected" data-filter="all">All <span id="allCount">0</span></button><button class="filter" data-filter="dm">Messages</button><button class="filter" data-filter="group">Circles</button></nav>
+      <button id="hMomentsNav" class="h-moments-nav" type="button" aria-label="Open Huddle Moments"><span class="h-moments-nav-icon" aria-hidden="true">◉</span><span>Moments</span><span class="h-moments-nav-suffix" aria-hidden="true">›</span></button>
       <div class="conversation-list" id="conversationList" aria-label="Your conversations"></div>
       <div class="side-bottom"><button id="notificationsBtn" type="button" class="notifications-btn">🔔 Enable message alerts</button><button class="profile-button" id="profileButton"><span id="selfAvatar"></span><span class="profile-info"><strong id="selfName"></strong><small id="selfHandle"></small></span><span class="profile-more" data-icon="settings"></span></button></div>
     </aside>
@@ -107,10 +109,15 @@
       </header>
       <section class="welcome-chat inbox-home" id="welcomeChat" aria-label="Chat inbox">
         <div class="inbox-home-header"><div class="inbox-title"><span class="inbox-eyebrow">HUDDLE / MESSAGES</span><h1>Chats</h1><p>Your conversations, right where you left them.</p></div><div class="inbox-home-actions"><button class="inbox-theme-btn" id="vInboxThemeBtn" type="button" title="Themes and wallpapers" aria-label="Customize Huddle"><span class="v-theme-emoji">🎨</span> <span class="v-theme-word">Themes</span></button><button class="inbox-new-btn" id="welcomeNewBtn" type="button" title="New conversation" aria-label="Start a new conversation">✎ <span>New chat</span></button></div></div>
+        <div class="h-moments-strip-section"><div class="h-moments-strip-head"><strong>✦ Moments</strong><button id="hMomentsSeeAll" type="button">See all ›</button></div><div class="h-moments-strip" id="hMomentsStrip" aria-label="24-hour updates"><button id="hMomentsStart" class="h-moment-strip-add" type="button"><span aria-hidden="true">＋</span><small>Your Moment</small></button></div></div>
         <div class="inbox-search-wrap"><span aria-hidden="true">⌕</span><input id="homeSearch" type="search" placeholder="Search people and conversations" autocomplete="off" aria-label="Search your chats"></div>
         <div class="inbox-filters" role="group" aria-label="Filter chats"><button type="button" data-home-filter="all" class="selected">All chats</button><button type="button" data-home-filter="dm">Direct messages</button><button type="button" data-home-filter="group">Groups</button></div>
         <div id="homeChatList" class="inbox-list" aria-live="polite"></div>
         <div class="inbox-home-footer"><span>🔒 Your private chats stay between members.</span><button type="button" id="inboxOpenAI">✦ Huddle Intelligence</button></div>
+      </section>
+      <section class="h-moments-home hidden" id="hMomentsHome" aria-labelledby="hMomentsHeading">
+        <div class="h-moments-hero"><span class="h-moments-kicker">HUDDLE / RIGHT NOW</span><div class="h-moments-title"><div><h1 id="hMomentsHeading">Moments<span>.</span></h1><p>Little stories that make the day. Just for your circle, for 24 hours.</p></div><button type="button" id="hMomentCreate" class="h-moments-create">＋ Add Moment</button></div></div>
+        <div class="h-moments-content"><div class="h-moments-group-head">Your day <span>Share a spark</span></div><div id="hMyMoments" class="h-moments-grid"></div><div class="h-moments-group-head">From your circle <span>People you chat with</span></div><div id="hFriendMoments" class="h-moments-grid"></div></div>
       </section>
       <section class="conversation-view hidden" id="conversationView">
         <div class="chat-banner" id="chatBanner"></div>
@@ -172,6 +179,17 @@
   </div>
 
   <div class="overlay hidden" id="modalOverlay" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-header"><div><div class="modal-eyebrow">HUDDLE / <span id="modalEyebrow">NEW</span></div><h2 id="modalTitle">Start something good<span class="accent">.</span></h2></div><button class="icon-btn" id="closeModal" title="Close" aria-label="Close"><span data-icon="x"></span></button></div><div class="modal-content" id="modalContent"></div></section></div>
+  <div class="h-moment-modal hidden" id="hMomentComposeOverlay" role="presentation">
+    <section class="h-moment-create-dialog" role="dialog" aria-modal="true" aria-labelledby="hMomentCreateTitle"><header><span>✦ HUDDLE MOMENTS</span><button type="button" id="hMomentComposeClose" aria-label="Close editor">✕</button></header><h2 id="hMomentCreateTitle">Share your moment.</h2><p>Only people you share a chat with can view it. Gone after 24 hours.</p>
+      <div class="h-moment-compose-tabs" role="group" aria-label="Moment type"><button type="button" data-moment-type="text" class="active">✎ Text</button><button type="button" data-moment-type="media">▣ Photo / video</button></div>
+      <div id="hMomentTextFields"><textarea id="hMomentTextInput" maxlength="320" placeholder="What's your vibe right now?" aria-label="Moment text"></textarea><div id="hMomentPaletteChoices" class="h-moment-palettes" role="group" aria-label="Background color"><button data-palette="iris" class="active" aria-label="Iris purple" type="button"></button><button data-palette="lagoon" aria-label="Lagoon teal" type="button"></button><button data-palette="sunrise" aria-label="Sunrise orange" type="button"></button><button data-palette="midnight" aria-label="Midnight blue" type="button"></button><button data-palette="peach" aria-label="Peach pink" type="button"></button><button data-palette="mint" aria-label="Mint green" type="button"></button></div></div>
+      <div id="hMomentMediaFields" class="hidden"><label class="h-moment-file-pick" for="hMomentFile">＋ Choose a photo or video <small>JPG, PNG, WebP, MP4 or WebM · max 12 MB</small></label><input id="hMomentFile" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" class="hidden"/><div id="hMomentMediaPreview" class="h-moment-media-preview" aria-live="polite"></div></div>
+      <p id="hMomentComposeError" role="alert" class="h-moment-error hidden"></p><button id="hMomentPublish" type="button" class="h-moment-publish">Post Moment ↗</button>
+    </section>
+  </div>
+  <div id="hMomentViewer" class="h-moment-viewer hidden" role="dialog" aria-modal="true" aria-label="Huddle Moment viewer">
+    <div class="h-moment-stage" id="hMomentStage"><div id="hMomentProgress" class="h-moment-progress"></div><header class="h-moment-view-head"><span class="h-moment-view-avatar" id="hMomentAvatar"></span><span class="h-moment-view-user"><strong id="hMomentAuthor"></strong><small id="hMomentPosted"></small></span><button id="hMomentViewerClose" type="button" aria-label="Close Moment">✕</button></header><div id="hMomentContent" class="h-moment-stage-content"></div><button id="hMomentPrev" type="button" class="h-moment-navigation h-moment-prev" aria-label="Previous Moment">‹</button><button id="hMomentNext" type="button" class="h-moment-navigation h-moment-next" aria-label="Next Moment">›</button><footer class="h-moment-view-footer"><button id="hMomentHeart" type="button" aria-label="Like Moment">♡ <span id="hMomentHeartCount"></span></button><button id="hMomentReply" type="button">↗ Reply</button><span id="hMomentViews" class="h-moment-view-count"></span><button id="hMomentDelete" class="hidden" type="button">Delete</button></footer></div>
+  </div>
   <div id="toastArea" class="toast-area" role="status" aria-live="polite"></div>
   <div class="mobile-scrim hidden" id="mobileScrim"></div>
   <script src="/assets/app.js" defer></script>
@@ -184,5 +202,6 @@
   <script src="/assets/responsive-composer.js" defer></script>
   <script src="/assets/image-lightbox.js" defer></script>
   <script src="/assets/puter-ai.js" defer></script>
+  <script src="/assets/moments.js" defer></script>
 </body>
 </html>
