@@ -1,0 +1,190 @@
+/* Huddle message actions and composer refinement. Scoped to conversations. */
+#appScreen .h-selected-bar{
+ flex:0 0 auto;display:flex;align-items:center;gap:7px;min-height:59px;
+ background:var(--v-surface);color:var(--v-title);
+ border-bottom:1px solid var(--v-line);padding:8px 15px;
+ box-shadow:0 4px 16px rgba(32,67,65,.055);z-index:3;
+}
+#appScreen .h-selected-bar.hidden{display:none!important}
+#appScreen .h-selected-bar button{
+ display:grid;place-items:center;width:40px;height:40px;border:0;
+ border-radius:12px;background:var(--v-accent-wash);color:var(--v-accent);
+ flex:0 0 auto;cursor:pointer;
+}
+#appScreen .h-selected-bar button:disabled{opacity:.35;cursor:not-allowed}
+#appScreen .h-selected-bar button:focus-visible{outline:2px solid var(--v-accent);outline-offset:2px}
+#appScreen .h-selection-name{display:flex;flex-direction:column;min-width:0;flex:1;gap:3px}
+#appScreen .h-selection-name strong{font:800 13px Manrope,sans-serif}
+#appScreen .h-selection-name small{font-size:10px;color:var(--v-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#appScreen .message-row:not(.deleted){
+ -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+ cursor:default;border-radius:18px;position:relative;
+ transition:background .15s,box-shadow .15s;
+ transform:translateX(var(--h-swipe-x,0px));
+}
+#appScreen .message-row :where(.bubble,.media-card,.h-location-card){
+ -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+#appScreen .message-row.h-msg-selected{
+ background:color-mix(in srgb,var(--v-accent) 13%,transparent);
+ outline:2px solid color-mix(in srgb,var(--v-accent) 45%,transparent);
+ outline-offset:1px;
+}
+#appScreen .message-row.h-msg-selected .message-stack{filter:drop-shadow(0 4px 9px rgba(39,105,87,.13))}
+#appScreen .message-row.h-msg-selected:before{
+ content:"✓";position:absolute;left:4px;top:50%;transform:translateY(-50%);
+ width:22px;height:22px;border-radius:50%;
+ background:var(--v-accent);color:#fff;font-size:14px;font-weight:800;
+ display:grid;place-items:center;box-shadow:0 2px 10px #0002;
+}
+#appScreen .message-row.mine.h-msg-selected:before{left:auto;right:4px}
+#appScreen .bubble[data-huddle-message-id]{-webkit-user-select:none!important;user-select:none!important;touch-action:pan-y}
+#appScreen .h-inline-quote{
+ display:flex;flex-direction:column;gap:2px;width:min(100%,330px);max-width:100%;
+ border:0;border-left:4px solid var(--v-accent);text-align:left;
+ background:var(--v-accent-wash);border-radius:10px;
+ color:var(--v-title);padding:9px 11px;margin:2px 0 5px;
+ font-size:12px;cursor:pointer;
+}
+#appScreen .h-inline-quote strong{color:var(--v-accent);font-size:11px}
+#appScreen .h-inline-quote span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;color:var(--v-ink)}
+#appScreen .h-inline-quote:hover{outline:1px solid var(--v-accent)}
+#appScreen .h-forwarded-flag{font-size:10px;font-weight:700;font-style:italic;color:var(--v-muted);margin-bottom:4px}
+#appScreen .bubble-meta{display:flex;align-items:center;gap:6px;min-height:16px;color:var(--v-muted)}
+#appScreen .bubble-meta time{font-size:10px;font-variant-numeric:tabular-nums}
+#appScreen .h-read-ticks{display:inline-flex;color:var(--v-muted);align-items:center;margin-left:2px}
+#appScreen .h-read-ticks.is-read{color:var(--v-accent)}
+#appScreen .h-read-ticks svg{width:18px;height:18px;stroke-width:2.3}
+#appScreen .h-reply-preview{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ background:var(--v-sheet);border:1px solid var(--v-line);border-left:4px solid var(--v-accent);
+ border-radius:14px;padding:10px 12px;margin:2px 0 7px;
+ box-shadow:0 3px 11px rgba(19,67,67,.05);
+}
+#appScreen .h-reply-preview.hidden{display:none!important}
+#appScreen .h-reply-line{display:flex;gap:10px;align-items:center;min-width:0;color:var(--v-accent)}
+#appScreen .h-reply-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+#appScreen .h-reply-text strong{font-size:12px;font-weight:800;color:var(--v-accent)}
+#appScreen .h-reply-text span{font-size:12px;color:var(--v-title);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:350px}
+#appScreen #hCancelReply{
+ border:0;background:var(--v-accent-wash);color:var(--v-accent);border-radius:9px;
+ width:32px;height:32px;display:grid;place-items:center;flex-shrink:0;
+}
+/* Clean, functional vector icons instead of mixed emoji pictures. */
+#appScreen .composer{
+ min-height:57px;border-radius:22px;align-items:center;
+ background:var(--v-sheet);border:1px solid var(--v-line);
+ padding:6px 8px;gap:5px;box-shadow:0 5px 19px rgba(23,65,63,.075);
+}
+#appScreen .composer:focus-within{
+ border-color:var(--v-accent);box-shadow:0 0 0 3px var(--v-accent-wash),0 8px 20px #0001;
+}
+#appScreen .composer :is(.h-tool-icon,.composer-emoji,.composer-media){
+ display:grid;place-items:center;flex:0 0 36px;min-width:36px;width:36px;height:38px;
+ padding:0;border:0;border-radius:12px;
+ background:var(--v-accent-wash);color:var(--v-accent);
+ font-size:0;cursor:pointer;
+ transition:transform .15s,background .15s;
+}
+#appScreen .composer .h-tool-icon svg{width:20px;height:20px}
+#appScreen .composer .h-tool-icon:hover{transform:translateY(-1px);filter:brightness(.97)}
+#appScreen .composer textarea{
+ min-width:0;min-height:39px;line-height:1.4;max-height:150px;
+ padding:10px 7px;background:transparent;color:var(--v-title);
+ font-size:15px;flex:1;outline:none;
+}
+#appScreen .composer #sendBtn{
+ flex:0 0 42px;width:42px;min-width:42px;height:42px;
+ color:#fff;background:var(--v-accent);border-radius:13px;
+ box-shadow:0 3px 12px color-mix(in srgb,var(--v-accent) 25%,transparent);
+}
+#appScreen .composer #sendBtn svg{width:21px;height:21px}
+#appScreen .composer-count{font-size:9px;color:var(--v-muted)}
+#appScreen .composer .h-tool-icon:focus-visible,#appScreen .composer #sendBtn:focus-visible{outline:2px solid var(--v-accent);outline-offset:2px}
+#appScreen .composer :is(.h-tool-icon,.composer-emoji,.composer-media)[disabled]{opacity:.42}
+#appScreen[data-v-composer="compact"] .composer{padding:4px 6px;gap:3px;min-height:48px}
+#appScreen[data-v-composer="compact"] .composer :is(.h-tool-icon,.composer-emoji,.composer-media){height:32px;width:32px;min-width:32px;flex-basis:32px}
+#appScreen[data-v-composer="compact"] .composer #sendBtn{width:35px;min-width:35px;flex-basis:35px;height:35px}
+/* Floating context menu is positioned relative to the viewport, not nested in appScreen. */
+.h-message-menu.h-message-menu-polished{
+ width:min(345px,calc(100vw - 18px));max-height:min(68dvh,440px);
+ overflow-y:auto;padding:10px;border-radius:21px;
+ background:linear-gradient(155deg,#ffffff,#f9faff);color:#243647;
+ box-shadow:0 18px 58px rgba(28,42,68,.24);
+ border:1px solid #dde8e9;z-index:160;overscroll-behavior:contain;
+}
+.h-message-menu-polished .h-message-reactions{
+ display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px;
+ padding:1px 0 10px;border-bottom:1px solid #e6ebef;
+}
+.h-message-menu-polished .h-message-reactions button{
+ display:grid;place-items:center;padding:4px 0;min-width:0;
+ background:transparent;border:0;border-radius:11px;font-size:23px;
+ min-height:39px;transition:transform .14s,background .14s;
+}
+.h-message-menu-polished .h-message-reactions button:hover{background:#e8f5f4;transform:scale(1.08)}
+.h-message-menu-polished .h-message-commands{display:grid;gap:2px;padding:6px 0 0}
+.h-message-menu-polished .h-message-commands button{
+ display:flex;align-items:center;gap:12px;width:100%;min-height:43px;
+ background:transparent;border:0;border-radius:11px;padding:10px 12px;
+ text-align:left;color:#253b49;font-size:13px;font-weight:750;
+}
+.h-message-menu-polished .h-message-commands button svg{width:18px;height:18px;color:#668494;flex-shrink:0}
+.h-message-menu-polished .h-message-commands button:hover{background:#eaf5f3}
+.h-message-menu-polished .h-message-commands button.danger{color:#bb4861}
+.h-message-menu-polished .h-message-commands button.danger svg{color:#bb4861}
+.h-message-menu-polished:focus-within{outline:1px solid #8dc9c1}
+/* Forward target picker works on desktop and Android. */
+.h-forward-overlay{
+ position:fixed;inset:0;z-index:195;display:flex;align-items:center;justify-content:center;
+ padding:15px;background:rgba(12,25,38,.6);backdrop-filter:blur(5px);
+}
+.h-forward-dialog{
+ background:#fff;color:#273c4b;border-radius:22px;width:min(475px,100%);
+ display:flex;flex-direction:column;max-height:min(80dvh,650px);
+ box-shadow:0 24px 75px rgba(5,23,36,.3);overflow:hidden;
+}
+.h-forward-head{display:flex;align-items:center;justify-content:space-between;padding:19px 22px 10px}
+.h-forward-head small{color:#168d7d;letter-spacing:1.5px;font-size:10px;font-weight:800}
+.h-forward-head h2{font:800 22px Manrope,sans-serif;color:#243647;margin:5px 0}
+.h-forward-head button{background:#edf5f3;border:0;border-radius:12px;display:grid;place-items:center;width:38px;height:38px}
+.h-forward-intro{padding:0 22px 5px;color:#788e9a;font-size:12px}
+#hForwardSearch{margin:10px 19px 15px;background:#f6f9f8;border:1px solid #d6e5e3;border-radius:13px;padding:13px 15px;color:#203c48;font-size:15px;min-height:45px}
+#hForwardSearch:focus{outline:2px solid #91cfc5}
+.h-forward-list{overflow:auto;padding:0 13px 20px}
+.h-forward-target{display:flex;align-items:center;gap:12px;width:100%;padding:11px 9px;border-radius:12px;background:#fff;border:0;text-align:left;color:#27404d}
+.h-forward-target:hover{background:#edf8f4}
+.h-forward-target:disabled{opacity:.4}
+.h-forward-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#d9f4e8;color:#168d7d;font-size:16px;font-weight:800}
+.h-forward-target strong{font-size:14px;display:block}
+.h-forward-target small{font-size:11px;color:#8795a3;display:block;margin-top:3px}
+.h-forward-arrow{margin-left:auto;color:#168d7d}
+.h-forward-empty{text-align:center;color:#8795a3;padding:20px}
+@media(max-width:720px){
+ #appScreen .h-selected-bar{padding:6px 8px;min-height:53px}
+ #appScreen .h-selected-bar button{width:36px;height:36px}
+ #appScreen .h-selection-name strong{font-size:12px}
+ #appScreen .h-selection-name small{max-width:104px}
+ #appScreen .message-stack{max-width:83%}
+ #appScreen .composer-area{padding:7px 8px max(10px,env(safe-area-inset-bottom))}
+ #appScreen .composer{padding:5px 6px;gap:3px;border-radius:19px}
+ #appScreen .composer :is(.h-tool-icon,.composer-emoji,.composer-media){width:33px;min-width:33px;flex-basis:33px;height:36px;border-radius:10px}
+ #appScreen .composer .h-tool-icon svg{width:19px;height:19px}
+ #appScreen .composer textarea{font-size:16px;min-height:38px;padding:8px 4px}
+ #appScreen .composer #sendBtn{width:39px;min-width:39px;flex-basis:39px;height:39px}
+ #appScreen .h-reply-text span{max-width:220px}
+ .h-message-menu.h-message-menu-polished{width:min(325px,calc(100vw - 18px))}
+ .h-message-menu-polished .h-message-reactions button{font-size:22px;min-height:34px}
+ .h-message-menu-polished .h-message-commands button{min-height:40px}
+ .h-forward-overlay{align-items:flex-end;padding:0}
+ .h-forward-dialog{width:100%;border-radius:23px 23px 0 0;max-height:83dvh}
+}
+@media(max-width:360px){
+ #appScreen .composer :is(.h-tool-icon,.composer-emoji,.composer-media){width:30px;min-width:30px;flex-basis:30px;height:34px}
+ #appScreen .composer #sendBtn{width:36px;min-width:36px;flex-basis:36px;height:36px}
+ #appScreen .h-selected-bar{gap:4px}
+ #appScreen .h-selected-bar button{width:34px;height:34px}
+}
+@media(prefers-reduced-motion:reduce){
+ #appScreen .message-row,#appScreen .composer .h-tool-icon,.h-message-menu-polished .h-message-reactions button{transition:none!important}
+}
