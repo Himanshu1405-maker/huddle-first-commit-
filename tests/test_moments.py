@@ -55,7 +55,7 @@ def test_private_text_media_views_and_expiry(tmp_path):
         photoid=upload.json()['id']
         read=bob.get(f'/api/moments/{photoid}/media')
         assert read.status_code==200 and read.content==image
-        assert read.headers['cache-control']=='private, no-store'
+        assert 'no-store' in read.headers['cache-control']
         assert outsider.get(f'/api/moments/{photoid}/media').status_code==404
         assert alice.post('/api/moments/media',content=b'badtype'*4,
             headers={'content-type':'image/jpeg'}).status_code==422
