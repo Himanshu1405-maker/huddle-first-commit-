@@ -73,8 +73,8 @@ function mobileDrawer(open){$('#sidebar').classList.toggle('open',open);$('#mobi
 $('#openSidebar').addEventListener('click',()=>{if(state.active||state.aiOpen)showWelcome();else mobileDrawer(true)});$('#closeSidebar').addEventListener('click',()=>mobileDrawer(false));$('#mobileScrim').addEventListener('click',()=>mobileDrawer(false));
 async function openConversation(id,focusId=null){const c=state.conversations.find(x=>x.id===id);if(!c)return;state.lastChatId=id;state.aiOpen=false;$('#aiView').classList.add('hidden');const changed=state.active?.id!==id;state.active=c;state.messages=[];state.hasMore=false;$('#welcomeChat').classList.add('hidden');$('#conversationView').classList.remove('hidden');$('#messageScroller').scrollTop=0;$('#messages').innerHTML='<div class="list-empty">Loading your conversation…</div>';renderHeader();renderSidebar();mobileDrawer(false);try{const result=await api(`/conversations/${id}/messages`);if(state.active?.id!==id)return;state.messages=result.messages;state.hasMore=result.has_more;renderMessages(true);markRead();if(focusId){scrollToMessage(focusId)}else if(changed&&window.matchMedia('(min-width: 721px)').matches){$('#messageInput').focus()}}catch(err){toast(err.message,true)}}
 function showWelcome(){state.aiOpen=false;$('#aiView').classList.add('hidden');state.active=null;$('#welcomeChat').classList.remove('hidden');$('#conversationView').classList.add('hidden');$('#chatBanner').textContent='';$('#headerIdentity').innerHTML='<span class="header-placeholder">YOUR CHATS</span>';mobileDrawer(false);renderSidebar()}
-function renderHeader(){const c=state.active;if(!c)return;const other=c.members.find(m=>m.id!==state.me.id);const online=c.kind==='dm'&&other?.online;$('#headerIdentity').innerHTML=avatar(c.name,c.id,c.kind,online)+`<span><span class="header-name">${esc(c.name)}</span><span class="header-meta">${c.kind==='group'?`${c.members.length} members · Your circle`:`${online?'<i class="little-dot"></i> Online now':'Offline · @'+esc(c.handle)}`}</span></span>`;$('#chatBanner').innerHTML=`${c.kind==='group'?'✳ Welcome to <strong>'+esc(c.name)+'</strong>. Good things happen together.':'🔒 This conversation is between you and <strong>'+esc(c.name)+'</strong>.'}`;$('#messageInput').placeholder='Message'}
-function renderMessages(jumpEnd=false){const view=$('#messageScroller');const oldHeight=view.scrollHeight,oldTop=view.scrollTop;$('#loadMoreBtn').classList.toggle('hidden',!state.hasMore);let previousDay='';$('#messages').innerHTML=state.messages.map(m=>{const day=dayLabel(m.created_at);let divider='';if(day!==previousDay){divider=`<div class="date-divider">${esc(day)}</div>`;previousDay=day}const mine=m.sender_id===state.me.id;const sender=state.active?.members.find(x=>x.id===m.sender_id)||{name:'Unknown'};const group=state.active?.kind==='group';const reactions=!m.deleted_at&&m.reactions?.length?`<div class="reactions" aria-label="Reactions on this message">${m.reactions.map(r=>`<button type="button" class="reaction ${r.users.includes(state.me.id)?'reacted':''}" data-reaction-message="${esc(m.id)}" data-reaction-emoji="${esc(r.emoji)}" aria-label="Reaction ${esc(r.emoji)}, ${r.count} ${r.count===1?'person':'people'}. Tap to react." title="${r.count} ${r.count===1?'reaction':'reactions'}">${esc(r.emoji)}<span class="reaction-count">${r.count}</span></button>`).join('')}</div>`:'';const media=(m.attachments||[]).map(a=>{const url='/api/media/'+encodeURIComponent(a.id);const mime=a.content_type||'';const label=esc(a.filename);return mime.startsWith('image/')?`<a class="media-card image-media" href="${url}" target="_blank" rel="noopener"><img src="${url}" loading="lazy" alt="Shared image: ${label}" /><span>${label}</span></a>`:mime.startsWith('video/')?`<div class="media-card video-media"><video controls preload="metadata" playsinline src="${url}"></video><a href="${url}" download>${label} · Save ↧</a></div>`:mime.startsWith('audio/')?`<div class="media-card voice-media"><div>🎧 ${label}</div><audio controls preload="none" src="${url}"></audio></div>`:`<a class="media-card file-media" href="${url}" download>📎 ${label} <small>↧ Download</small></a>`;}).join('');const actions=!m.deleted_at?`<div class="message-actions"><button data-action="react" data-message="${esc(m.id)}" title="React">☺ React</button>${mine?`<button data-action="edit" data-message="${esc(m.id)}">Edit</button><button data-action="delete" data-message="${esc(m.id)}">Delete</button>`:`<button data-action="report" data-message="${esc(m.id)}" title="Report this message">⚑ Report</button>`}</div>`:'';return divider+`<div class="message-row ${mine?'mine':''}" id="msg-${esc(m.id)}">${mine?'<span class="avatar-placeholder"></span>':avatar(sender.name,sender.id)}<div class="message-stack">${group&&!mine?`<div class="sender-label">${esc(sender.name)}</div>`:''}<div class="h-message-visual"><div class="bubble ${m.deleted_at?'deleted':''}">${m.deleted_at?'This message was deleted':esc(m.body)}</div>${m.deleted_at?'':media}${reactions}</div><div class="bubble-meta">${esc(prettyTime(m.created_at))} ${m.edited_at?'<span class="edit-label">· edited</span>':''}${mine?`<span class="seen-check" title="${(m.seen_by||[]).length?'Seen':'Sent'}">${(m.seen_by||[]).length?'✓✓':'✓'}</span>`:''}</div>${actions}</div></div>`}).join('')||'<div class="list-empty">No messages yet.<br/>Be the first to say hello 👋</div>';if(jumpEnd){view.scrollTop=view.scrollHeight}else{view.scrollTop=oldTop}}
+function renderHeader(){const c=state.active;if(!c)return;const other=c.members.find(m=>m.id!==state.me.id);const online=c.kind==='dm'&&other?.online;$('#headerIdentity').innerHTML=avatar(c.name,c.id,c.kind,online)+`<span><span class="header-name">${esc(c.name)}</span><span class="header-meta">${c.kind==='group'?`${c.members.length} members · Your circle`:`${online?'<i class="little-dot"></i> Online now':'Offline · @'+esc(c.handle)}`}</span></span>`;$('#chatBanner').textContent='';$('#messageInput').placeholder='Message'}
+function renderMessages(jumpEnd=false){const view=$('#messageScroller');const oldHeight=view.scrollHeight,oldTop=view.scrollTop;$('#loadMoreBtn').classList.toggle('hidden',!state.hasMore);let previousDay='';$('#messages').innerHTML=state.messages.map(m=>{const day=dayLabel(m.created_at);let divider='';if(day!==previousDay){divider=`<div class="date-divider">${esc(day)}</div>`;previousDay=day}const mine=m.sender_id===state.me.id;const sender=state.active?.members.find(x=>x.id===m.sender_id)||{name:'Unknown'};const group=state.active?.kind==='group';const reactions=!m.deleted_at&&m.reactions?.length?`<div class="reactions" aria-label="Reactions on this message">${m.reactions.map(r=>`<button type="button" class="reaction ${r.users.includes(state.me.id)?'reacted':''}" data-reaction-message="${esc(m.id)}" data-reaction-emoji="${esc(r.emoji)}" aria-label="Reaction ${esc(r.emoji)}, ${r.count} ${r.count===1?'person':'people'}. Tap to react." title="${r.count} ${r.count===1?'reaction':'reactions'}">${esc(r.emoji)}<span class="reaction-count">${r.count}</span></button>`).join('')}</div>`:'';const media=(m.attachments||[]).map(a=>{const url='/api/media/'+encodeURIComponent(a.id);const mime=a.content_type||'';const label=esc(a.filename);return mime.startsWith('image/')?`<a class="media-card image-media" href="${url}" target="_blank" rel="noopener" title="Open full photo: ${label}" aria-label="Open shared photo: ${label}"><img src="${url}" loading="lazy" alt="Shared photo: ${label}" /><span class="h-photo-overlay">View photo <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16 17 7M9 7h8v8"/></svg></span></a>`:mime.startsWith('video/')?`<div class="media-card video-media"><video controls preload="metadata" playsinline src="${url}"></video><a href="${url}" download>${label} · Save ↧</a></div>`:mime.startsWith('audio/')?`<div class="media-card voice-media"><button type="button" class="h-voice-play" aria-label="Play voice message" title="Play voice note"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.54.84l10-6.5a1 1 0 0 0 0-1.68l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg></button><div class="h-voice-details"><span class="h-voice-title">Voice message</span><div class="h-voice-track"><div class="h-voice-waves" aria-hidden="true">${[7,12,5,10,14,8,18,9,13,6,17,11,5,16,12,8,19,11,7,14,9,17,6,12].map(h=>`<i style="--height:${h}"></i>`).join('')}</div><span class="h-voice-duration" aria-label="Voice message time">0:00</span></div><input class="h-voice-progress" type="range" min="0" max="100" step="1" value="0" aria-label="Seek voice message"/></div><audio controls preload="metadata" src="${url}" aria-label="Voice message playback"></audio></div>`:`<a class="media-card file-media" href="${url}" download>📎 ${label} <small>↧ Download</small></a>`;}).join('');const actions=!m.deleted_at?`<div class="message-actions"><button data-action="react" data-message="${esc(m.id)}" title="React">☺ React</button>${mine?`<button data-action="edit" data-message="${esc(m.id)}">Edit</button><button data-action="delete" data-message="${esc(m.id)}">Delete</button>`:`<button data-action="report" data-message="${esc(m.id)}" title="Report this message">⚑ Report</button>`}</div>`:'';return divider+`<div class="message-row ${mine?'mine':''}" id="msg-${esc(m.id)}">${mine?'<span class="avatar-placeholder"></span>':avatar(sender.name,sender.id)}<div class="message-stack">${group&&!mine?`<div class="sender-label">${esc(sender.name)}</div>`:''}<div class="h-message-visual"><div class="bubble ${m.deleted_at?'deleted':''}">${m.deleted_at?'This message was deleted':esc(m.body)}</div>${m.deleted_at?'':media}${reactions}</div><div class="bubble-meta">${esc(prettyTime(m.created_at))} ${m.edited_at?'<span class="edit-label">· edited</span>':''}${mine?`<span class="seen-check" title="${(m.seen_by||[]).length?'Seen':'Sent'}">${(m.seen_by||[]).length?'✓✓':'✓'}</span>`:''}</div>${actions}</div></div>`}).join('')||'<div class="list-empty">No messages yet.<br/>Be the first to say hello 👋</div>';if(jumpEnd){view.scrollTop=view.scrollHeight}else{view.scrollTop=oldTop}}
 function scrollToMessage(id){const el=document.getElementById('msg-'+id);if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.querySelector('.bubble')?.classList.add('highlight-bubble');setTimeout(()=>el.querySelector('.bubble')?.classList.remove('highlight-bubble'),2200)}else toast('Message is in older history — load earlier messages')}
 $('#loadMoreBtn').addEventListener('click',async()=>{if(state.loading||!state.hasMore||!state.messages.length)return;state.loading=true;const cid=state.active.id;const scroller=$('#messageScroller');const beforeHeight=scroller.scrollHeight;try{const result=await api(`/conversations/${cid}/messages?before=${state.messages[0].id}`);if(state.active?.id!==cid)return;state.messages=[...result.messages,...state.messages];state.hasMore=result.has_more;renderMessages();scroller.scrollTop=scroller.scrollHeight-beforeHeight}catch(e){toast(e.message,true)}finally{state.loading=false}});
 function markRead(){if(!state.active)return;const id=state.active.id;post(`/conversations/${id}/read`,{}).then(()=>{const c=state.conversations.find(c=>c.id===id);if(c){c.unread=0;renderSidebar()}}).catch(()=>{})}
@@ -115,47 +115,88 @@ async function sendMediaFile(file,caption=''){
   finally{btn.disabled=false;setMediaProgress('');$('#mediaFileInput').value='';}
 }
 $('#mediaFileInput').addEventListener('change',e=>openMediaEditor(e.target.files?.[0]));
-let voiceRecorder=null,voiceStream=null,voiceParts=[];
-$('#voiceNoteBtn').addEventListener('click',async()=>{
+/* Recording state stays visible and uses vector icons (no disappearing emoji). */
+let voiceRecorder=null,voiceStream=null,voiceParts=[],voiceCancelRequested=false,voiceStarting=false;
+let voiceTicker=null,voiceStartedAt=0,voiceLimitTimer=null;
+const VOICE_MIC_SVG='<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>';
+const VOICE_STOP_SVG='<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>';
+function recordDuration(seconds){const s=Math.max(0,Math.floor(seconds));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function refreshVoiceRecordUI(recording){
   const button=$('#voiceNoteBtn');
+  const panel=$('#hVoiceStatus');
+  if(button){
+    button.innerHTML=recording?VOICE_STOP_SVG:VOICE_MIC_SVG;
+    button.classList.toggle('recording',recording);
+    button.title=recording?'Stop & send voice message':'Record voice note';
+    button.setAttribute('aria-label',button.title);
+    button.setAttribute('aria-pressed',String(recording));
+  }
+  if(panel)panel.hidden=!recording;
+  if(!recording){
+    clearInterval(voiceTicker);
+    voiceTicker=null;
+  }
+}
+function cancelVoiceRecord(){
+  voiceCancelRequested=true;
+  if(voiceRecorder&&voiceRecorder.state!=='inactive')voiceRecorder.stop();
+  else refreshVoiceRecordUI(false);
+}
+$('#hVoiceCancel').addEventListener('click',cancelVoiceRecord);
+$('#voiceNoteBtn').addEventListener('click',async()=>{
   if(voiceRecorder&&voiceRecorder.state==='recording'){
     voiceRecorder.stop();return;
   }
-  if(!state.active)return;
+  if(voiceStarting||!state.active)return;
   if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){
-    toast('Voice recording requires microphone support in your browser.',true);return;
+    toast('Voice recording needs microphone permission in your browser.',true);return;
   }
+  voiceStarting=true;
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     voiceStream=stream;
     const candidates=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
     const mimeType=candidates.find(t=>MediaRecorder.isTypeSupported(t));
-    if(!mimeType)throw Error('Your browser does not support supported voice note formats');
+    if(!mimeType)throw Error('Your browser cannot record a supported voice format');
     const recorder=new MediaRecorder(stream,{mimeType});
-    voiceRecorder=recorder;voiceParts=[];
+    voiceRecorder=recorder;
+    voiceParts=[];
+    voiceCancelRequested=false;
     const roomId=state.active.id;
-    button.textContent='■';button.classList.add('recording');button.title='Stop recording';
-    setMediaProgress('Recording — tap stop to send (max 45 seconds)');
-    let deadline=setTimeout(()=>{if(recorder.state==='recording')recorder.stop();},45000);
-    recorder.ondataavailable=e=>{if(e.data.size)voiceParts.push(e.data);};
+    recorder.ondataavailable=event=>{if(event.data.size)voiceParts.push(event.data);};
     recorder.onstop=async()=>{
-      clearTimeout(deadline);
-      stream.getTracks().forEach(t=>t.stop());
+      clearTimeout(voiceLimitTimer);
+      stream.getTracks().forEach(track=>track.stop());
       voiceStream=null;voiceRecorder=null;
-      button.textContent='🎙';button.classList.remove('recording');button.title='Record voice note';
+      refreshVoiceRecordUI(false);
+      const cancelled=voiceCancelRequested;
+      voiceCancelRequested=false;
+      if(cancelled){setMediaProgress('');toast('Voice recording discarded');return;}
       const type=mimeType.split(';')[0];
       const ext=type==='audio/mp4'?'m4a':type==='audio/ogg'?'ogg':'webm';
-      const file=new File(voiceParts,['voice-note.'+ext].join(''),{type});
-      // Prevent sending to a different conversation if user navigates away.
+      const file=new File(voiceParts,'voice-note.'+ext,{type});
+      voiceParts=[];
       if(state.active?.id===roomId&&file.size)await sendMediaFile(file);
-      else setMediaProgress('');
+      else{setMediaProgress('');if(!file.size)toast('No audio was captured. Try again.',true);}
     };
     recorder.start(600);
+    voiceStartedAt=Date.now();
+    $('#hVoiceElapsed').textContent='0:00';
+    refreshVoiceRecordUI(true);
+    voiceTicker=setInterval(()=>{
+      $('#hVoiceElapsed').textContent=recordDuration((Date.now()-voiceStartedAt)/1000);
+    },350);
+    voiceLimitTimer=setTimeout(()=>{if(recorder.state==='recording')recorder.stop();},45000);
+    setMediaProgress('');
   }catch(error){
-    voiceStream?.getTracks().forEach(t=>t.stop());
-    voiceStream=null;voiceRecorder=null;button.textContent='🎙';button.classList.remove('recording');
+    clearTimeout(voiceLimitTimer);
+    voiceStream?.getTracks().forEach(track=>track.stop());
+    voiceStream=null;voiceRecorder=null;
+    refreshVoiceRecordUI(false);
     setMediaProgress('');
     toast('Could not record: '+(error.message||'microphone unavailable'),true);
+  }finally{
+    voiceStarting=false;
   }
 });
 function notificationPreference(){try{return localStorage.getItem('huddle-notify-opt-in')==='yes';}catch{return false;}}
