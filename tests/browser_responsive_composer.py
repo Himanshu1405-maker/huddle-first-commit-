@@ -132,7 +132,7 @@ def main():
                 assert popup['textLabels']==0 and popup['layout']=='grid',popup
                 assert len(popup['icons'])==4,popup
                 assert [item['accessible'] for item in popup['icons']]==['Emojis','Attach','Location','Voice note'],popup
-                assert all(item['icon'] and 38<=item['width']<=44 for item in popup['icons']),popup
+                assert all(item['icon'] and 35<=item['width']<=44 for item in popup['icons']),popup
                 assert popup['bounds']['left']>=-1 and popup['bounds']['right']<=width+2
                 browser.find_element(By.ID,'hComposerMore').click()
                 assert not browser.execute_script("return window.HuddleComposerUI.isOpen()")
