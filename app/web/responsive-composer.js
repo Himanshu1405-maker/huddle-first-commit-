@@ -47,7 +47,9 @@
   more.innerHTML=plus;
   group.after(more);
 
-  const mirror=document.createElement('div');
+  const mirror=document.createElement('textarea');
+  mirror.rows=1;
+  mirror.tabIndex=-1;
   mirror.className='h-composer-measure';
   mirror.setAttribute('aria-hidden','true');
   composer.append(mirror);
@@ -57,24 +59,31 @@
 
   function measureIsMultiLine(){
     if(!input.value)return false;
+    // Temporarily restore normal four-button geometry to measure the text's
+    // *actual original input width*. No browser frame paints mid-function.
+    // This works even after the plus button has appeared and prevents flicker.
+    composer.classList.remove('h-composer-expanded','h-tools-open');
     const styles=getComputedStyle(input);
-    const cs=getComputedStyle(composer);
-    const padding=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
-    const gap=parseFloat(cs.columnGap)||4;
-    const sampleWidth=window.innerWidth<=365?30:window.innerWidth<=720?33:36;
-    const buttonWidth=send.offsetWidth||40;
-    // Four tool icons + gaps plus the send button, as in the short-message UI.
-    const normalWidth=Math.max(54,composer.clientWidth-padding-(4*sampleWidth+3*gap)-buttonWidth-2*gap-8);
-    mirror.style.width=normalWidth+'px';
+    const width=input.getBoundingClientRect().width;
+    if(width<=0)return false;
+    mirror.style.width=width+'px';
     mirror.style.font=styles.font;
     mirror.style.fontFamily=styles.fontFamily;
     mirror.style.fontSize=styles.fontSize;
     mirror.style.fontWeight=styles.fontWeight;
     mirror.style.letterSpacing=styles.letterSpacing;
     mirror.style.lineHeight=styles.lineHeight;
-    mirror.textContent=input.value.endsWith('\n')?input.value+'\u200b':input.value;
-    const lineHeight=parseFloat(styles.lineHeight)||parseFloat(styles.fontSize)*1.42;
-    return mirror.getBoundingClientRect().height>lineHeight*1.5;
+    mirror.style.padding=styles.padding;
+    mirror.style.boxSizing=styles.boxSizing;
+    mirror.style.wordBreak=styles.wordBreak;
+    mirror.style.overflowWrap=styles.overflowWrap;
+    mirror.value=input.value.endsWith('\n')?input.value+'\u200b':input.value;
+    mirror.style.height='1px';
+    const threshold=(parseFloat(styles.lineHeight)||parseFloat(styles.fontSize)*1.4)+
+      (parseFloat(styles.paddingTop)||0)+(parseFloat(styles.paddingBottom)||0);
+    // scrollHeight counts visual lines plus padding. Second-line presence
+    // is detected at its very first character, not halfway through.
+    return mirror.scrollHeight>Math.ceil(threshold)+1;
   }
 
   function sync(){
