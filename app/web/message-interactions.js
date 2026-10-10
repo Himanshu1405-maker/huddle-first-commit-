@@ -19,6 +19,7 @@
     copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     edit:'<path d="m15 5 4 4M4 20l4.5-1 11-11a2.5 2.5 0 0 0-3.5-3.5l-11 11L4 20Z"/>',
     trash:'<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5m4-5v5"/>',
+    star:'<path d="m12 2.8 2.9 6 6.6 1-4.8 4.7 1.1 6.6-5.8-3.1-5.8 3.1 1.1-6.6-4.8-4.7 6.6-1L12 2.8Z"/>',
     close:'<path d="m5 5 14 14M19 5 5 19"/>',
     check:'<path d="m4 12 5 5L20 6"/>',
     double:'<path d="m2 12 5 5L18 6m-5 11 3 0 6-8"/>',
@@ -35,6 +36,8 @@
   let holdTimer=null;
   let longPressed=false;
   let lastTouchHandled=0;
+  let starredIds=new Set();
+  let starsLoadedFor=null;
   const clearTimer=()=>{if(holdTimer!==null)clearTimeout(holdTimer);holdTimer=null;};
 
   const bar=document.createElement('div');
@@ -42,15 +45,13 @@
   bar.className='h-selected-bar hidden';
   bar.setAttribute('role','toolbar');
   bar.setAttribute('aria-label','Selected message actions');
-  bar.innerHTML='<div class="h-selection-summary">'+
-    '<button type="button" id="hClearSelection" aria-label="Deselect message" title="Deselect">'+svg('close')+'</button>'+
-    '<span class="h-selection-name"><strong>1 selected</strong><small id="hSelectionDetail">Message options</small></span>'+
-    '<span class="h-selected-hint">ACTIONS</span></div>'+
-    '<div class="h-selection-actions">'+
+  // Single-row action toolbar: no redundant selected-message text or close X.
+  bar.innerHTML='<div class="h-selection-actions">'+
     '<button type="button" id="hTopReply" aria-label="Reply to selected message" title="Reply">'+svg('reply')+'<span>Reply</span></button>'+
     '<button type="button" id="hTopForward" aria-label="Forward selected message" title="Forward">'+svg('forward')+'<span>Forward</span></button>'+
     '<button type="button" id="hTopCopy" aria-label="Copy selected message" title="Copy">'+svg('copy')+'<span>Copy</span></button>'+
     '<button type="button" id="hTopEdit" aria-label="Edit selected message" title="Edit">'+svg('edit')+'<span>Edit</span></button>'+
+    '<button type="button" id="hTopStar" aria-label="Star selected message" title="Star">'+svg('star')+'<span>Star</span></button>'+
     '<button type="button" id="hTopDelete" class="h-action-danger" aria-label="Delete selected message for everyone" title="Delete">'+svg('trash')+'<span>Delete</span></button>'+
     '<button type="button" id="hTopReport" aria-label="Report selected message" title="Report"><span aria-hidden="true">⚑</span><span>Report</span></button>'+
     '</div>';
@@ -78,8 +79,12 @@
     if(!bubble){clearSelection();return;}
     row.classList.add('h-msg-selected');
     bubble.classList.add('h-selected-target');
-    const body=msg.location?'Location':msg.attachments?.length?'Media message':msg.body;
-    bar.querySelector('#hSelectionDetail').textContent=(body||'Message').slice(0,55);
+    const starred=starredIds.has(selectedId);
+    const starButton=bar.querySelector('#hTopStar');
+    starButton.classList.toggle('is-starred',starred);
+    starButton.setAttribute('aria-label',starred?'Unstar selected message':'Star selected message');
+    starButton.title=starred?'Unstar':'Star';
+    starButton.querySelector('span').textContent=starred?'Unstar':'Star';
     const mine=msg.sender_id===state.me?.id;
     const editable=mine && !msg.location && !(msg.attachments?.length);
     const copyable=!msg.location && !msg.attachments?.length && !!msg.body;
@@ -177,6 +182,14 @@
         quote.dataset.replyTarget=msg.reply_to.id;
         quote.innerHTML='<strong>'+esc(msg.reply_to.name)+'</strong><span>'+esc(msg.reply_to.preview)+'</span>';
         if(bubble)stack.insertBefore(quote,bubble.closest('.h-message-visual')||bubble);
+      }
+      if(starredIds.has(msg.id)){
+        const star=document.createElement('span');
+        star.className='h-message-star';
+        star.setAttribute('aria-label','Starred message');
+        star.title='You starred this message';
+        star.innerHTML=svg('star',12);
+        stack.querySelector('.h-message-visual')?.append(star);
       }
       const meta=stack.querySelector('.bubble-meta');
       if(meta){
@@ -314,6 +327,7 @@
     if(!content||!row||!msg||msg.deleted_at||
        e.target.closest('button,audio,video,.reactions,.h-inline-quote'))return;
     e.stopPropagation(); // suppress old bubble-only hold listener
+    e.preventDefault(); // Android WebView: do not begin native text selection.
     clearTimer();longPressed=false;
     touch={pointerId:e.pointerId,x:e.clientX,y:e.clientY,row,id:msg.id,content};
     holdTimer=setTimeout(()=>{
@@ -358,12 +372,22 @@
   root.addEventListener('pointerup',finishTouch,true);
   root.addEventListener('pointercancel',finishTouch,true);
   root.addEventListener('contextmenu',e=>{
+    // Android's native Copy / Select all popover must never appear when a
+    // text message is being held for Huddle message actions.
+    if(e.target.closest('.bubble,.h-location-card,.media-card')){
+      e.preventDefault();e.stopImmediatePropagation();
+      return;
+    }
     if(Date.now()-lastTouchHandled<850){e.preventDefault();e.stopImmediatePropagation();}
   },true);
   root.addEventListener('selectstart',e=>{
     if(e.target.closest('.bubble,.h-location-card,.media-card'))e.preventDefault();
   },true);
   root.addEventListener('click',e=>{
+    const selectedRow=e.target.closest('.message-row.h-msg-selected');
+    if(selectedRow&&Date.now()-lastTouchHandled>=650&& !e.target.closest('button,a,.reactions')){
+      clearSelection();return;
+    }
     if(Date.now()-lastTouchHandled<650 && e.target.closest('.message-row')){
       e.preventDefault();e.stopImmediatePropagation();
     }
@@ -379,6 +403,79 @@
     clearSelection();
     button?.click();  // Reuse existing edit/delete/report APIs and confirmations.
   }
+  // Starred state is private to the signed-in account, not broadcast to others.
+  async function loadStarred(force=false){
+    const account=state.me?.id||null;
+    if(!account){starredIds.clear();starsLoadedFor=null;return [];}
+    if(!force&&starsLoadedFor===account)return [];
+    const result=await api('/messages/starred');
+    if(state.me?.id!==account)return [];
+    starredIds=new Set(result.items.map(entry=>entry.message.id));
+    starsLoadedFor=account;
+    if(state.active)renderMessages(false);
+    return result.items;
+  }
+  async function toggleStar(id){
+    if(!id)return;
+    const previous=starredIds.has(id);
+    const method=previous?'DELETE':'PUT';
+    try{
+      await api('/messages/'+encodeURIComponent(id)+'/star',{method});
+      if(previous)starredIds.delete(id);else starredIds.add(id);
+      clearSelection();
+      if(state.active)renderMessages(false);
+      toast(previous?'Removed from starred messages':'Message starred');
+    }catch(err){toast(err.message,true)}
+  }
+  function closeStars(){document.getElementById('hStarsOverlay')?.remove();}
+  async function openStarred(){
+    closeStars();
+    const overlay=document.createElement('div');
+    overlay.id='hStarsOverlay';
+    overlay.className='h-stars-overlay';
+    overlay.innerHTML='<section class="h-stars-dialog" role="dialog" aria-modal="true" aria-label="Starred messages">'+
+      '<header><div><small>YOUR SAVED MESSAGES</small><h2>Starred messages</h2></div>'+
+      '<button type="button" id="hStarsClose" aria-label="Close starred messages">'+svg('close')+'</button></header>'+
+      '<div id="hStarsItems" class="h-stars-items" aria-live="polite">Loading starred messages…</div></section>';
+    document.body.append(overlay);
+    const container=overlay.querySelector('#hStarsItems');
+    const close=()=>{closeStars()};
+    overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+    overlay.querySelector('#hStarsClose').addEventListener('click',close);
+    const escHandler=e=>{if(e.key==='Escape'&&overlay.isConnected){close();document.removeEventListener('keydown',escHandler)}};
+    document.addEventListener('keydown',escHandler);
+    try{
+      const result=await api('/messages/starred');
+      if(!overlay.isConnected)return;
+      starredIds=new Set(result.items.map(e=>e.message.id));
+      starsLoadedFor=state.me?.id||null;
+      const items=result.items;
+      container.innerHTML=items.length?items.map(({message,conversation_name})=>{
+        const preview=message.location?'📍 Location':message.attachments?.length?
+          '📎 '+message.attachments[0].filename:(message.body||'Message').replace(/^\\s+/,'');
+        return '<button type="button" data-star-conv="'+esc(message.conversation_id)+'" data-star-msg="'+esc(message.id)+'">'+
+          '<span aria-hidden="true" class="h-stars-icon">'+svg('star',18)+'</span>'+
+          '<span class="h-star-list-copy"><strong>'+esc(conversation_name||'Conversation')+'</strong><small>'+esc(preview.slice(0,125))+'</small></span>'+
+          '<span class="h-stars-chevron" aria-hidden="true">›</span></button>';
+      }).join(''):'<div class="h-stars-empty">No starred messages yet. Long-press a message and tap Star.</div>';
+      if(state.active)renderMessages(false);
+    }catch(error){container.textContent=error.message||'Could not load starred messages';}
+    container.addEventListener('click',async e=>{
+      const item=e.target.closest('[data-star-msg]');if(!item)return;
+      const cid=item.dataset.starConv,id=item.dataset.starMsg;
+      close();document.removeEventListener('keydown',escHandler);
+      if(typeof openConversation==='function')await openConversation(cid,id);
+    });
+    overlay.querySelector('#hStarsClose').focus();
+  }
+  document.getElementById('hOpenStarred')?.addEventListener('click',openStarred);
+  document.getElementById('hProfileStars')?.addEventListener('click',openStarred);
+  // Account-specific storage is kept server-side; reload when account changes.
+  const originalOpenStars=openConversation;
+  openConversation=async function(...args){
+    if(starsLoadedFor!==state.me?.id){try{await loadStarred()}catch{}}
+    return originalOpenStars.apply(this,args);
+  };
   bar.addEventListener('click',async e=>{
     const btn=e.target.closest('button');
     if(!btn || btn.disabled || btn.hidden)return;
@@ -388,6 +485,7 @@
     if(btn.id==='hTopReply')startReply(id);
     if(btn.id==='hTopForward')forwardMessage(id);
     if(btn.id==='hTopCopy')await copyMessage();
+    if(btn.id==='hTopStar')await toggleStar(id);
     if(btn.id==='hTopEdit')performOriginalAction(id,'edit');
     if(btn.id==='hTopDelete')performOriginalAction(id,'delete');
     if(btn.id==='hTopReport')performOriginalAction(id,'report');
@@ -416,5 +514,5 @@
   installIcons();
 
   // Help automated interaction checks without exposing conversation content.
-  window.HuddleMessageUI={selectMessage,startReply,clearReply,getReply:()=>replyTo,clearSelection};
+  window.HuddleMessageUI={selectMessage,startReply,clearReply,getReply:()=>replyTo,clearSelection,openStarred,loadStarred,isStarred:id=>starredIds.has(id)};
 })();
