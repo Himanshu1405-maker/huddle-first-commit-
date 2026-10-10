@@ -104,9 +104,16 @@ def main():
             a.find_element(By.CSS_SELECTOR, '[data-sticker="🚀"]').click()
             WebDriverWait(c, 12).until(lambda browser:
                 len(browser.find_elements(By.CSS_SELECTOR, "#messages .h-animated-sticker")) >= 1)
-            bubble=a.execute_script("return [...document.querySelectorAll('.mine .bubble')].find(e=>e.textContent.includes('Hello from browser Alice'))")
-            assert bubble is not None
-            a.execute_script("arguments[0].dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))", bubble)
+            # Messages can re-render on websocket updates. Find and double-click
+            # the bubble in one atomic browser task, avoiding a stale DOM element.
+            bubble_found=a.execute_script("""
+                const bubble=[...document.querySelectorAll('.mine .bubble')]
+                  .find(e=>e.textContent.includes('Hello from browser Alice'));
+                if(!bubble)return false;
+                bubble.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));
+                return true;
+            """)
+            assert bubble_found
             WebDriverWait(a, 4).until(lambda browser:
                 len(browser.find_elements(By.CSS_SELECTOR, ".h-message-menu [data-h-reaction]")) >= 5)
             a.find_element(By.CSS_SELECTOR, '[data-h-reaction="❤️"]').click()
