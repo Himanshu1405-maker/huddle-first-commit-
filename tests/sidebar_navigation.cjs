@@ -1,0 +1,24 @@
+/* Keep home return and scrolling wired as the interface evolves. */
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const html=fs.readFileSync('app/web/index.html','utf8');
+const js=fs.readFileSync('app/web/app.js','utf8');
+const moments=fs.readFileSync('app/web/moments.js','utf8');
+const css=fs.readFileSync('app/web/sidebar-home-navigation.css','utf8');
+new Function(js);new Function(moments);
+assert(html.includes('id="backToChats"'),'Back button is required');
+assert(html.includes('aria-label="Back to all chats"'),'Back button must be accessible');
+assert(html.includes('href="/assets/sidebar-home-navigation.css"'),'Navigation CSS must load');
+assert(js.includes("$('#backToChats').addEventListener('click',()=>showWelcome())"),'Button must navigate to real inbox');
+assert(js.includes("function syncChatNavigation()"),'Central navigation visibility is required');
+assert(js.includes("$('#openSidebar').classList.toggle('hidden',!atInbox)"),'Mobile menu must not duplicate Back');
+assert(js.includes("syncChatNavigation();mobileDrawer(false);renderSidebar()"),'Inbox return should update Back visibility');
+assert(js.includes("renderHeader(){")&&js.includes("'Message';syncChatNavigation()"),'Conversation header must expose Back');
+assert(js.includes("$('#aiView').classList.remove('hidden');syncChatNavigation()"),'AI should have Back');
+assert(moments.includes("if(typeof syncChatNavigation==='function')syncChatNavigation()"),'Moments should have Back');
+assert(css.includes('overflow-y:auto!important'),'Whole sidebar must scroll');
+assert(css.includes('#appScreen #sidebar>.conversation-list'),'List must not capture only scrolling');
+assert(css.includes('overflow:visible!important'),'List overflow must be visible');
+assert(css.includes('margin-top:auto'),'Profile should remain at sidebar bottom when short');
+assert(css.includes('@media(max-width:720px)'),'Mobile back control required');
+assert(css.includes('prefers-reduced-motion'),'Respect motion settings');
+console.log('SIDEBAR_NAVIGATION_PASS: Inbox return, AI/Moments Back, full sidebar scroll and mobile layout');
