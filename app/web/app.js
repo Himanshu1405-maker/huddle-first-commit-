@@ -98,17 +98,37 @@ if(action.dataset.action==='report'){
 function setMediaProgress(text){const el=$('#mediaProgress');if(el)el.textContent=text||'';}
 async function sendMediaFile(file,caption='',durationMs=null){
   const cid=state.active?.id;if(!cid||!file)return;
-  if(file.size>(file.type.startsWith('video/')?20:6)*1024*1024){toast('Selected file exceeds upload size limit.',true);return;}
+  if(file.size>(file.type.startsWith('video/')||/\.(mp4|mov)$/i.test(file.name||'')?50:25)*1024*1024){toast('File is too large. Maximum 50 MB for videos or 25 MB for other files.',true);return;}
   const name=file.name||'attachment';
   const btn=$('#voiceNoteBtn');btn.disabled=true;setMediaProgress('Uploading '+name+'…');
   try{
-    const response=await fetch('/api/conversations/'+encodeURIComponent(cid)+'/attachments',{
-      method:'POST',credentials:'same-origin',
-      headers:{'X-Huddle-Filename':encodeURIComponent(name),'X-Huddle-Caption':encodeURIComponent(caption.slice(0,500)),'Content-Type':file.type||'application/octet-stream',...(durationMs>0&&file.type.startsWith('audio/')?{'X-Huddle-Duration-Ms':String(Math.round(durationMs))}:{})},
-      body:file
+    // XHR reports genuine bytes uploaded even for large videos. The request
+    // still uses the same authorized endpoint, metadata and session cookies.
+    const payload=await new Promise((resolve,reject)=>{
+      const xhr=new XMLHttpRequest();
+      xhr.open('POST','/api/conversations/'+encodeURIComponent(cid)+'/attachments');
+      xhr.withCredentials=true;
+      xhr.setRequestHeader('X-Huddle-Filename',encodeURIComponent(name));
+      xhr.setRequestHeader('X-Huddle-Caption',encodeURIComponent(caption.slice(0,500)));
+      xhr.setRequestHeader('Content-Type',file.type||'application/octet-stream');
+      if(durationMs>0&&file.type.startsWith('audio/'))xhr.setRequestHeader('X-Huddle-Duration-Ms',String(Math.round(durationMs)));
+      xhr.upload.onprogress=event=>{
+        if(event.lengthComputable&&event.total>0){
+          const percent=Math.min(99,Math.round(event.loaded/event.total*100));
+          setMediaProgress('Uploading '+name+' · '+percent+'%');
+        }else setMediaProgress('Uploading '+name+'…');
+      };
+      xhr.onload=()=>{
+        let data={};
+        try{data=JSON.parse(xhr.responseText)}catch{}
+        if(xhr.status>=200&&xhr.status<300)resolve(data);
+        else reject(new Error(typeof data.detail==='string'?data.detail:'Upload failed (HTTP '+xhr.status+').'));
+      };
+      xhr.onerror=()=>reject(new Error('Upload interrupted. Check your connection and try again.'));
+      xhr.onabort=()=>reject(new Error('Upload cancelled.'));
+      xhr.send(file);
     });
-    const payload=await response.json().catch(()=>({}));
-    if(!response.ok)throw Error(payload.detail||'Upload failed');
+    if(!payload.message)throw Error('Upload finished but no message was returned. Please check your chat.');
     toast('Shared '+name+' ✓');
     if(!state.connected&&state.active?.id===cid)await openConversation(cid);
   }catch(err){toast(err.message||'Could not share that file.',true);}

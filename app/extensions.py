@@ -14,8 +14,8 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from .security import encrypt_bytes, decrypt_bytes, decrypt_text
 
-MAX_UPLOAD = 6 * 1024 * 1024
-MAX_VIDEO_UPLOAD = 20 * 1024 * 1024
+MAX_UPLOAD = 25 * 1024 * 1024
+MAX_VIDEO_UPLOAD = 50 * 1024 * 1024
 SAFE_IMAGE_TYPES = {
     "image/png": (".png",),
     "image/jpeg": (".jpg", ".jpeg"),
@@ -69,7 +69,7 @@ def validate_media(data: bytes, filename: str, media_type: str):
     if media_type not in ALLOW:
         raise ValueError("Only images, short videos, voice notes, PDF/TXT and DOCX files are supported")
     limit = MAX_VIDEO_UPLOAD if media_type in SAFE_VIDEO_TYPES else MAX_UPLOAD
-    if not data or len(data)>limit: raise ValueError("Video limit: 20 MB; other files: 6 MB")
+    if not data or len(data)>limit: raise ValueError("Video limit: 50 MB; other files: 25 MB")
     ext = Path(filename).suffix.lower()
     if ext not in ALLOW[media_type]:
         raise ValueError("File extension does not match its declared type")
@@ -159,13 +159,15 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
     @app.post("/api/conversations/{conversation_id}/attachments", status_code=201)
     async def upload_attachment(conversation_id: str, request: Request):
         user=require_user(request)
-        raw_size=request.headers.get("content-length","")
-        upload_limit=MAX_VIDEO_UPLOAD if request.headers.get("content-type","").startswith("video/") else MAX_UPLOAD
-        if raw_size.isdigit() and int(raw_size)>upload_limit:fail(413,"File exceeds upload limit")
         with db.connection() as cx: ensure_membership(cx,conversation_id,user["id"])
         filename=Path(unquote(request.headers.get("x-huddle-filename","attachment"))).name
         filename="".join(c for c in filename if c.isprintable() and c not in '<>:"/\\|?*')[:95] or "attachment"
-        media_type=request.headers.get("content-type","").lower()
+        media_type=request.headers.get("content-type","").split(";",1)[0].strip().lower()
+        video_upload=media_type.startswith("video/") or (media_type in ("application/octet-stream","") and Path(filename).suffix.lower() in (".mp4",".mov"))
+        upload_limit=MAX_VIDEO_UPLOAD if video_upload else MAX_UPLOAD
+        upload_label="50 MB for videos" if video_upload else "25 MB for other files"
+        raw_size=request.headers.get("content-length","")
+        if raw_size.isdigit() and int(raw_size)>upload_limit:fail(413,"File exceeds limit: "+upload_label)
         raw_duration=request.headers.get("x-huddle-duration-ms","")
         duration_ms=int(raw_duration) if raw_duration.isascii() and raw_duration.isdecimal() and len(raw_duration)<=8 else None
         if duration_ms is not None and not (100<=duration_ms<=3600000):
@@ -173,7 +175,7 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         chunks=bytearray()
         async for piece in request.stream():
             if len(chunks)+len(piece)>upload_limit:
-                fail(413,"File exceeds upload limit")
+                fail(413,"File exceeds limit: "+upload_label)
             chunks.extend(piece)
         data=bytes(chunks)
         try: media_type=validate_media(data, filename, media_type)

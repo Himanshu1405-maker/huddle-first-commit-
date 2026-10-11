@@ -7,7 +7,7 @@ new Function(js);
 for(const fragment of ['function openMediaEditor(file)','function handleEmojiPickerClick(e)','function decorateHuddleMessages()','function openHuddleContextMenu','async function sendSticker(emoji)','canvas.toBlob','data-photo-tool','hEditorCaption','h-animated-sticker','pointerdown','contextmenu'])assert(js.includes(fragment),fragment);
 assert(main.includes("e=>openMediaEditor(e.target.files?.[0])"));
 assert(main.includes("async function sendMediaFile(file,caption='',durationMs=null)"));
-assert(main.includes("'X-Huddle-Caption':encodeURIComponent"));
+assert(main.includes("xhr.setRequestHeader('X-Huddle-Caption',encodeURIComponent"));
 assert(main.includes("e=>handleEmojiPickerClick(e)"));
 assert(html.includes('src="/assets/chat-enhancements.js" defer'));
 assert(html.includes('href="/assets/chat-enhancements.css"'));

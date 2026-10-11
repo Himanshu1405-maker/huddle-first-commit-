@@ -59,7 +59,7 @@ def test_private_text_media_views_and_expiry(tmp_path):
         assert outsider.get(f'/api/moments/{photoid}/media').status_code==404
         assert alice.post('/api/moments/media',content=b'badtype'*4,
             headers={'content-type':'image/jpeg'}).status_code==422
-        assert alice.post('/api/moments/media',content=b'x'*(12*1024*1024+1),
+        assert alice.post('/api/moments/media',content=b'x'*(24*1024*1024+1),
             headers={'content-type':'image/jpeg'}).status_code==413
         assert alice.post('/api/moments',json={'text':'Hi','palette':'evil'}).status_code==422
         assert alice.delete(f'/api/moments/{photoid}').status_code==200
