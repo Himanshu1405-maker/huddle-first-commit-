@@ -231,6 +231,14 @@ def main():
             # Hosted AI fallback can be connected without developer credentials.
             a.find_element(By.ID, "aiQuickBtn").click()
             WebDriverWait(a, 10).until(lambda browser:
+                browser.find_element(By.ID, "aiView").is_displayed())
+            # Explicitly test the optional hosted fallback, independent of
+            # whether CI has a server AI provider configured today.
+            a.execute_script("""
+                state.config.ai_chat=false;state.config.ai_image=false;
+                state.aiMode='text';state.puter.connected=false;aiStatus();
+            """)
+            WebDriverWait(a, 10).until(lambda browser:
                 browser.find_element(By.ID, "aiPuterConnect").is_displayed())
             assert not a.execute_script("return !!document.querySelector('script[src=\"https://js.puter.com/v2/\"]')")
             a.find_element(By.ID, "aiPuterConnect").click()
