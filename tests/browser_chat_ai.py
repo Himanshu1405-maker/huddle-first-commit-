@@ -68,6 +68,23 @@ def main():
                     };
                     state.puter.connected=true;
                 """)
+                trigger=browser.execute_script("""
+                    const button=document.getElementById('hChatAiOpen');
+                    const view=document.getElementById('conversationView');
+                    const parent=button.parentElement;
+                    const r=button.getBoundingClientRect();
+                    const p=parent.getBoundingClientRect();
+                    const comp=document.querySelector('.composer-area').getBoundingClientRect();
+                    const style=getComputedStyle(button),ps=getComputedStyle(parent);
+                    return {buttonRect:{top:r.top,bottom:r.bottom,width:r.width,height:r.height},
+                      parentRect:{top:p.top,bottom:p.bottom,width:p.width,height:p.height},
+                      composerRect:{top:comp.top,bottom:comp.bottom,height:comp.height},
+                      display:style.display,visibility:style.visibility,parentDisplay:ps.display,
+                      active:state.active?.id,conversationDisplay:getComputedStyle(view).display,
+                      elementAt:document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.id};
+                """)
+                print("INLINE_AI_TRIGGER",width,trigger,flush=True)
+                assert trigger['buttonRect']['height']>15 and trigger['buttonRect']['width']>25,trigger
                 browser.find_element(By.ID,"hChatAiOpen").click()
                 assert browser.find_element(By.ID,"hChatAiPanel").is_displayed()
                 view=browser.execute_script("""
