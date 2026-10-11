@@ -69,7 +69,7 @@ def main():
                     state.puter.connected=true;
                 """)
                 trigger=browser.execute_script("""
-                    const button=document.getElementById('hChatAiOpen');
+                    const button=document.getElementById('aiQuickBtn');
                     const view=document.getElementById('conversationView');
                     const parent=button.parentElement;
                     const r=button.getBoundingClientRect();
@@ -85,7 +85,7 @@ def main():
                 """)
                 print("INLINE_AI_TRIGGER",width,trigger,flush=True)
                 assert trigger['buttonRect']['height']>15 and trigger['buttonRect']['width']>25,trigger
-                browser.find_element(By.ID,"hChatAiOpen").click()
+                browser.find_element(By.ID,"aiQuickBtn").click()
                 assert browser.find_element(By.ID,"hChatAiPanel").is_displayed()
                 view=browser.execute_script("""
                     const p=document.querySelector('#hChatAiPanel').getBoundingClientRect();
