@@ -307,7 +307,29 @@ def main():
                             if m['kind']=='image' and m['has_media']]
                     assert images,'Moments image upload failed'
                     assert bob.get(base+'/api/moments/'+images[0]['id']+'/media').status_code==200
+                    assert not browser.find_element(By.ID,'hMomentUploadProgress').is_displayed()
+                    assert len(browser.find_elements(By.CSS_SELECTOR,'#hMomentsStrip .h-moment-own-group'))==1
                 browser.execute_script("showWelcome()")
+                # Screenshot regression: selected pill must be fully visible,
+                # all filters remain separate from the scrollable chat list.
+                inbox=browser.execute_script("""
+                  const f=document.querySelector('.inbox-filters');
+                  const list=document.getElementById('homeChatList');
+                  const outer=f.getBoundingClientRect(),item=list.getBoundingClientRect();
+                  const pills=[...f.querySelectorAll('button')].map(n=>n.getBoundingClientRect().toJSON());
+                  const ring=document.querySelectorAll('#hMomentsStrip .h-moment-own-group').length;
+                  return {top:outer.top,bottom:outer.bottom,listTop:item.top,listHeight:item.height,
+                    pills,ring,footer:!!document.querySelector('.inbox-home-footer'),
+                    duplicateTheme:!!document.getElementById('vInboxThemeBtn'),
+                    scrollOverflow:document.documentElement.scrollWidth-innerWidth};
+                """)
+                print('INBOX_REFINEMENT',width,inbox,flush=True)
+                assert inbox['listTop']>=inbox['bottom']-2,inbox
+                assert inbox['listHeight']>45 and inbox['ring']==1,inbox
+                assert not inbox['footer'] and not inbox['duplicateTheme'],inbox
+                assert inbox['scrollOverflow']<=2,inbox
+                assert all(pill['top']>=inbox['top']-1 and pill['bottom']<=inbox['bottom']+1
+                           for pill in inbox['pills']),inbox
             print('MODERN_COMPOSER_BROWSER_PASS',flush=True)
         finally:
             browser.quit();server.should_exit=True

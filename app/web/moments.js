@@ -9,6 +9,7 @@
  if(!page||!viewer||!compose)return;
  let entries=[],account='',sequence=[],index=0,playing=false,elapsed=0,duration=5500,lastTick=0,loop=null,previewUrl=null,mode='text',palette='iris',publishing=false;
  let pendingFile=null,lastFocused=null;
+ let uploadRequest=null;
  const icon=name=>name==='video'?'▶':name==='image'?'▣':'✦';
  const timeAgo=date=>{
    const mins=Math.max(0,Math.floor((Date.now()-new Date(date).getTime())/60000));
@@ -39,7 +40,7 @@
      '" data-moment-owner="'+clean(first.author_id)+'" aria-label="View '+clean(first.author_name)+' Moments">'+
      '<span class="h-moment-avatar-wrap '+(unread?'unseen':'seen')+'"><span class="h-moment-avatar-inner">'+
      clean(first.author_name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join('').toUpperCase())+'</span></span>'+
-     '<span class="h-moment-person-text"><strong>'+clean(first.mine?'Your Moment':first.author_name)+'</strong>'+
+     '<span class="h-moment-person-text"><strong>'+clean(first.mine?(small?'You':'My Moments'):first.author_name)+'</strong>'+
      (!small?'<small>'+items.length+' '+(items.length===1?'update':'updates')+' · '+timeAgo(latest.created_at)+'</small>':'')+
      '</span></button>';
  }
@@ -50,8 +51,10 @@
    $('hFriendMoments').innerHTML=friends.length?friends.map(g=>tile(g)).join(''):
       '<div class="h-moments-empty">✦<strong>It’s quiet right now.</strong><span>Moments from people you share a chat with will show up here.</span></div>';
    const strip=$('hMomentsStrip');
-   if(strip)strip.innerHTML='<button id="hMomentsStart" class="h-moment-strip-add" type="button" aria-label="Share your Moment"><span aria-hidden="true">＋</span><small>Your Moment</small></button>'+
-     (mine?tile(mine,true):'')+friends.slice(0,10).map(g=>tile(g,true)).join('');
+   if(strip)strip.innerHTML=(mine?'<div class="h-moment-own-group">'+tile(mine,true)+
+       '<button id="hMomentsStart" class="h-moment-mini-create" type="button" aria-label="Add another Moment" title="Add Moment">＋</button></div>':
+       '<button id="hMomentsStart" class="h-moment-strip-add" type="button" aria-label="Share your Moment"><span aria-hidden="true">＋</span><small>Add Moment</small></button>')+
+       friends.slice(0,10).map(g=>tile(g,true)).join('');
  }
  async function refresh(){
    if(!state.me)return;
@@ -95,6 +98,7 @@
    if(!state.me)return;
    lastFocused=document.activeElement;
    compose.classList.remove('hidden');
+   hideProgress();
    chooseMode('text');
    $('hMomentComposeError').classList.add('hidden');
    $('hMomentTextInput').value='';
@@ -104,12 +108,52 @@
  function closeComposer(){
    if(publishing)return;
    clearPreview();
+   hideProgress();
    compose.classList.add('hidden');
    lastFocused?.focus?.();
  }
  function errorMessage(text){
    const target=$('hMomentComposeError');
    target.textContent=text;target.classList.remove('hidden');
+ }
+ function progressUI(percent,label,indeterminate=false){
+   const box=$('hMomentUploadProgress');
+   box.classList.remove('hidden');
+   box.classList.toggle('h-is-indeterminate',indeterminate);
+   $('hMomentUploadText').textContent=label;
+   $('hMomentUploadPercent').textContent=indeterminate?'':percent+'%';
+   $('hMomentUploadBar').style.width=indeterminate?'42%':percent+'%';
+ }
+ function hideProgress(){
+   $('hMomentUploadProgress').classList.add('hidden');
+   $('hMomentUploadProgress').classList.remove('h-is-indeterminate');
+   $('hMomentUploadBar').style.width='0%';
+   $('hMomentUploadPercent').textContent='0%';
+ }
+ function uploadMomentFile(file){
+   return new Promise((resolve,reject)=>{
+     const xhr=new XMLHttpRequest();
+     uploadRequest=xhr;
+     xhr.open('POST','/api/moments/media');
+     xhr.withCredentials=true;
+     xhr.setRequestHeader('Content-Type',file.type);
+     xhr.upload.onprogress=event=>{
+       if(event.lengthComputable&&event.total>0){
+         const value=Math.min(99,Math.floor(event.loaded/event.total*100));
+         progressUI(value,'Uploading your Moment…');
+       }else progressUI(0,'Uploading your Moment…',true);
+     };
+     xhr.onload=()=>{
+       uploadRequest=null;
+       let response={};
+       try{response=JSON.parse(xhr.responseText)}catch{}
+       if(xhr.status>=200&&xhr.status<300)resolve(response);
+       else reject(new Error(typeof response.detail==='string'?response.detail:'Could not upload your Moment'));
+     };
+     xhr.onerror=()=>{uploadRequest=null;reject(new Error('Upload interrupted. Check your connection and retry.'))};
+     xhr.onabort=()=>{uploadRequest=null;reject(new Error('Upload cancelled'))};
+     xhr.send(file);
+   });
  }
  async function publish(){
    if(publishing)return;
@@ -132,21 +176,18 @@
      }
      publishing=true;
      const button=$('hMomentPublish');button.disabled=true;button.textContent='Sharing Moment…';
-     const response=mode==='text'?await api(path,options):
-       await (async()=>{
-         const result=await fetch('/api'+path,{credentials:'same-origin',...options});
-         const body=await result.json().catch(()=>({detail:'Could not upload this Moment'}));
-         if(!result.ok)throw new Error(typeof body.detail==='string'?body.detail:'Could not upload');
-         return body;
-       })();
+     progressUI(0,mode==='text'?'Publishing your Moment…':'Preparing your upload…',true);
+     const response=mode==='text'?await api(path,options):await uploadMomentFile(pendingFile);
      if(!response?.id)throw Error('The Moment was not saved');
+     progressUI(100,'Moment shared successfully');
      publishing=false;
      clearPreview();
      compose.classList.add('hidden');
+     hideProgress();
      toast('✦ Your Moment is live for 24 hours');
      await refresh();
      showHome();
-   }catch(error){errorMessage(error.message||'Could not share Moment')}
+   }catch(error){hideProgress();errorMessage(error.message||'Could not share Moment')}
    finally{
      publishing=false;
      $('hMomentPublish').disabled=false;$('hMomentPublish').textContent='Post Moment ↗';

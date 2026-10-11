@@ -85,6 +85,11 @@
       slider.setAttribute('aria-valuetext',value+' percent');
     }
     if(readout)readout.value=value+'%';
+    const quick=$('#hTextQuickValue');
+    if(quick)quick.textContent=value+'%';
+    const smaller=$('#hTextSmaller'),larger=$('#hTextLarger');
+    if(smaller)smaller.disabled=value<=90;
+    if(larger)larger.disabled=value>=135;
     const preview=$('#vTextPreview');
     if(preview)preview.style.fontSize=(14*value/100)+'px';
     const note=document.getElementById('vChatThemeHint');
@@ -129,7 +134,7 @@
     lastFocus=null;
   }
   document.getElementById('vHeaderThemeBtn')?.addEventListener('click',openDrawer);
-  document.getElementById('vInboxThemeBtn')?.addEventListener('click',openDrawer);
+  // The uppermost toolbar owns the single appearance control; no duplicate in Chats.
   $('#vPanelClose')?.addEventListener('click',closeDrawer);
   scrim.addEventListener('click',closeDrawer);
   document.addEventListener('keydown',event=>{
@@ -142,6 +147,12 @@
       else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
     }
   });
+  const adjustTextSize=direction=>{
+    config.textSize=Math.min(135,Math.max(90,config.textSize+direction*5));
+    persist();apply();
+  };
+  $('#hTextSmaller')?.addEventListener('click',()=>adjustTextSize(-1));
+  $('#hTextLarger')?.addEventListener('click',()=>adjustTextSize(1));
   $('#vTextSize')?.addEventListener('input',event=>{
     const value=Number(event.target.value);
     if(!Number.isInteger(value)||value<90||value>135||value%5!==0)return;

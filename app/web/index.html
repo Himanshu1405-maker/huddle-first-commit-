@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="/assets/readability-tool-centering.css" />
   <link rel="stylesheet" href="/assets/compact-selected-starred.css" />
   <link rel="stylesheet" href="/assets/moments.css" />
+  <link rel="stylesheet" href="/assets/inbox-moments-refinement.css" />
 </head>
 <body>
   <div class="auth-screen" id="authScreen">
@@ -108,12 +109,12 @@
         <div class="header-actions"><span class="ws-status" id="wsStatus" title="Connection status"><span></span> Connecting</span><button class="icon-btn toolbar-btn" id="searchMessagesBtn" aria-label="Search your messages" title="Search messages"><span data-icon="search"></span></button><button class="icon-btn toolbar-btn toolbar-ai" id="aiQuickBtn" aria-label="Open Huddle AI" title="Open Huddle AI"><span data-icon="sparkles"></span></button><button type="button" class="icon-btn toolbar-btn toolbar-theme" id="vHeaderThemeBtn" title="Chat themes and wallpapers" aria-label="Customize chat theme">🎨</button><button class="icon-btn toolbar-btn" id="profileQuickBtn" aria-label="Your profile and settings" title="Your profile"><span data-icon="user-round"></span></button></div>
       </header>
       <section class="welcome-chat inbox-home" id="welcomeChat" aria-label="Chat inbox">
-        <div class="inbox-home-header"><div class="inbox-title"><span class="inbox-eyebrow">HUDDLE / MESSAGES</span><h1>Chats</h1><p>Your conversations, right where you left them.</p></div><div class="inbox-home-actions"><button class="inbox-theme-btn" id="vInboxThemeBtn" type="button" title="Themes and wallpapers" aria-label="Customize Huddle"><span class="v-theme-emoji">🎨</span> <span class="v-theme-word">Themes</span></button><button class="inbox-new-btn" id="welcomeNewBtn" type="button" title="New conversation" aria-label="Start a new conversation">✎ <span>New chat</span></button></div></div>
+        <div class="inbox-home-header"><div class="inbox-title"><span class="inbox-eyebrow">HUDDLE / MESSAGES</span><h1>Chats</h1><p>Your conversations, right where you left them.</p></div><div class="inbox-home-actions"><button class="inbox-new-btn" id="welcomeNewBtn" type="button" title="New conversation" aria-label="Start a new conversation">✎ <span>New chat</span></button></div></div>
         <div class="h-moments-strip-section"><div class="h-moments-strip-head"><strong>✦ Moments</strong><button id="hMomentsSeeAll" type="button">See all ›</button></div><div class="h-moments-strip" id="hMomentsStrip" aria-label="24-hour updates"><button id="hMomentsStart" class="h-moment-strip-add" type="button"><span aria-hidden="true">＋</span><small>Your Moment</small></button></div></div>
         <div class="inbox-search-wrap"><span aria-hidden="true">⌕</span><input id="homeSearch" type="search" placeholder="Search people and conversations" autocomplete="off" aria-label="Search your chats"></div>
         <div class="inbox-filters" role="group" aria-label="Filter chats"><button type="button" data-home-filter="all" class="selected">All chats</button><button type="button" data-home-filter="dm">Direct messages</button><button type="button" data-home-filter="group">Groups</button></div>
         <div id="homeChatList" class="inbox-list" aria-live="polite"></div>
-        <div class="inbox-home-footer"><span>🔒 Your private chats stay between members.</span><button type="button" id="inboxOpenAI">✦ Huddle Intelligence</button></div>
+        
       </section>
       <section class="h-moments-home hidden" id="hMomentsHome" aria-labelledby="hMomentsHeading">
         <div class="h-moments-hero"><span class="h-moments-kicker">HUDDLE / RIGHT NOW</span><div class="h-moments-title"><div><h1 id="hMomentsHeading">Moments<span>.</span></h1><p>Little stories that make the day. Just for your circle, for 24 hours.</p></div><button type="button" id="hMomentCreate" class="h-moments-create">＋ Add Moment</button></div></div>
@@ -156,7 +157,13 @@
       <section id="vThemePanel" class="v-theme-panel" role="dialog" aria-modal="true" aria-labelledby="vThemeTitle" hidden>
         <header class="v-panel-head"><div><span class="v-panel-kicker">MAKE HUDDLE YOURS ✦</span><h2 id="vThemeTitle">Themes &amp; wallpapers</h2></div><button type="button" id="vPanelClose" class="v-panel-close" aria-label="Close theme settings">×</button></header>
         <div class="v-panel-scroll">
-          <p class="v-panel-description">Choose how your chats feel. Tap a preview to apply it instantly — no restart needed.</p>
+          <p class="v-panel-description">Personalize your chats, colors and readability.</p>
+          <section class="h-font-quick" aria-label="Quick text size controls">
+            <span class="h-font-quick-title">Aa <span>Text size</span></span>
+            <button type="button" id="hTextSmaller" aria-label="Decrease text size">A−</button>
+            <output id="hTextQuickValue" aria-live="polite">100%</output>
+            <button type="button" id="hTextLarger" aria-label="Increase text size">A+</button>
+          </section>
           <section class="v-theme-section" aria-label="App colors"><div class="v-theme-section-heading"><h3>🎨 App colors</h3><small>Auto follows your device</small></div><div class="v-choice-grid"><button type="button" class="v-choice" data-v-kind="theme" data-v-value="system" aria-pressed="false"><span class="v-choice-preview" data-preview-theme="system" aria-hidden="true"></span><span class="v-choice-label">Auto</span></button><button type="button" class="v-choice" data-v-kind="theme" data-v-value="mint" aria-pressed="false"><span class="v-choice-preview" data-preview-theme="mint" aria-hidden="true"></span><span class="v-choice-label">Mint</span></button><button type="button" class="v-choice" data-v-kind="theme" data-v-value="peach" aria-pressed="false"><span class="v-choice-preview" data-preview-theme="peach" aria-hidden="true"></span><span class="v-choice-label">Peach</span></button><button type="button" class="v-choice" data-v-kind="theme" data-v-value="lavender" aria-pressed="false"><span class="v-choice-preview" data-preview-theme="lavender" aria-hidden="true"></span><span class="v-choice-label">Lilac</span></button><button type="button" class="v-choice" data-v-kind="theme" data-v-value="ocean" aria-pressed="false"><span class="v-choice-preview" data-preview-theme="ocean" aria-hidden="true"></span><span class="v-choice-label">Ocean</span></button><button type="button" class="v-choice" data-v-kind="theme" data-v-value="midnight" aria-pressed="false"><span class="v-choice-preview" data-preview-theme="midnight" aria-hidden="true"></span><span class="v-choice-label">Night</span></button></div></section>
           <section class="v-theme-section" aria-label="Chat wallpapers">
             <div class="v-theme-section-heading"><h3>🌿 Chat wallpaper</h3><small id="vSelectedWallpaper">All chats</small></div>
@@ -184,7 +191,9 @@
       <div class="h-moment-compose-tabs" role="group" aria-label="Moment type"><button type="button" data-moment-type="text" class="active">✎ Text</button><button type="button" data-moment-type="media">▣ Photo / video</button></div>
       <div id="hMomentTextFields"><textarea id="hMomentTextInput" maxlength="320" placeholder="What's your vibe right now?" aria-label="Moment text"></textarea><div id="hMomentPaletteChoices" class="h-moment-palettes" role="group" aria-label="Background color"><button data-palette="iris" class="active" aria-label="Iris purple" type="button"></button><button data-palette="lagoon" aria-label="Lagoon teal" type="button"></button><button data-palette="sunrise" aria-label="Sunrise orange" type="button"></button><button data-palette="midnight" aria-label="Midnight blue" type="button"></button><button data-palette="peach" aria-label="Peach pink" type="button"></button><button data-palette="mint" aria-label="Mint green" type="button"></button></div></div>
       <div id="hMomentMediaFields" class="hidden"><label class="h-moment-file-pick" for="hMomentFile">＋ Choose a photo or video <small>JPG, PNG, WebP, MP4 or WebM · max 12 MB</small></label><input id="hMomentFile" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" class="hidden"/><div id="hMomentMediaPreview" class="h-moment-media-preview" aria-live="polite"></div></div>
-      <p id="hMomentComposeError" role="alert" class="h-moment-error hidden"></p><button id="hMomentPublish" type="button" class="h-moment-publish">Post Moment ↗</button>
+      <p id="hMomentComposeError" role="alert" class="h-moment-error hidden"></p>
+      <div id="hMomentUploadProgress" class="h-moment-upload-status hidden" role="status" aria-live="polite"><div class="h-moment-upload-details"><span id="hMomentUploadText">Preparing Moment…</span><span id="hMomentUploadPercent">0%</span></div><div class="h-moment-upload-track"><div id="hMomentUploadBar"></div></div></div>
+      <button id="hMomentPublish" type="button" class="h-moment-publish">Post Moment ↗</button>
     </section>
   </div>
   <div id="hMomentViewer" class="h-moment-viewer hidden" role="dialog" aria-modal="true" aria-label="Huddle Moment viewer">

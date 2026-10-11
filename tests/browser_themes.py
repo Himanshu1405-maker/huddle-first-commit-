@@ -52,15 +52,21 @@ def main():
                     theme:app.dataset.vTheme,wallpaper:app.dataset.vWallpaper,
                     cardBorder:getComputedStyle(card).borderRadius,
                     listVisible:!!card.getClientRects().length,
-                    themeButton:!!document.getElementById('vInboxThemeBtn')};
+                    themeButton:!!document.getElementById('vHeaderThemeBtn') && !document.getElementById('vInboxThemeBtn')};
                 """)
                 print('VIVID_INBOX',width,initial,flush=True)
                 assert initial['appWidth']<=initial['viewport']+3
                 assert initial['themeButton'] and initial['listVisible']
                 assert initial['wallpaper']=='doodles'
-                browser.find_element(By.ID,'vInboxThemeBtn').click()
+                browser.find_element(By.ID,'vHeaderThemeBtn').click()
                 assert browser.find_element(By.ID,'vThemePanel').is_displayed()
                 assert len(browser.find_elements(By.CSS_SELECTOR,'[data-v-kind="wallpaper"]'))==8
+                before=browser.execute_script("return document.getElementById('appScreen').style.getPropertyValue('--h-text-scale')")
+                browser.find_element(By.ID,'hTextLarger').click()
+                after=browser.execute_script("return document.getElementById('appScreen').style.getPropertyValue('--h-text-scale')")
+                assert float(after)>float(before) and browser.find_element(By.ID,'hTextQuickValue').text=='105%',(before,after)
+                browser.find_element(By.ID,'hTextSmaller').click()
+                assert browser.find_element(By.ID,'hTextQuickValue').text=='100%'
                 browser.find_element(By.CSS_SELECTOR,'[data-v-kind="theme"][data-v-value="lavender"]').click()
                 browser.find_element(By.CSS_SELECTOR,'[data-v-kind="wallpaper"][data-v-value="waves"]').click()
                 assert browser.execute_script("return document.getElementById('appScreen').dataset.vTheme")=='lavender'
@@ -98,7 +104,7 @@ def main():
                 WebDriverWait(browser,10).until(lambda b:not b.find_element(By.ID,'appScreen').get_attribute('class').find('hidden')>=0)
                 assert browser.execute_script("return document.getElementById('appScreen').dataset.vTheme")=='midnight','Theme did not survive reload'
                 assert browser.execute_script("return document.getElementById('appScreen').dataset.vComposer")=='glass','Composer choice did not persist'
-                browser.find_element(By.ID,'vInboxThemeBtn').click()
+                browser.find_element(By.ID,'vHeaderThemeBtn').click()
                 browser.find_element(By.ID,'vResetVisuals').click()
                 assert browser.execute_script("return document.getElementById('appScreen').dataset.vWallpaper")=='doodles'
                 browser.find_element(By.ID,'vPanelClose').click()

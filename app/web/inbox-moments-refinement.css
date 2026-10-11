@@ -1,0 +1,293 @@
+/* Huddle Chats and Moments polish — mobile-first, accessible, no duplicate chrome. */
+
+/* Permanent panels never shrink into the scrollable chat list. On short phones,
+   only the conversation list scrolls; filters and search stay fully visible. */
+#appScreen #welcomeChat{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#appScreen #welcomeChat>.inbox-home-header,
+#appScreen #welcomeChat>.h-moments-strip-section,
+#appScreen #welcomeChat>.inbox-search-wrap,
+#appScreen #welcomeChat>.inbox-filters{
+  flex:0 0 auto!important;
+  min-width:0!important;
+}
+#appScreen #welcomeChat>.inbox-home-header{
+  padding-bottom:9px!important;
+}
+#appScreen #welcomeChat>.inbox-home-header .inbox-home-actions{
+  display:flex!important;gap:8px!important;
+}
+#appScreen #welcomeChat>.inbox-search-wrap{
+  margin-top:11px!important;
+  margin-bottom:10px!important;
+}
+#appScreen #welcomeChat>.inbox-filters{
+  display:flex!important;
+  gap:8px!important;
+  align-items:center!important;
+  box-sizing:border-box!important;
+  padding-top:7px!important;
+  padding-bottom:14px!important;
+  min-height:63px!important;
+  line-height:normal!important;
+  border-bottom:1px solid var(--v-line)!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scroll-padding-inline:14px;
+  scrollbar-width:none;
+}
+#appScreen #welcomeChat>.inbox-filters::-webkit-scrollbar{display:none}
+#appScreen #welcomeChat>.inbox-filters button{
+  box-sizing:border-box!important;
+  flex:0 0 auto!important;
+  align-self:center!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:43px!important;
+  height:auto!important;
+  line-height:1.2!important;
+  padding:10px 17px!important;
+  border-radius:24px!important;
+  font-size:calc(12px * var(--h-text-scale,1))!important;
+  transform:none!important;
+}
+#appScreen #welcomeChat>.inbox-filters button.selected{
+  box-shadow:0 3px 10px color-mix(in srgb,var(--v-accent) 12%,transparent)!important;
+}
+#appScreen #welcomeChat>.inbox-list{
+  box-sizing:border-box!important;
+  flex:1 1 0!important;
+  min-height:0!important;
+  width:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain!important;
+  padding-top:16px!important;
+  padding-bottom:max(25px,env(safe-area-inset-bottom))!important;
+  scroll-padding-top:16px;
+  scrollbar-gutter:stable;
+}
+#appScreen #welcomeChat>.inbox-list .inbox-chat{
+  box-sizing:border-box!important;
+  margin-top:0!important;
+  margin-bottom:12px!important;
+  min-height:85px!important;
+}
+#appScreen #welcomeChat .inbox-title h1{
+  font-size:calc(36px * var(--h-text-scale,1))!important;
+}
+#appScreen #welcomeChat .inbox-title p{
+  font-size:calc(12px * var(--h-text-scale,1))!important;
+}
+#appScreen #welcomeChat .inbox-search-wrap input{
+  font-size:calc(14px * var(--h-text-scale,1))!important;
+}
+#appScreen #welcomeChat .inbox-chat .inbox-chat-bottom{
+  font-size:calc(12px * var(--h-text-scale,1))!important;
+}
+#appScreen #welcomeChat .inbox-home-actions .inbox-new-btn{
+  min-width:44px;min-height:44px;border-radius:13px;
+}
+
+/* Font adjustments stay available in the SINGLE top toolbar appearance panel. */
+.h-font-quick{
+  display:flex;align-items:center;gap:9px;
+  margin:0 0 18px;padding:12px 13px;
+  border:1px solid var(--v-line);border-radius:16px;
+  background:var(--v-sheet);box-shadow:0 5px 16px rgba(35,35,70,.04);
+}
+.h-font-quick-title{
+  display:flex;align-items:center;gap:7px;flex:1 1 auto;min-width:0;
+  font:900 17px Manrope,system-ui,sans-serif;color:var(--v-title);
+}
+.h-font-quick-title span{
+  font-size:12px;font-weight:750;white-space:nowrap;
+}
+.h-font-quick button{
+  flex:0 0 40px;display:grid;place-items:center;
+  width:40px;height:39px;border:1px solid var(--v-line);
+  border-radius:12px;background:var(--v-accent-wash);
+  color:var(--v-accent);font:900 14px Manrope,system-ui,sans-serif;
+  cursor:pointer;
+  transition:background .2s,transform .2s;
+}
+.h-font-quick button:active{transform:scale(.94)}
+.h-font-quick button:disabled{opacity:.34;cursor:default;transform:none}
+.h-font-quick output{
+  width:44px;flex:0 0 44px;text-align:center;
+  font:850 12px Manrope,system-ui,sans-serif;color:var(--v-title);
+  font-variant-numeric:tabular-nums;
+}
+
+/* One neat owner ring; add another update using the small floating + badge. */
+#appScreen .h-moments-strip-section{
+  margin-top:3px!important;
+  margin-bottom:8px!important;
+}
+#appScreen .h-moments-strip{
+  display:flex!important;
+  gap:15px!important;
+  align-items:flex-start!important;
+  padding-top:6px!important;
+  padding-bottom:8px!important;
+}
+#appScreen .h-moment-own-group{
+  position:relative;
+  width:78px;max-width:78px;
+  flex:0 0 78px;
+}
+#appScreen .h-moment-own-group>.h-moment-strip-item{
+  width:78px;max-width:78px;
+}
+#appScreen .h-moment-mini-create{
+  position:absolute;z-index:3;
+  top:38px;right:1px;
+  display:grid;place-items:center;
+  width:26px;height:26px;border-radius:50%;
+  border:3px solid var(--v-surface);
+  color:white;background:var(--v-accent);
+  box-shadow:0 3px 9px rgba(30,25,90,.19);
+  font:900 19px/1 Manrope,system-ui,sans-serif;
+  cursor:pointer;transition:transform .18s,filter .18s;
+}
+#appScreen .h-moment-mini-create:active{transform:scale(.9)}
+#appScreen .h-moment-avatar-wrap{
+  transition:transform .26s cubic-bezier(.2,.85,.3,1),box-shadow .26s ease;
+}
+#appScreen [data-moment-owner]:hover .h-moment-avatar-wrap{
+  transform:scale(1.04);box-shadow:0 5px 18px rgba(110,74,175,.2);
+}
+#appScreen .h-moment-strip-item .h-moment-person-text{width:100%;max-width:80px}
+#appScreen .h-moment-strip-item .h-moment-person-text strong{
+  display:block;max-width:100%;
+  font-size:calc(11px * var(--h-text-scale,1))!important;
+  text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#appScreen .h-moments-strip-head strong{
+  font-size:calc(15px * var(--h-text-scale,1))!important;
+}
+#appScreen .h-moments-home .h-moments-title h1{
+  font-size:calc(39px * var(--h-text-scale,1))!important;
+}
+#appScreen .h-moments-home .h-moments-title p{
+  font-size:calc(13px * var(--h-text-scale,1))!important;
+}
+#appScreen .h-moments-home .h-moment-person-text strong{
+  font-size:calc(13px * var(--h-text-scale,1))!important;
+}
+
+/* Polished Moments editor + real (not simulated) network upload progress. */
+.h-moment-create-dialog{
+  transition:transform .26s cubic-bezier(.18,.85,.2,1),opacity .26s ease;
+  animation:h-moment-editor-pop .27s cubic-bezier(.16,.85,.25,1) both;
+}
+@keyframes h-moment-editor-pop{
+  from{opacity:0;transform:translateY(14px) scale(.98)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.h-moment-file-pick{
+  transition:background .2s,transform .2s,border-color .2s;
+}
+.h-moment-file-pick:active{transform:scale(.985)}
+.h-moment-media-preview:empty{display:none!important}
+.h-moment-media-preview:not(:empty){
+  padding:9px;
+  background:color-mix(in srgb,var(--v-accent-wash) 60%,var(--v-sheet));
+  border:1px solid var(--v-line);
+  box-shadow:0 8px 21px rgba(40,43,82,.07);
+  animation:h-moment-preview-in .27s ease both;
+}
+@keyframes h-moment-preview-in{
+  from{opacity:0;transform:translateY(9px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.h-moment-upload-preview{
+  max-height:218px;
+  max-width:100%;
+  width:auto;object-fit:contain;
+  border-radius:11px;
+}
+.h-moment-upload-status{
+  padding:13px 14px;
+  margin:8px 0 13px;
+  border-radius:14px;
+  border:1px solid var(--v-line);
+  background:var(--v-accent-wash);
+  color:var(--v-title);
+}
+.h-moment-upload-status.hidden{display:none!important}
+.h-moment-upload-details{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:9px;
+  font:750 12px Manrope,system-ui,sans-serif;
+}
+.h-moment-upload-details span:last-child{
+  color:var(--v-accent);font-variant-numeric:tabular-nums;
+}
+.h-moment-upload-track{
+  height:8px;border-radius:99px;
+  overflow:hidden;
+  background:color-mix(in srgb,var(--v-accent) 16%,var(--v-sheet));
+}
+#hMomentUploadBar{
+  height:100%;width:0%;
+  border-radius:99px;
+  background:linear-gradient(90deg,#8065df,#dd83bd);
+  transition:width .14s linear;
+}
+.h-moment-upload-status.h-is-indeterminate #hMomentUploadBar{
+  width:42%;animation:h-moment-loading 1.3s ease-in-out infinite;
+}
+@keyframes h-moment-loading{
+  from{transform:translateX(-110%)}
+  to{transform:translateX(350%)}
+}
+@media(max-width:720px){
+  #appScreen #welcomeChat>.inbox-home-header{
+    padding-top:16px!important;padding-bottom:8px!important;
+  }
+  #appScreen #welcomeChat>.inbox-filters{
+    padding-left:14px!important;padding-right:14px!important;
+    padding-bottom:13px!important;min-height:62px!important;
+  }
+  #appScreen #welcomeChat>.inbox-filters button{
+    font-size:calc(11px * var(--h-text-scale,1))!important;
+    padding:10px 13px!important;min-height:40px!important;
+  }
+  #appScreen #welcomeChat>.inbox-list{
+    padding-left:13px!important;padding-right:13px!important;
+    padding-top:13px!important;
+  }
+  #appScreen #welcomeChat .inbox-title h1{
+    font-size:calc(33px * var(--h-text-scale,1))!important;
+  }
+  #appScreen #welcomeChat .inbox-title p{
+    font-size:calc(12px * var(--h-text-scale,1))!important;
+  }
+  #appScreen .h-moments-strip-section{
+    margin:0 14px 8px!important;
+  }
+  .h-font-quick{padding:10px;gap:6px}
+  .h-font-quick-title span{font-size:11px}
+  .h-font-quick button{width:36px;flex-basis:36px}
+  #appScreen .h-moments-home .h-moments-title h1{
+    font-size:calc(34px * var(--h-text-scale,1))!important;
+  }
+}
+@media(max-width:370px){
+  #appScreen #welcomeChat>.inbox-filters button{
+    font-size:calc(10px * var(--h-text-scale,1))!important;
+    padding-inline:12px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .h-moment-create-dialog,.h-moment-media-preview:not(:empty){animation:none!important}
+  #hMomentUploadBar,#appScreen .h-moment-avatar-wrap{animation:none!important;transition:none!important}
+}
