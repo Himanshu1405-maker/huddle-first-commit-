@@ -180,7 +180,7 @@ async function openMediaEditor(file){
   if(mediaEditorDialog)closeMediaEditor();
   const isImage=file.type.startsWith('image/');
   const isVideo=file.type.startsWith('video/');
-  const max=isVideo?20:6;
+  const max=(isVideo||/\.(mp4|mov)$/i.test(file.name||''))?50:25;
   if(file.size>max*1024*1024){toast('Maximum file size is '+max+' MB.',true);$('#mediaFileInput').value='';return;}
   const dialog=document.createElement('div');
   dialog.className='h-editor-overlay';
@@ -297,7 +297,7 @@ async function openMediaEditor(file){
     send.disabled=true;send.textContent='Preparing…';
     try{
       const outgoing=await buildFile();
-      if(outgoing.size>(outgoing.type.startsWith('video/')?20:6)*1024*1024)throw Error('Edited file is too large.');
+      if(outgoing.size>(outgoing.type.startsWith('video/')||/\.(mp4|mov)$/i.test(outgoing.name||'')?50:25)*1024*1024)throw Error('Edited file is too large.');
       const caption=dialog.querySelector('#hEditorCaption').value.trim();
       // sendMediaFile handles authorization, transport errors and message updates.
       closeMediaEditor();cleanup();
