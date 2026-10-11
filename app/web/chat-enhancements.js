@@ -195,7 +195,7 @@ async function openMediaEditor(file){
   dialog.querySelector('.h-editor-close').addEventListener('click',closeMediaEditor);
   dialog.querySelector('#hEditorCancel').addEventListener('click',closeMediaEditor);
   dialog.addEventListener('click',e=>{if(e.target===dialog)closeMediaEditor()});
-  dialog.querySelector('#hEditorFilename').textContent=file.name;
+  dialog.querySelector('#hEditorFilename').textContent=file.name+' · '+(file.size/1024/1024).toFixed(1)+' MB / '+max+' MB limit';
   const stage=dialog.querySelector('#hEditorStage');
   const tools=dialog.querySelector('#hEditorTools');
   let buildFile=()=>Promise.resolve(file);
