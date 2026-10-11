@@ -64,7 +64,7 @@
 
   function selectionTarget(row){
     // Highlight only actual message content, never the flex row's empty width.
-    return [...(row?.querySelectorAll('.bubble:not(.deleted),.h-location-card,.media-card')||[])]
+    return [...(row?.querySelectorAll('.bubble:not(.deleted),.h-location-card,.media-card,.h-once-card')||[])]
       .find(element=>element.getClientRects().length>0 && getComputedStyle(element).visibility!=='hidden'
         && getComputedStyle(element).display!=='none');
   }
@@ -89,7 +89,7 @@
     const editable=mine && !msg.location && !(msg.attachments?.length);
     const copyable=!msg.location && !msg.attachments?.length && !!msg.body;
     bar.querySelector('#hTopCopy').disabled=!copyable;
-    bar.querySelector('#hTopForward').disabled=!!msg.location;
+    bar.querySelector('#hTopForward').disabled=!!msg.location||!!msg.attachments?.some(a=>a.view_once);
     bar.querySelector('#hTopEdit').hidden=!editable;
     bar.querySelector('#hTopDelete').hidden=!mine;
     bar.querySelector('#hTopReport').hidden=mine;
@@ -233,6 +233,7 @@
     document.getElementById('hForwardOverlay')?.remove();
   }
   function forwardMessage(id){
+    if(getMsg(id)?.attachments?.some(a=>a.view_once)){toast('View Once media cannot be forwarded.',true);return;}
     const msg=getMsg(id);
     if(!msg||msg.deleted_at||msg.location)return;
     clearSelection();

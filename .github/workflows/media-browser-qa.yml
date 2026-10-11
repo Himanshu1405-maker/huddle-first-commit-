@@ -41,6 +41,9 @@ on:
       - app/web/readability-tool-centering.css
       - tests/readability_tools.cjs
       - app/web/image-lightbox.js
+      - app/web/view-once.js
+      - app/web/view-once.css
+      - tests/browser_view_once.py
       - app/extensions.py
       - app/message_context.py
       - tests/browser_audio_gallery_composer.py
@@ -103,6 +106,9 @@ on:
       - app/web/readability-tool-centering.css
       - tests/readability_tools.cjs
       - app/web/image-lightbox.js
+      - app/web/view-once.js
+      - app/web/view-once.css
+      - tests/browser_view_once.py
       - app/extensions.py
       - app/message_context.py
       - tests/browser_audio_gallery_composer.py
@@ -148,6 +154,7 @@ jobs:
           node --check app/web/voice-media-player.js
           node --check app/web/responsive-composer.js
           node --check app/web/image-lightbox.js
+          node --check app/web/view-once.js
       - name: Check new sign-in and registration design at desktop and mobile widths
         run: PYTHONPATH=. python tests/browser_auth.py
       - name: Check responsive themes and account-scoped chat wallpaper persistence
@@ -158,6 +165,8 @@ jobs:
         run: PYTHONPATH=. python tests/browser_message_actions.py
       - name: Verify compact images, voice controls and reaction layout on mobile
         run: PYTHONPATH=. python tests/browser_voice_media_polish.py
+      - name: Check View Once media preview, consumption and mobile scrolling
+        run: PYTHONPATH=. python tests/browser_view_once.py
       - name: Check private inline AI in mobile chats and opt-in message context
         run: PYTHONPATH=. python tests/browser_chat_ai.py
       - name: Check responsive multiline composer and modern voice notes in Chrome

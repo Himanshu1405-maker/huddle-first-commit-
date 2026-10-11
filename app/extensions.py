@@ -155,6 +155,13 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         cols={row["name"] for row in cx.execute("PRAGMA table_info(attachments)")}
         if "duration_ms" not in cols:
             cx.execute("ALTER TABLE attachments ADD COLUMN duration_ms INTEGER")
+        # Additive migration: preserve previously sent media across deploys.
+        if "view_once" not in cols:
+            cx.execute("ALTER TABLE attachments ADD COLUMN view_once INTEGER NOT NULL DEFAULT 0")
+        if "opened_at" not in cols:
+            cx.execute("ALTER TABLE attachments ADD COLUMN opened_at TEXT")
+        if "opened_by" not in cols:
+            cx.execute("ALTER TABLE attachments ADD COLUMN opened_by TEXT")
 
     @app.post("/api/conversations/{conversation_id}/attachments", status_code=201)
     async def upload_attachment(conversation_id: str, request: Request):
@@ -168,6 +175,14 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         upload_label="50 MB for videos" if video_upload else "25 MB for other files"
         raw_size=request.headers.get("content-length","")
         if raw_size.isdigit() and int(raw_size)>upload_limit:fail(413,"File exceeds limit: "+upload_label)
+        view_once=request.headers.get("x-huddle-view-once","").strip()=="1"
+        if view_once:
+            if not media_type.startswith(("image/","video/")):
+                fail(422,"View Once is available only for photos and videos")
+            with db.connection() as cx:
+                conversation=cx.execute("SELECT kind FROM conversations WHERE id=?",(conversation_id,)).fetchone()
+                if not conversation or conversation["kind"]!="dm":
+                    fail(422,"View Once is currently supported in direct chats only")
         raw_duration=request.headers.get("x-huddle-duration-ms","")
         duration_ms=int(raw_duration) if raw_duration.isascii() and raw_duration.isdecimal() and len(raw_duration)<=8 else None
         if duration_ms is not None and not (100<=duration_ms<=3600000):
@@ -180,6 +195,8 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         data=bytes(chunks)
         try: media_type=validate_media(data, filename, media_type)
         except ValueError as exc: fail(422,str(exc))
+        if view_once and not media_type.startswith(("image/","video/")):
+            fail(422,"View Once is available only for photos and videos")
         if not media_type.startswith("audio/"):
             duration_ms=None
         if media_type=="audio/wav":
@@ -207,8 +224,10 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
             text=f"{marker} {filename}"+("\n"+caption if caption else "")
             message,created=send_message(conversation_id,user["id"],text)
             with db.connection() as cx:
-                cx.execute("""INSERT INTO attachments(id,message_id,filename,content_type,byte_size,storage_name,created_at,duration_ms)
-                   VALUES(?,?,?,?,?,?,?,?)""",(aid,message["id"],filename,media_type,len(data),aid,now(),duration_ms))
+                cx.execute("""INSERT INTO attachments(
+                    id,message_id,filename,content_type,byte_size,storage_name,created_at,duration_ms,view_once)
+                   VALUES(?,?,?,?,?,?,?,?,?)""",
+                   (aid,message["id"],filename,media_type,len(data),aid,now(),duration_ms,int(view_once)))
                 fresh=cx.execute("SELECT * FROM messages WHERE id=?",(message["id"],)).fetchone()
                 message=serialize_message(cx,fresh)
             await hub.notify(member_ids(conversation_id),{"type":"message:new","message":message})
@@ -217,6 +236,56 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
             path.unlink(missing_ok=True)
             raise
 
+    @app.post("/api/media/{attachment_id}/view-once")
+    async def open_view_once(attachment_id: str, request: Request):
+        """One atomic claim, one whole-file response; no thumbnail or range leak.
+
+        Do not promise screenshot prevention: clients control what they display.
+        """
+        user=require_user(request)
+        if not re.fullmatch(r"[a-f0-9]{32}",attachment_id):
+            fail(404,"View Once attachment not found")
+        storage=Path(db.path).resolve().parent / "media" if db.path!=":memory:" else Path("/tmp/huddle-media")
+        with db.connection() as cx:
+            item=cx.execute("""SELECT a.*,m.conversation_id,m.sender_id,m.deleted_at
+                    FROM attachments a JOIN messages m ON m.id=a.message_id
+                    WHERE a.id=?""",(attachment_id,)).fetchone()
+            if not item:fail(404,"Media not found")
+            ensure_membership(cx,item["conversation_id"],user["id"])
+            if item["deleted_at"] or not item["view_once"] or item["opened_at"]:
+                fail(410,"This View Once media has expired or was already opened")
+            if item["sender_id"]==user["id"]:
+                fail(403,"The sender cannot reopen View Once media")
+            path=storage/item["storage_name"]
+            if not path.is_file():
+                fail(410,"This View Once media is no longer available")
+            try: blob=decrypt_bytes(path.read_bytes())
+            except Exception: fail(503,"Could not open this media")
+            if not blob or len(blob)>MAX_VIDEO_UPLOAD:
+                fail(503,"Media corrupted")
+            # A conditional UPDATE permits only one successful redemption,
+            # even when the recipient opens the same image in two browser tabs.
+            changed=cx.execute("""UPDATE attachments SET opened_at=?,opened_by=?
+                    WHERE id=? AND view_once=1 AND opened_at IS NULL""",
+                    (now(),user["id"],attachment_id))
+            if changed.rowcount!=1:fail(410,"This View Once media was already opened")
+            updated_message=serialize_message(cx,cx.execute("SELECT * FROM messages WHERE id=?",
+                (item["message_id"],)).fetchone())
+        # Best-effort immediate erasure of the encrypted server-side file.
+        # Metadata stays to display an 'Opened' placeholder in the chat.
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            # Metadata remains consumed even when the filesystem is unavailable;
+            # all normal media routes reject View Once access.
+            pass
+        await hub.notify(member_ids(item["conversation_id"]),{
+            "type":"message:update","message":updated_message})
+        return Response(blob,media_type=item["content_type"],headers={
+            "Cache-Control":"no-store, no-cache, max-age=0, must-revalidate",
+            "Pragma":"no-cache","X-Content-Type-Options":"nosniff",
+            "Content-Disposition":"inline"})
+
     @app.get("/api/media/{attachment_id}")
     async def download_attachment(attachment_id: str, request: Request):
         user=require_user(request)
@@ -224,7 +293,8 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
         with db.connection() as cx:
             item=cx.execute("""SELECT a.*,m.conversation_id,m.deleted_at FROM attachments a
                 JOIN messages m ON m.id=a.message_id WHERE a.id=?""",(attachment_id,)).fetchone()
-            if not item or item["deleted_at"]: fail(404,"Media not found")
+            if not item or item["deleted_at"] or item["view_once"]:
+                fail(404,"Media not found")
             ensure_membership(cx,item["conversation_id"],user["id"])
         storage=Path(db.path).resolve().parent/"media" if db.path!=":memory:" else Path("/tmp/huddle-media")
         path=storage/item["storage_name"]

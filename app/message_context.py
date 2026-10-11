@@ -90,6 +90,8 @@ def install_message_context(app,db,hub,require_user,serialize_message,send_messa
             if payload.action=="forward":
                 attachment=cx.execute("SELECT * FROM attachments WHERE message_id=?",
                                       (source["id"],)).fetchone()
+                if attachment and attachment["view_once"]:
+                    raise HTTPException(422,"View Once media cannot be forwarded")
             text=decrypt_text(source["body"]) if payload.action=="forward" else payload.body.strip()
         # Forwarding text is a server-side copy; ignore untrusted client-provided text.
         # Keep the existing rate limit, nonce deduplication and encryption via send_message.

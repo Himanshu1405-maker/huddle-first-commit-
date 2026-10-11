@@ -188,7 +188,10 @@ async function openMediaEditor(file){
   dialog.innerHTML='<section class="h-editor-panel"><header class="h-editor-head"><div><small>PREVIEW BEFORE SENDING</small><h2>Ready to share?</h2></div><button type="button" class="h-editor-close" aria-label="Cancel upload">✕</button></header>'+
     '<div class="h-editor-stage" id="hEditorStage"></div>'+
     '<div class="h-editor-tools" id="hEditorTools"></div>'+
-    '<div class="h-editor-bottom"><label>Caption <span>(optional)</span><textarea id="hEditorCaption" rows="2" maxlength="500" placeholder="Add a message with your file…"></textarea></label>'+
+    '<div class="h-editor-bottom">'+
+    ((isImage||isVideo)&&state.active?.kind==='dm'?
+    '<label class="h-once-choice"><input id="hEditorViewOnce" type="checkbox" /><span><strong>① View Once</strong><small>Recipient can open it one time. Screenshots or recordings may still be possible.</small></span></label>':'')+
+    '<label>Caption <span>(optional)</span><textarea id="hEditorCaption" rows="2" maxlength="500" placeholder="Add a message with your file…"></textarea></label>'+
     '<div class="h-editor-footer"><span id="hEditorFilename"></span><div><button type="button" id="hEditorCancel" class="h-editor-secondary">Cancel</button><button type="button" id="hEditorSend" class="h-editor-submit">Send ↗</button></div></div></div></section>';
   document.body.append(dialog);
   mediaEditorDialog=dialog;
@@ -299,9 +302,10 @@ async function openMediaEditor(file){
       const outgoing=await buildFile();
       if(outgoing.size>(outgoing.type.startsWith('video/')||/\.(mp4|mov)$/i.test(outgoing.name||'')?50:25)*1024*1024)throw Error('Edited file is too large.');
       const caption=dialog.querySelector('#hEditorCaption').value.trim();
+      const viewOnce=Boolean(dialog.querySelector('#hEditorViewOnce')?.checked);
       // sendMediaFile handles authorization, transport errors and message updates.
       closeMediaEditor();cleanup();
-      await sendMediaFile(outgoing,caption);
+      await sendMediaFile(outgoing,caption,null,viewOnce);
     }catch(err){send.disabled=false;send.textContent='Send ↗';toast(err.message||'Failed to prepare file',true);}
   });
   dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){cleanup();closeMediaEditor();}});

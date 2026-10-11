@@ -334,7 +334,7 @@ def create_app(database_path: str | None = None):
             return [r["user_id"] for r in cx.execute("SELECT user_id FROM members WHERE conversation_id=?", (conversation_id,))]
 
     def serialize_message(cx, msg):
-        attachment = cx.execute("""SELECT id,filename,content_type,byte_size,duration_ms FROM attachments WHERE message_id=?""",(msg["id"],)).fetchone()
+        attachment = cx.execute("""SELECT id,filename,content_type,byte_size,duration_ms,view_once,opened_at FROM attachments WHERE message_id=?""",(msg["id"],)).fetchone()
         reactions = cx.execute("""SELECT emoji, COUNT(*) AS count, GROUP_CONCAT(user_id) AS users
               FROM reactions WHERE message_id=? GROUP BY emoji ORDER BY emoji""", (msg["id"],)).fetchall()
         readers = cx.execute("""SELECT user_id FROM members

@@ -27,6 +27,7 @@ jobs:
       - run: node tests/ai_ux.cjs
       - run: node --check app/web/chat-ai.js
       - run: node tests/chat_ai_inline.cjs
+      - run: node --check app/web/view-once.js
       - run: node --check app/web/puter-ai.js
       - run: node tests/puter_ai.cjs
       - run: node tests/local_ai.cjs
