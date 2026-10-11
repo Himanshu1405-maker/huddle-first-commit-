@@ -183,22 +183,26 @@ async function openMediaEditor(file){
   const max=(isVideo||/\.(mp4|mov)$/i.test(file.name||''))?50:25;
   if(file.size>max*1024*1024){toast('Maximum file size is '+max+' MB.',true);$('#mediaFileInput').value='';return;}
   const dialog=document.createElement('div');
-  dialog.className='h-editor-overlay';
+  dialog.className='h-editor-overlay h-media-studio';
   dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Preview file before sharing');
-  dialog.innerHTML='<section class="h-editor-panel"><header class="h-editor-head"><div><small>PREVIEW BEFORE SENDING</small><h2>Ready to share?</h2></div><button type="button" class="h-editor-close" aria-label="Cancel upload">✕</button></header>'+
-    '<div class="h-editor-stage" id="hEditorStage"></div>'+
+  dialog.innerHTML='<section class="h-editor-panel"><header class="h-editor-head"><div class="h-editor-heading"><span class="h-editor-brand" aria-hidden="true">✦</span><div><small>HUDDLE / MEDIA STUDIO</small><h2 id="hEditorTitle">Preview your media</h2><p id="hEditorRecipient"></p></div></div><div class="h-editor-head-actions"><span class="h-editor-kind" id="hEditorKind"></span><button type="button" class="h-editor-close" aria-label="Close media preview">✕</button></div></header>'+
+    '<div class="h-editor-stage" id="hEditorStage"><span class="h-editor-stage-label" id="hEditorStageLabel">PREVIEW</span></div>'+
     '<div class="h-editor-tools" id="hEditorTools"></div>'+
     '<div class="h-editor-bottom">'+
     ((isImage||isVideo)&&state.active?.kind==='dm'?
     '<label class="h-once-choice"><input id="hEditorViewOnce" type="checkbox" /><span><strong>① View Once</strong><small>Recipient can open it one time. Screenshots or recordings may still be possible.</small></span></label>':'')+
-    '<label>Caption <span>(optional)</span><textarea id="hEditorCaption" rows="2" maxlength="500" placeholder="Add a message with your file…"></textarea></label>'+
-    '<div class="h-editor-footer"><span id="hEditorFilename"></span><div><button type="button" id="hEditorCancel" class="h-editor-secondary">Cancel</button><button type="button" id="hEditorSend" class="h-editor-submit">Send ↗</button></div></div></div></section>';
+    '<label class="h-editor-caption-label" for="hEditorCaption">Add a caption <span>Optional</span></label><textarea id="hEditorCaption" rows="2" maxlength="500" placeholder="Write something about this '+(isImage?'photo':isVideo?'video':'file')+'…"></textarea>'+
+    '<div class="h-editor-footer"><span id="hEditorFilename"></span><div><button type="button" id="hEditorCancel" class="h-editor-secondary">Cancel</button><button type="button" id="hEditorSend" class="h-editor-submit">Send <span aria-hidden="true">↑</span></button></div></div></div></section>';
   document.body.append(dialog);
   mediaEditorDialog=dialog;
   dialog.querySelector('.h-editor-close').addEventListener('click',closeMediaEditor);
   dialog.querySelector('#hEditorCancel').addEventListener('click',closeMediaEditor);
   dialog.addEventListener('click',e=>{if(e.target===dialog)closeMediaEditor()});
   dialog.querySelector('#hEditorFilename').textContent=file.name+' · '+(file.size/1024/1024).toFixed(1)+' MB / '+max+' MB limit';
+  dialog.querySelector('#hEditorTitle').textContent=isImage?'Edit photo':isVideo?'Preview video':'Preview file';
+  dialog.querySelector('#hEditorKind').textContent=isImage?'PHOTO':isVideo?'VIDEO':'FILE';
+  dialog.querySelector('#hEditorRecipient').textContent='To '+(state.active?.name||'this conversation');
+  dialog.querySelector('#hEditorStageLabel').textContent=isImage?'PHOTO EDITOR':isVideo?'VIDEO PREVIEW':'FILE PREVIEW';
   const stage=dialog.querySelector('#hEditorStage');
   const tools=dialog.querySelector('#hEditorTools');
   let buildFile=()=>Promise.resolve(file);
@@ -220,8 +224,11 @@ async function openMediaEditor(file){
     const render=()=>{
       const originalRatio= (rot%180===0?image.width/image.height:image.height/image.width);
       const useRatio=ratio||originalRatio;
-      canvas.width=Math.min(maxOutput,Math.max(240,Math.round(maxOutput*Math.min(1,useRatio))));
-      canvas.height=Math.min(maxOutput,Math.max(240,Math.round(canvas.width/useRatio)));
+      const targetWidth=Math.min(maxOutput,Math.max(240,Math.round(maxOutput*Math.min(1,useRatio))));
+      const targetHeight=Math.min(maxOutput,Math.max(240,Math.round(targetWidth/useRatio)));
+      // Avoid resetting the canvas backing store on every pan/draw event.
+      if(canvas.width!==targetWidth)canvas.width=targetWidth;
+      if(canvas.height!==targetHeight)canvas.height=targetHeight;
       // Ensure the photo can cover every output pixel at every rotation.
       const rotatedWidth=rot%180===0?image.width:image.height;
       const rotatedHeight=rot%180===0?image.height:image.width;
@@ -243,10 +250,13 @@ async function openMediaEditor(file){
         context.stroke();
       }
     };
-    const toolBtn=(id,title)=>'<button type="button" data-photo-tool="'+id+'">'+title+'</button>';
-    tools.innerHTML=toolBtn('free','Original')+toolBtn('square','1:1 crop')+toolBtn('portrait','4:5 crop')+toolBtn('wide','16:9 crop')+toolBtn('rotate','↻ Rotate')+toolBtn('flip','⇄ Flip')+toolBtn('pen','✎ Draw')+toolBtn('undo','↶ Undo')+
-      '<label class="h-zoom">Zoom <input type="range" id="hEditorZoom" min="100" max="250" step="5" value="100"></label>'+
-      '<small>Drag image to reposition. Draw to annotate.</small>';
+    const toolBtn=(id,title,icon)=>'<button type="button" class="h-editor-tool" data-photo-tool="'+id+'" aria-pressed="'+(id==='free'?'true':'false')+'"><span aria-hidden="true">'+icon+'</span>'+title+'</button>';
+    tools.innerHTML='<div class="h-editor-tool-group"><span class="h-editor-group-label">CROP</span><div class="h-editor-tool-strip">'+
+      toolBtn('free','Original','▣')+toolBtn('square','1:1 crop','□')+toolBtn('portrait','4:5 crop','▯')+toolBtn('wide','16:9 crop','▭')+'</div></div>'+
+      '<div class="h-editor-tool-group"><span class="h-editor-group-label">EDIT</span><div class="h-editor-tool-strip">'+
+      toolBtn('rotate','↻ Rotate','↻')+toolBtn('flip','⇄ Flip','⇄')+toolBtn('pen','✎ Draw','✎')+toolBtn('undo','↶ Undo','↶')+'</div></div>'+
+      '<div class="h-editor-zoom-row"><label for="hEditorZoom">Zoom <output id="hEditorZoomValue">100%</output></label><input type="range" id="hEditorZoom" min="100" max="250" step="5" value="100"></div>'+
+      '<small class="h-editor-gesture-tip">Drag to reposition · Use Draw to annotate</small>';
     tools.addEventListener('click',e=>{
       const cmd=e.target.closest('[data-photo-tool]')?.dataset.photoTool;
       if(!cmd)return;
@@ -257,11 +267,17 @@ async function openMediaEditor(file){
       if(cmd==='rotate'){rot=(rot+90)%360;panX=0;panY=0;}
       if(cmd==='flip')flipped=!flipped;
       if(cmd==='undo')strokes.pop();
-      if(cmd==='pen'){pen=!pen;tools.querySelector('[data-photo-tool="pen"]').classList.toggle('is-active',pen)}
+      if(cmd==='pen')pen=!pen;
+      tools.querySelectorAll('[data-photo-tool]').forEach(btn=>{
+        const mode=btn.dataset.photoTool;
+        const selected=mode==='free'?ratio===0:mode==='square'?ratio===1:mode==='portrait'?ratio===4/5:mode==='wide'?ratio===16/9:mode==='pen'?pen:false;
+        btn.classList.toggle('is-active',selected);btn.setAttribute('aria-pressed',String(selected));
+      });
       render();
     });
-    tools.querySelector('#hEditorZoom').addEventListener('input',e=>{zoom=Number(e.target.value)/100;render()});
-    let tracking=false,prev=null;
+    tools.querySelector('#hEditorZoom').addEventListener('input',e=>{zoom=Number(e.target.value)/100;tools.querySelector('#hEditorZoomValue').textContent=e.target.value+'%';render()});
+    let tracking=false,prev=null,drawFrame=0;
+    const scheduleDraw=()=>{if(drawFrame)return;drawFrame=requestAnimationFrame(()=>{drawFrame=0;if(mediaEditorDialog===dialog)render()})};
     const point=e=>{const rect=canvas.getBoundingClientRect();return [(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height]};
     canvas.addEventListener('pointerdown',e=>{
       tracking=true;canvas.setPointerCapture(e.pointerId);prev=point(e);
@@ -272,9 +288,9 @@ async function openMediaEditor(file){
       const current=point(e);
       if(pen&&line){line.push(current)}
       else if(prev){panX=Math.max(-.65,Math.min(.65,panX+current[0]-prev[0]));panY=Math.max(-.65,Math.min(.65,panY+current[1]-prev[1]));}
-      prev=current;render();
+      prev=current;scheduleDraw();
     });
-    const end=()=>{tracking=false;if(line){strokes.push(line);line=null;}prev=null;render()};
+    const end=()=>{tracking=false;if(line){strokes.push(line);line=null;}prev=null;if(drawFrame){cancelAnimationFrame(drawFrame);drawFrame=0}render()};
     canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
     render();
     buildFile=async()=>{
@@ -287,7 +303,12 @@ async function openMediaEditor(file){
     resource=URL.createObjectURL(file);
     const video=document.createElement('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.src=resource;
     stage.append(video);
-    tools.innerHTML='<p class="h-editor-tip">Preview your clip and add a caption before sending. Video trimming is not available yet.</p>';
+    tools.innerHTML='<div class="h-editor-video-summary"><span class="h-editor-video-play" aria-hidden="true">▶</span><span><strong>Ready to share</strong><small id="hEditorVideoDetail">Preview with sound before sending. Video trimming is not available yet.</small></span></div>';
+    video.addEventListener('loadedmetadata',()=>{const info=tools.querySelector('#hEditorVideoDetail');if(!info)return;
+      const seconds=Number.isFinite(video.duration)?Math.round(video.duration):null;
+      const stamp=seconds===null?'':Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+      info.textContent=(stamp?stamp+' · ':'')+'Preview with sound before sending. Video trimming is not available yet.';
+    });
   }else{
     stage.innerHTML='<div class="h-document-preview"><span>📄</span><strong></strong><small></small></div>';
     stage.querySelector('strong').textContent=file.name;

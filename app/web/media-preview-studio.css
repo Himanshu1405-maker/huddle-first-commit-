@@ -1,0 +1,238 @@
+/* Huddle Media Studio — refreshed photo/video review UI.
+   Overrides legacy editor without affecting chat, Moments, or file validation. */
+.h-media-studio{
+  padding:clamp(12px,2.3vw,28px)!important;
+  background:rgba(9,13,25,.88)!important;
+  backdrop-filter:blur(9px)!important;
+  -webkit-backdrop-filter:blur(9px)!important;
+  overscroll-behavior:contain;
+}
+.h-media-studio .h-editor-panel{
+  width:min(940px,100%)!important;
+  height:min(844px,calc(100dvh - 42px));
+  max-height:min(844px,calc(100dvh - 42px))!important;
+  min-height:0;
+  background:#f8f9fc!important;
+  border:1px solid rgba(255,255,255,.14)!important;
+  border-radius:25px!important;
+  box-shadow:0 30px 95px rgba(0,0,0,.38),0 1px 0 rgba(255,255,255,.1) inset!important;
+  overflow:hidden;
+  animation:h-editor-arrive .18s ease-out both;
+}
+.h-media-studio .h-editor-head{
+  flex:0 0 auto;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:17px 23px!important;
+  border:0!important;
+  color:#f6f8ff;
+  background:linear-gradient(105deg,#181d2e,#20273c 63%,#242b41)!important;
+}
+.h-media-studio .h-editor-heading,.h-media-studio .h-editor-head-actions{display:flex;align-items:center;gap:13px;min-width:0}
+.h-media-studio .h-editor-heading>div{min-width:0}
+.h-media-studio .h-editor-brand{
+  display:grid;place-items:center;flex:0 0 45px;
+  width:45px;height:45px;border-radius:15px;
+  background:linear-gradient(140deg,#67dfcb,#41acae);
+  box-shadow:0 5px 19px #4ed1c144;color:#143d47;font-size:26px;
+}
+.h-media-studio .h-editor-head small{
+  font-size:9px!important;letter-spacing:1.8px!important;font-weight:850!important;color:#89c9cf!important;
+  display:block;line-height:1.3;
+}
+.h-media-studio .h-editor-head h2{font-size:clamp(18px,2.3vw,23px)!important;line-height:1.2;margin:3px 0 1px!important;letter-spacing:-.6px;color:#fff!important}
+.h-media-studio #hEditorRecipient{margin:4px 0 0;font-size:11px;line-height:1.3;color:#b6c7d9;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h-media-studio .h-editor-head-actions{flex:0 0 auto;gap:12px}
+.h-media-studio .h-editor-kind{
+  border:1px solid #8de3db5b;background:#76d9d41c;color:#b7eee9;
+  border-radius:100px;padding:7px 11px;letter-spacing:1px;font-size:10px;font-weight:900;
+}
+.h-media-studio .h-editor-close{
+  display:grid;place-items:center;flex:0 0 39px;min-height:39px;
+  width:39px;height:39px;border-radius:12px!important;
+  background:#ffffff17!important;border:1px solid #ffffff27!important;
+  color:white!important;transition:background .16s ease;
+  cursor:pointer;
+}
+.h-media-studio .h-editor-close:hover{background:#ffffff33!important}
+.h-media-studio .h-editor-stage{
+  flex:1 1 auto;min-height:115px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(ellipse at 15% 20%,#2e4658 0%,transparent 43%),
+    radial-gradient(ellipse at 83% 84%,#242d4b 0%,transparent 48%),
+    linear-gradient(155deg,#0d1320,#171d2a 60%,#0f1421)!important;
+  padding:20px!important;
+  display:flex;align-items:center;justify-content:center;
+}
+.h-media-studio .h-editor-stage:before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(#ffffff07 1px,transparent 1px),linear-gradient(90deg,#ffffff07 1px,transparent 1px);
+  background-size:42px 42px;mask-image:linear-gradient(to bottom,transparent 4%,#000 38%,#000 70%,transparent);
+}
+.h-media-studio .h-editor-stage-label{
+  pointer-events:none;position:absolute;z-index:2;top:13px;left:17px;
+  padding:6px 10px;border-radius:9px;border:1px solid #ffffff24;
+  background:#080e1bb5;color:#e1ebf3;font-size:9px;font-weight:850;letter-spacing:1.35px;
+}
+.h-media-studio .h-editor-stage canvas,.h-media-studio .h-editor-stage video{
+  position:relative;z-index:1;
+  max-height:100%!important;max-width:100%!important;
+  height:auto;width:auto;object-fit:contain;
+  border-radius:11px!important;
+  box-shadow:0 12px 44px rgba(0,0,0,.28)!important;
+}
+.h-media-studio .h-editor-stage canvas{cursor:grab;touch-action:none}
+.h-media-studio .h-editor-stage canvas:active{cursor:grabbing}
+.h-media-studio .h-editor-tools{
+  flex:0 0 auto;min-height:0;max-height:min(225px,30dvh);
+  display:flex;flex-wrap:wrap;align-items:flex-start;
+  gap:11px 18px;padding:13px 22px 12px!important;
+  overflow-x:hidden;overflow-y:auto;
+  background:#eef1f7!important;
+  border:0!important;border-top:1px solid #dfe4ed!important;
+  scrollbar-width:thin;scrollbar-color:#c5cdda transparent;
+}
+.h-media-studio .h-editor-tool-group{display:flex;flex-direction:column;gap:7px;min-width:0}
+.h-media-studio .h-editor-group-label{font-size:9px;color:#687b93;font-weight:900;letter-spacing:1.2px}
+.h-media-studio .h-editor-tool-strip{display:flex;flex-wrap:wrap;gap:6px}
+.h-media-studio .h-editor-tools .h-editor-tool{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:38px;padding:7px 10px;
+  border:1px solid #d8dfeb!important;
+  border-radius:11px!important;
+  background:#fff!important;color:#405068!important;
+  font-size:11px!important;font-weight:760;
+  cursor:pointer;transition:background .12s,border-color .12s,box-shadow .12s;
+}
+.h-media-studio .h-editor-tool>span{font-size:16px;line-height:1;color:#60758a}
+.h-media-studio .h-editor-tools .h-editor-tool:hover{background:#e6f5f4!important;border-color:#86c9c2!important;transform:none}
+.h-media-studio .h-editor-tools .h-editor-tool.is-active,.h-media-studio .h-editor-tools .h-editor-tool[aria-pressed=true]{
+  color:#075e62!important;background:#dff5f2!important;border-color:#6cc4b9!important;
+  box-shadow:0 0 0 1px #85d3c840 inset!important;
+}
+.h-media-studio .h-editor-tool.is-active>span{color:#087c79}
+.h-media-studio .h-editor-zoom-row{
+  display:flex;align-items:center;gap:12px;min-height:38px;
+  flex:1 1 210px;align-self:flex-end;max-width:340px;
+  background:#fff;border:1px solid #d8dfeb;border-radius:11px;padding:7px 11px;
+}
+.h-media-studio .h-editor-zoom-row label{flex:0 0 auto;display:flex;gap:8px;align-items:center;font-size:11px;font-weight:850;color:#526578}
+.h-media-studio #hEditorZoomValue{font-size:10px;color:#0b8e86;font-weight:900;min-width:28px;text-align:right}
+.h-media-studio #hEditorZoom{flex:1;min-width:70px;max-width:210px;accent-color:#0ba59a;cursor:pointer}
+.h-media-studio .h-editor-tools .h-editor-gesture-tip{
+  width:100%;font-size:10px!important;color:#64748b!important;line-height:1.35;
+}
+.h-media-studio .h-editor-video-summary{display:flex;align-items:center;gap:12px;padding:4px 0}
+.h-media-studio .h-editor-video-summary>.h-editor-video-play{
+  display:grid;place-items:center;flex:0 0 41px;width:41px;height:41px;border-radius:12px;
+  background:#ddf4f1;color:#07857b;font-size:15px;
+}
+.h-media-studio .h-editor-video-summary>span:last-child{display:flex;flex-direction:column;gap:4px}
+.h-media-studio .h-editor-video-summary strong{font-size:12px;color:#264058}
+.h-media-studio .h-editor-video-summary small{font-size:11px;color:#64748b;line-height:1.45}
+.h-media-studio .h-editor-bottom{
+  flex:0 0 auto;max-height:min(305px,43dvh);overflow-y:auto;
+  border-top:1px solid #e1e7ef;
+  background:#fff!important;
+  padding:14px 22px 17px!important;
+  scrollbar-width:thin;scrollbar-color:#c4cfdc transparent;
+}
+.h-media-studio .h-editor-caption-label{
+  display:flex!important;align-items:center;justify-content:space-between;gap:10px;
+  margin:0 0 7px;font-size:12px!important;color:#33465b!important;font-weight:850!important;
+}
+.h-media-studio .h-editor-caption-label span{color:#8c99aa;font-size:10px}
+.h-media-studio #hEditorCaption{
+  margin:0!important;resize:vertical;
+  width:100%;min-height:52px;max-height:94px;
+  padding:11px 13px!important;background:#f8fafc!important;
+  color:#26394c!important;border:1px solid #dbe3eb!important;
+  border-radius:12px!important;font-size:12px;line-height:1.5;
+  transition:border-color .15s,box-shadow .15s;
+}
+.h-media-studio #hEditorCaption:focus{outline:0!important;border-color:#36aaa3!important;box-shadow:0 0 0 3px #2ea89e19!important}
+.h-media-studio .h-once-choice{
+  margin:0 0 12px!important;display:flex!important;
+  border-radius:13px!important;padding:10px 12px!important;
+  background:#f3f5ff!important;border:1px solid #dfe5fb!important;
+}
+.h-media-studio .h-once-choice strong{color:#41477f!important;font-size:12px}
+.h-media-studio .h-once-choice small{font-size:10px!important;line-height:1.35!important;color:#73809a!important}
+.h-media-studio .h-editor-footer{
+  display:flex;align-items:center;gap:12px;justify-content:space-between;
+  margin-top:13px!important;min-height:45px;
+}
+.h-media-studio #hEditorFilename{
+  flex:1;min-width:0;max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:11px!important;color:#708094!important;
+}
+.h-media-studio .h-editor-footer>div{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.h-media-studio .h-editor-secondary,.h-media-studio .h-editor-submit{
+  min-height:44px;border-radius:12px!important;padding:11px 19px!important;
+  font-size:12px!important;font-weight:850!important;cursor:pointer;
+  transition:background .14s,box-shadow .14s;
+}
+.h-media-studio .h-editor-secondary{
+  background:#f0f3f8!important;border:1px solid #e0e7ef!important;color:#47586b!important;
+}
+.h-media-studio .h-editor-secondary:hover{background:#e7ecf3!important}
+.h-media-studio .h-editor-submit{
+  display:inline-flex;gap:16px;align-items:center;justify-content:center;
+  background:linear-gradient(105deg,#0a9b91,#087f86)!important;color:#fff!important;
+  border:1px solid #078d89!important;
+  box-shadow:0 6px 14px #0a91872e!important;
+}
+.h-media-studio .h-editor-submit:hover{background:linear-gradient(105deg,#087e79,#076c73)!important}
+.h-media-studio .h-editor-submit:disabled{opacity:.56;cursor:progress;box-shadow:none!important}
+.h-media-studio .h-editor-submit span{font-size:19px;line-height:1}
+.h-media-studio :is(button,input,textarea):focus-visible{outline:3px solid #24b2a8!important;outline-offset:2px}
+@keyframes h-editor-arrive{from{opacity:0;transform:translateY(10px) scale(.992)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:720px){
+ .h-media-studio{padding:0!important;background:#0e1525!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+ .h-media-studio .h-editor-panel{
+   width:100%!important;height:100dvh!important;max-height:100dvh!important;
+   min-height:0;border:none!important;border-radius:0!important;
+   box-shadow:none!important;animation:none!important;
+ }
+ .h-media-studio .h-editor-head{padding:10px 14px!important;min-height:65px}
+ .h-media-studio .h-editor-brand{width:38px;height:38px;flex-basis:38px;font-size:21px;border-radius:12px}
+ .h-media-studio .h-editor-heading{gap:10px}
+ .h-media-studio .h-editor-head h2{font-size:17px!important}
+ .h-media-studio .h-editor-head small{font-size:8px!important}
+ .h-media-studio #hEditorRecipient{font-size:10px;max-width:195px}
+ .h-media-studio .h-editor-kind{font-size:9px;padding:6px 9px}
+ .h-media-studio .h-editor-head-actions{gap:8px}
+ .h-media-studio .h-editor-close{width:35px;height:35px;min-height:35px;flex-basis:35px}
+ .h-media-studio .h-editor-stage{padding:10px!important;min-height:90px}
+ .h-media-studio .h-editor-stage-label{top:9px;left:10px;font-size:8px;padding:5px 8px}
+ .h-media-studio .h-editor-tools{
+   flex:0 0 auto;max-height:min(172px,27dvh);
+   padding:10px 11px!important;gap:9px 12px!important;
+ }
+ .h-media-studio .h-editor-tool-group{width:100%;gap:5px}
+ .h-media-studio .h-editor-tool-strip{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;padding-bottom:2px;scrollbar-width:none}
+ .h-media-studio .h-editor-tool-strip::-webkit-scrollbar{display:none}
+ .h-media-studio .h-editor-tool{flex:0 0 auto;font-size:10px!important;min-height:35px!important;padding:6px 9px!important}
+ .h-media-studio .h-editor-zoom-row{flex:0 0 auto;width:100%;max-width:none;min-height:34px;padding:5px 9px}
+ .h-media-studio .h-editor-bottom{
+    max-height:min(260px,42dvh);padding:10px 13px max(13px,env(safe-area-inset-bottom))!important;
+ }
+ .h-media-studio .h-once-choice{padding:8px 10px!important;margin-bottom:8px!important}
+ .h-media-studio #hEditorCaption{min-height:42px;padding:8px 11px!important;font-size:12px}
+ .h-media-studio .h-editor-footer{margin-top:9px!important;gap:6px}
+ .h-media-studio .h-editor-secondary,.h-media-studio .h-editor-submit{min-height:41px;padding:9px 13px!important}
+ .h-media-studio #hEditorFilename{font-size:10px!important;max-width:none!important}
+ .h-media-studio .h-editor-video-summary>.h-editor-video-play{width:33px;height:33px;flex-basis:33px}
+}
+@media(max-width:370px){
+ .h-media-studio .h-editor-head{padding:9px 11px!important}
+ .h-media-studio .h-editor-kind{display:none}
+ .h-media-studio #hEditorRecipient{max-width:174px}
+ .h-media-studio .h-editor-tools{max-height:min(164px,26dvh)}
+ .h-media-studio .h-editor-bottom{max-height:min(250px,42dvh)}
+ .h-media-studio .h-editor-footer>div{gap:6px}
+ .h-media-studio .h-editor-secondary,.h-media-studio .h-editor-submit{padding:9px 11px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .h-media-studio .h-editor-panel{animation:none!important;transition:none!important}
+ .h-media-studio .h-editor-tools .h-editor-tool,.h-media-studio .h-editor-submit{transition:none!important}
+}
