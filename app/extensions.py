@@ -250,9 +250,10 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
             item=cx.execute("""SELECT a.*,m.conversation_id,m.sender_id,m.deleted_at
                     FROM attachments a JOIN messages m ON m.id=a.message_id
                     WHERE a.id=?""",(attachment_id,)).fetchone()
-            if not item or item["deleted_at"] or not item["view_once"] or item["opened_at"]:
-                fail(410,"This View Once media has expired or was already opened")
+            if not item:fail(404,"Media not found")
             ensure_membership(cx,item["conversation_id"],user["id"])
+            if item["deleted_at"] or not item["view_once"] or item["opened_at"]:
+                fail(410,"This View Once media has expired or was already opened")
             if item["sender_id"]==user["id"]:
                 fail(403,"The sender cannot reopen View Once media")
             path=storage/item["storage_name"]
@@ -272,7 +273,12 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
                 (item["message_id"],)).fetchone())
         # Best-effort immediate erasure of the encrypted server-side file.
         # Metadata stays to display an 'Opened' placeholder in the chat.
-        path.unlink(missing_ok=True)
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            # Metadata remains consumed even when the filesystem is unavailable;
+            # all normal media routes reject View Once access.
+            pass
         await hub.notify(member_ids(item["conversation_id"]),{
             "type":"message:update","message":updated_message})
         return Response(blob,media_type=item["content_type"],headers={
