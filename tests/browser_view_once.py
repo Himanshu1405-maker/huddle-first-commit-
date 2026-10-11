@@ -36,7 +36,7 @@ def main():
       opts.add_argument(arg)
     browser=webdriver.Chrome(options=opts)
     try:
-      for attempt,(width,height) in enumerate([(390,844),(345,740)],start=1):
+      for width,height in [(390,844),(345,740)]:
         browser.execute_cdp_cmd("Emulation.setDeviceMetricsOverride",{
           "width":width,"height":height,"deviceScaleFactor":2,"mobile":True})
         browser.get(base)
@@ -55,7 +55,7 @@ def main():
         box.click()
         browser.find_element(By.ID,"hEditorSend").click()
         WebDriverWait(browser,12).until(lambda d:
-          len(d.find_elements(By.CSS_SELECTOR,"#messages .h-once-card"))>=attempt)
+          len(d.find_elements(By.CSS_SELECTOR,"#messages .h-once-card"))>0)
         sender=browser.execute_script("""
           const c=[...document.querySelectorAll('.h-once-card')].at(-1);
           return {text:c?.innerText,inline:!!c?.querySelector('img,video'),
@@ -96,6 +96,11 @@ def main():
             ".h-once-card[data-h-once-card='"+aid+"']").text
         assert bob.post(base+f"/api/media/{aid}/view-once").status_code==410
         assert bob.get(base+f"/api/media/{aid}").status_code==404
+        # Isolate each viewport's test so earlier consumed cards cannot be mistaken
+        # for a newly uploaded attachment during asynchronous chat refresh.
+        latest=alice.get(base+f"/api/conversations/{cid}/messages").json()["messages"][-1]
+        removed=alice.delete(base+"/api/messages/"+latest["id"])
+        assert removed.status_code==200,removed.text
       print("VIEW_ONCE_BROWSER_PASS",flush=True)
     finally:
       browser.quit()
