@@ -29,7 +29,7 @@
 .ai-input-row:focus-within{border-color:#4bb9ad!important}
 .ai-mode-option.selected{background:#0c726f!important;color:#fff!important}
 /* The connection card scrolls with the conversation, never pushes the composer below the screen. */
-#aiView{min-height:0;overflow:hidden}
+#aiView{min-height:0;overflow:hidden;animation:none!important}
 #aiView #aiScroll{flex:1 1 0;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 #aiView #aiScroll .ai-notice{margin:0 0 15px!important;max-width:100%}
 #aiView .ai-composer{flex:0 0 auto;min-width:0}
