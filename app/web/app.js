@@ -49,17 +49,78 @@ $('#togglePassword').addEventListener('click',()=>{$('#authPassword').type=$('#a
 $('#authForm').addEventListener('submit',async e=>{e.preventDefault();const submit=$('#authSubmit');submit.disabled=true;$('#authError').textContent='';try{const handle=$('#authHandle').value.trim().toLowerCase(),password=$('#authPassword').value,name=state.isRegister?$('#authName').value.trim():'';if(state.isRegister&&!/^[a-z0-9_]{3,22}$/.test(handle)){$('#authError').textContent='Check username: use 3–22 letters, numbers or underscores (_). No spaces, @ signs, dots or hyphens.';$('#authHandle').focus();return}if(state.isRegister&&name.length<2){$('#authError').textContent='Check display name: enter at least 2 characters.';$('#authName').focus();return}const payload=state.isRegister?{name,handle,password,...(state.config.email_otp?{email:$('#authEmail').value.trim()}: {})}:{handle,password};const result=await post(state.isRegister?'/auth/register':'/auth/login',payload);if(result.requires_verification){state.otpTicket=result.ticket;$('#authForm').classList.add('hidden');$('.switch-auth').classList.add('hidden');$('#googleAuthArea').classList.add('hidden');$('#otpPanel').classList.remove('hidden');$('#otpHint').textContent='Code sent to '+result.email_hint+'. Enter the 6-digit code within 10 minutes.';$('#otpCode').value='';$('#otpCode').focus();return}state.me=result.user;await loadConversations();showApp()}catch(err){$('#authError').textContent=err.message}finally{submit.disabled=false}});
 async function init(){try{state.config=await api('/config')}catch{}initGoogleSignIn();try{const result=await api('/me');state.me=result.user;await loadConversations();showApp()}catch{showAuth()}}
 async function loadConversations(){if(!state.me)return;const {conversations}=await api('/conversations');state.conversations=conversations;if(state.active){const active=state.conversations.find(c=>c.id===state.active.id);if(active){state.active=active;renderHeader()}else{state.active=null;showWelcome()}}renderSidebar()}
-function renderSidebar(){if(!state.me)return;$('#allCount').textContent=state.conversations.length;const term=$('#sidebarSearch').value.trim().toLowerCase();const items=state.conversations.filter(c=>(state.filter==='all'||c.kind===state.filter)&&(c.name.toLowerCase().includes(term)||(c.last_message?.body||'').toLowerCase().includes(term)));$('#conversationList').innerHTML=items.length?items.map(c=>{const other=c.members.find(m=>m.id!==state.me.id);const online=c.kind==='dm'&&other?.online;const preview=c.last_message?(c.last_message.sender_id===state.me.id?'You: ':'')+c.last_message.body:(c.kind==='group'?'New circle · say hello':'Start with hello 👋');return `<button class="conv-item ${state.active?.id===c.id?'active':''}" data-conversation="${esc(c.id)}">${avatar(c.name,c.id,c.kind,online)}<span class="conv-details"><span class="conv-name-row"><span class="conv-name">${esc(c.name)}</span><span class="conv-time">${esc(prettyTime(c.last_message?.created_at||c.updated_at))}</span></span><span class="conv-preview-row"><span class="conv-preview">${esc(preview)}</span>${c.unread?`<span class="unread">${c.unread>99?'99+':c.unread}</span>`:''}</span></span></button>`}).join(''):'<div class="list-empty"><span class="big-icon">✳</span>No conversations here yet.<br/>Start with a hello.</div>';renderInboxHome()}
+/* Clean, typed chat-list previews. Real media categorization comes from the
+   authenticated conversation API, not from untrusted filename/emoji text. */
+function chatPreviewIcon(kind){
+ const paths={
+  photo:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.8" cy="8.7" r="1.5"/><path d="m4.6 17 4.8-4.8a1.7 1.7 0 0 1 2.4 0l1.1 1.1 2-2a1.7 1.7 0 0 1 2.4 0l3 3"/>',
+  video:'<rect x="3" y="4" width="18" height="16" rx="4"/><path d="m10 8 6 4-6 4z" stroke-linejoin="round"/>',
+  location:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
+  voice:'<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"/>',
+  file:'<path d="M7 2.8h7l5 5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4.8a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5M8.5 13h7m-7 3.5h7"/>',
+  sticker:'<path d="M5 3h14a2 2 0 0 1 2 2v10l-6 6H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 21v-5a1 1 0 0 1 1-1h5M8 9h.01M16 9h.01M8 13q4 4 8 0"/>'
+ };
+ if(!paths[kind])return '';
+ return '<span class="h-preview-symbol h-preview-symbol-'+kind+'" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">'+paths[kind]+'</svg></span>';
+}
+function chatPreview(c){
+ const last=c.last_message;
+ if(!last)return '<span class="h-preview-wrap"><span class="h-preview-text">'+esc(c.kind==='group'?'Start a group conversation':'Say hello')+'</span></span>';
+ const mine=last.sender_id===state.me.id;
+ const intro=mine?'<span class="h-preview-sender">You</span><span class="h-preview-separator" aria-hidden="true">·</span>':'';
+ let kind=last.preview_kind||'';
+ const body=last.body||'';
+ // Graceful display when connected to an older Huddle server.
+ if(!kind){
+  kind=/^🖼️\s/u.test(body)?'photo':/^🎬\s/u.test(body)?'video':
+    /^🎤\s/u.test(body)?'voice':/^📎\s/u.test(body)?'file':
+    /^(?:📍 Shared location|🟢 Live location)/u.test(body)?'location':
+    body==='🎉 Animated sticker'?'sticker':'text';
+ }
+ if(!['photo','video','voice','file','location','sticker'].includes(kind))
+  return '<span class="h-preview-wrap">'+intro+'<span class="h-preview-text">'+esc(body)+'</span></span>';
+ const labels={photo:'Photo',video:'Video',voice:'Voice message',file:'Document',location:'Location',sticker:'Sticker'};
+ const label=last.preview_label||labels[kind];
+ const caption=last.preview_caption||(!last.preview_kind&&['photo','video','voice','file'].includes(kind)?body.split('\n').slice(1).join(' ').trim().slice(0,120):'');
+ return '<span class="h-preview-wrap h-preview-media" data-preview-kind="'+kind+'">'+intro+
+   chatPreviewIcon(kind)+'<span class="h-preview-label">'+esc(label)+'</span>'+
+   (caption?'<span class="h-preview-caption">· '+esc(caption)+'</span>':'')+'</span>';
+}
+/* Keep unchanged conversation buttons mounted between WebSocket updates.
+   Preserves scroll position and focus, and avoids whole-list flash/jitter. */
+function reconcileChatRows(container,markup,key){
+ if(!container||container.innerHTML===markup)return;
+ const fragment=document.createElement('template');
+ fragment.innerHTML=markup;
+ const next=[...fragment.content.children];
+ const current=[...container.children];
+ const sameRows=next.length===current.length&&next.every((row,i)=>
+   row.hasAttribute(key)&&current[i]?.getAttribute(key)===row.getAttribute(key));
+ if(!sameRows){
+   const scroll=container.scrollTop;
+   container.replaceChildren(fragment.content);
+   container.scrollTop=scroll;
+   return;
+ }
+ const focused=document.activeElement;
+ for(let i=0;i<next.length;i++){
+   if(current[i].isEqualNode(next[i]))continue;
+   const restore=focused===current[i];
+   current[i].replaceWith(next[i]);
+   if(restore)next[i].focus({preventScroll:true});
+ }
+}
+function renderSidebar(){if(!state.me)return;$('#allCount').textContent=state.conversations.length;const term=$('#sidebarSearch').value.trim().toLowerCase();const items=state.conversations.filter(c=>(state.filter==='all'||c.kind===state.filter)&&(c.name.toLowerCase().includes(term)||(c.last_message?.body||'').toLowerCase().includes(term)));const sidebarMarkup=items.length?items.map(c=>{const other=c.members.find(m=>m.id!==state.me.id);const online=c.kind==='dm'&&other?.online;const preview=chatPreview(c);return `<button class="conv-item ${state.active?.id===c.id?'active':''}" data-conversation="${esc(c.id)}">${avatar(c.name,c.id,c.kind,online)}<span class="conv-details"><span class="conv-name-row"><span class="conv-name">${esc(c.name)}</span><span class="conv-time">${esc(prettyTime(c.last_message?.created_at||c.updated_at))}</span></span><span class="conv-preview-row"><span class="conv-preview">${preview}</span>${c.unread?`<span class="unread">${c.unread>99?'99+':c.unread}</span>`:''}</span></span></button>`}).join(''):'<div class="list-empty"><span class="big-icon">✳</span>No conversations here yet.<br/>Start with a hello.</div>';reconcileChatRows($('#conversationList'),sidebarMarkup,'data-conversation');renderInboxHome()}
 function renderInboxHome(){
  const list=$('#homeChatList');if(!list||!state.me)return;
  const term=$('#homeSearch').value.trim().toLowerCase(),filter=state.homeFilter||'all';
  const items=state.conversations.filter(c=>(filter==='all'||filter===c.kind)&&(c.name.toLowerCase().includes(term)||(c.last_message?.body||'').toLowerCase().includes(term)));
- list.innerHTML=items.length?items.map(c=>{
+ const inboxMarkup=items.length?items.map(c=>{
     const other=c.members.find(m=>m.id!==state.me.id),online=c.kind==='dm'&&other?.online;
-    const preview=c.last_message?(c.last_message.sender_id===state.me.id?'You: ':'')+c.last_message.body:(c.kind==='group'?'Start a conversation in your group':'Say hello 👋');
+    const preview=chatPreview(c);
     return '<button type="button" class="inbox-chat" data-home-conversation="'+esc(c.id)+'">'+avatar(c.name,c.id,c.kind,online)+
-       '<span class="inbox-chat-detail"><span class="inbox-chat-top"><strong>'+esc(c.name)+'</strong><time>'+esc(prettyTime(c.last_message?.created_at||c.updated_at))+'</time></span><span class="inbox-chat-bottom"><span>'+esc(preview)+'</span>'+(c.unread?'<b class="inbox-unread">'+Math.min(99,c.unread)+'</b>':'')+'</span></span></button>';
- }).join(''):'<div class="inbox-zero"><span aria-hidden="true">💬</span><strong>'+ (term?'No matching chats':'No conversations yet')+'</strong><p>'+(term?'Try a different name or search term.':'Start a chat with someone or create a group.')+'</p></div>';
+       '<span class="inbox-chat-detail"><span class="inbox-chat-top"><strong>'+esc(c.name)+'</strong><time>'+esc(prettyTime(c.last_message?.created_at||c.updated_at))+'</time></span><span class="inbox-chat-bottom"><span class="h-inbox-preview">'+preview+'</span>'+(c.unread?'<b class="inbox-unread">'+Math.min(99,c.unread)+'</b>':'')+'</span></span></button>';
+ }).join(''):'<div class="inbox-zero"><span aria-hidden="true">✦</span><strong>'+ (term?'No matching chats':'No conversations yet')+'</strong><p>'+(term?'Try a different name or search term.':'Start a chat with someone or create a group.')+'</p></div>';reconcileChatRows(list,inboxMarkup,'data-home-conversation');
  $$('.inbox-filters button').forEach(btn=>btn.classList.toggle('selected',btn.dataset.homeFilter===filter));
 }
 $('#homeSearch').addEventListener('input',renderInboxHome);
