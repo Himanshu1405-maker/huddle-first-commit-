@@ -46,6 +46,15 @@
 #appScreen #welcomeChat:not(.hidden)>.inbox-filters{
   flex-shrink:0!important;
 }
+/* While users scroll the entire left sidebar, keep its close/menu row
+   reachable at the top of the drawer on short phones. */
+#appScreen #sidebar>.side-top{
+  position:sticky;
+  top:0;
+  z-index:4;
+  background:var(--v-sheet,#fff);
+  border-bottom:1px solid rgba(109,93,165,.08);
+}
 /* Preserve the old visibility fix; hidden Chats must never overlap AI or a
    conversation even when the visible page uses its own scrollport. */
 #appScreen #welcomeChat.hidden{display:none!important}
