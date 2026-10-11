@@ -124,7 +124,7 @@ function renderInboxHome(){
  $$('.inbox-filters button').forEach(btn=>btn.classList.toggle('selected',btn.dataset.homeFilter===filter));
 }
 $('#homeSearch').addEventListener('input',renderInboxHome);
-$('.inbox-filters').addEventListener('click',e=>{const btn=e.target.closest('[data-home-filter]');if(!btn)return;state.homeFilter=btn.dataset.homeFilter;renderInboxHome();$('#homeChatList').scrollTop=0});
+$('.inbox-filters').addEventListener('click',e=>{const btn=e.target.closest('[data-home-filter]');if(!btn)return;state.homeFilter=btn.dataset.homeFilter;renderInboxHome();$('#welcomeChat').scrollTop=0});
 $('#homeChatList').addEventListener('click',e=>{const btn=e.target.closest('[data-home-conversation]');if(btn)openConversation(btn.dataset.homeConversation)});
 
 $('#conversationList').addEventListener('click',e=>{const btn=e.target.closest('[data-conversation]');if(btn)openConversation(btn.dataset.conversation)});
