@@ -1,7 +1,5 @@
 /* Huddle AI as a private, responsive companion inside each conversation. */
 #appScreen .chat-main{position:relative}
-#appScreen .chat-extras #hChatAiOpen{display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:999px;padding:5px 11px;background:#ede7ff;color:#6450b5;border:1px solid #d9cdfb;font-size:12px;font-weight:850;line-height:1.2;min-height:32px;white-space:nowrap;flex:0 0 auto}
-#appScreen .chat-extras #hChatAiOpen:hover,#appScreen .chat-extras #hChatAiOpen:focus-visible{background:#dcd1ff;outline-offset:2px}
 .h-chat-ai-panel{position:absolute;z-index:60;inset:75px 10px 10px auto;width:min(418px,calc(100% - 20px));min-height:0;max-height:calc(100% - 85px);display:flex;flex-direction:column;background:#fff;border:1px solid #ded7ef;border-radius:22px;box-shadow:0 22px 75px rgba(32,31,75,.23);overflow:hidden;color:#302e4b;animation:hChatAiArrive .2s ease both}
 .h-chat-ai-panel[hidden],.h-chat-ai-panel.hidden{display:none!important}
 @keyframes hChatAiArrive{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
@@ -38,7 +36,6 @@
 .h-chat-ai-submit{border:0;background:#7157c9;color:white;margin-left:auto}
 .h-chat-ai-submit:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:720px){
- #appScreen .chat-extras #hChatAiOpen{padding:5px 10px;min-height:31px;font-size:11px}
  .h-chat-ai-panel{inset:70px 0 0 0;width:100%;max-height:calc(100% - 70px);border:0;border-radius:19px 19px 0 0;box-shadow:0 -7px 33px rgba(26,22,63,.16)}
  .h-chat-ai-head{padding:10px 12px 7px}
  .h-chat-ai-privacy{padding:6px 12px}
