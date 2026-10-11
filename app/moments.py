@@ -8,7 +8,7 @@ from fastapi import HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 PALETTES={"iris","lagoon","sunrise","midnight","peach","mint"}
-MEDIA_LIMIT=12*1024*1024
+MEDIA_LIMIT=24*1024*1024
 TTL=timedelta(hours=24)
 
 class MomentText(BaseModel):
@@ -148,12 +148,12 @@ def install_moments(app,db,require_user,now,new_id):
         allowed_types={"image/jpeg","image/png","image/webp","video/mp4","video/webm"}
         if declared not in allowed_types:raise HTTPException(422,"Unsupported media format")
         length=request.headers.get("content-length","")
-        if length.isdigit() and int(length)>MEDIA_LIMIT:raise HTTPException(413,"Moment file is too large (12 MB max)")
+        if length.isdigit() and int(length)>MEDIA_LIMIT:raise HTTPException(413,"Moment file is too large (24 MB max)")
         # Stream to avoid unbounded in-memory reads of a malicious upload.
         buffer=bytearray()
         async for chunk in request.stream():
             buffer.extend(chunk)
-            if len(buffer)>MEDIA_LIMIT:raise HTTPException(413,"Moment file is too large (12 MB max)")
+            if len(buffer)>MEDIA_LIMIT:raise HTTPException(413,"Moment file is too large (24 MB max)")
         if len(buffer)<16:raise HTTPException(422,"The file is empty or invalid")
         mime,kind=media_format(bytes(buffer[:24]),declared)
         with db.connection() as cx:
