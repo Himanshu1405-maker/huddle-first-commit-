@@ -365,6 +365,38 @@ def create_app(database_path: str | None = None):
             WHERE conversation_id=? ORDER BY created_at DESC LIMIT 1""", (conv["id"],)).fetchone()
         unread = cx.execute("""SELECT COUNT(*) FROM messages WHERE conversation_id=? AND sender_id<>?
             AND created_at>? AND deleted_at IS NULL""", (conv["id"], user_id, me["last_read_at"] if me else "")).fetchone()[0]
+        # Semantic preview metadata makes the inbox independent of emoji and
+        # attachment filenames. Do not send location coordinates or media URLs.
+        latest_text = ("Message deleted" if latest["deleted_at"] else
+                       message_preview(decrypt_text(latest["body"]))) if latest else ""
+        preview_kind, preview_label, preview_caption = "text", "", ""
+        if latest and not latest["deleted_at"]:
+            if latest_text.startswith(("🖼️ ", "🎬 ", "🎤 ", "📎 ")):
+                media = cx.execute("""SELECT filename,content_type,view_once FROM attachments
+                    WHERE message_id=?""", (latest["id"],)).fetchone()
+                if media:
+                    content_type = media["content_type"]
+                    preview_kind = ("photo" if content_type.startswith("image/") else
+                                    "video" if content_type.startswith("video/") else
+                                    "voice" if content_type.startswith("audio/") else "file")
+                    view_once = bool(media["view_once"])
+                    preview_label = {
+                        "photo": "View once photo" if view_once else
+                                 ("Edited photo" if media["filename"].lower().endswith("-edited.jpg") else "Photo"),
+                        "video": "View once video" if view_once else "Video",
+                        "voice": "Voice message", "file": "Document"
+                    }[preview_kind]
+                    preview_caption = latest_text.partition("\n")[2][:120]
+            elif latest_text.startswith(("📍 Shared location", "🟢 Live location")):
+                loc = cx.execute("SELECT mode,stopped_at,expires_at FROM location_shares WHERE message_id=?",
+                                 (latest["id"],)).fetchone()
+                if loc:
+                    preview_kind = "location"
+                    preview_label = ("Live location" if loc["mode"] == "live" and not loc["stopped_at"]
+                                     and loc["expires_at"] and loc["expires_at"] > now()
+                                     else "Location")
+            elif latest_text == "🎉 Animated sticker":
+                preview_kind, preview_label = "sticker", "Sticker"
         return {
             "id": conv["id"], "kind": conv["kind"],
             "name": other["name"] if conv["kind"] == "dm" and other else conv["name"],
@@ -372,7 +404,10 @@ def create_app(database_path: str | None = None):
             "handle": other["handle"] if other and conv["kind"] == "dm" else "",
             "members": [{**public_user(m), "role": m["role"], "online": hub.online(m["id"])} for m in members],
             "unread": unread, "updated_at": conv["updated_at"],
-            "last_message": ({"body": "Message deleted" if latest["deleted_at"] else message_preview(decrypt_text(latest["body"])),
+            "last_message": ({"body": latest_text,
+                              "preview_kind": preview_kind,
+                              "preview_label": preview_label,
+                              "preview_caption": preview_caption,
                               "created_at": latest["created_at"], "sender_id": latest["sender_id"]} if latest else None)
         }
 
