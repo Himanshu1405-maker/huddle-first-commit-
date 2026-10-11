@@ -5,7 +5,6 @@
 'use strict';
 (function(){
   const panel=document.getElementById('hChatAiPanel');
-  const trigger=document.getElementById('hChatAiOpen');
   const input=document.getElementById('hChatAiPrompt');
   const form=document.getElementById('hChatAiForm');
   const scroll=document.getElementById('hChatAiScroll');
@@ -15,7 +14,7 @@
   const connect=document.getElementById('hChatAiConnect');
   const status=document.getElementById('hChatAiStatus');
   const send=document.getElementById('hChatAiSend');
-  if(!panel||!trigger||!input||!form||!scroll||!messages||!checkbox||!quote||!connect||!status||!send)return;
+  if(!panel||!input||!form||!scroll||!messages||!checkbox||!quote||!connect||!status||!send)return;
   const sessions=new Map();
   let roomId=null,busy=false,activeQuote=null,connecting=false;
   const $=id=>document.getElementById(id);
@@ -185,7 +184,6 @@
       }
     }finally{busy=false;refreshStatus(status.textContent);}
   });
-  trigger.addEventListener('click',()=>open());
   $('hChatAiClose').addEventListener('click',close);
   connect.addEventListener('click',connectProvider);
   $('hChatAiClear').addEventListener('click',()=>{
