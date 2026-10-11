@@ -36,7 +36,7 @@ def main():
       opts.add_argument(arg)
     browser=webdriver.Chrome(options=opts)
     try:
-      for width,height in [(390,844),(345,740)]:
+      for attempt,(width,height) in enumerate([(390,844),(345,740)],start=1):
         browser.execute_cdp_cmd("Emulation.setDeviceMetricsOverride",{
           "width":width,"height":height,"deviceScaleFactor":2,"mobile":True})
         browser.get(base)
@@ -55,7 +55,7 @@ def main():
         box.click()
         browser.find_element(By.ID,"hEditorSend").click()
         WebDriverWait(browser,12).until(lambda d:
-          len(d.find_elements(By.CSS_SELECTOR,"#messages .h-once-card"))>0)
+          len(d.find_elements(By.CSS_SELECTOR,"#messages .h-once-card"))>=attempt)
         sender=browser.execute_script("""
           const c=[...document.querySelectorAll('.h-once-card')].at(-1);
           return {text:c?.innerText,inline:!!c?.querySelector('img,video'),
