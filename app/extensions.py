@@ -268,13 +268,13 @@ def install_extensions(app, db, hub, require_user, serialize_message, send_messa
                     WHERE id=? AND view_once=1 AND opened_at IS NULL""",
                     (now(),user["id"],attachment_id))
             if changed.rowcount!=1:fail(410,"This View Once media was already opened")
+            updated_message=serialize_message(cx,cx.execute("SELECT * FROM messages WHERE id=?",
+                (item["message_id"],)).fetchone())
         # Best-effort immediate erasure of the encrypted server-side file.
         # Metadata stays to display an 'Opened' placeholder in the chat.
         path.unlink(missing_ok=True)
         await hub.notify(member_ids(item["conversation_id"]),{
-            "type":"message:update",
-            "message_id":item["message_id"],"conversation_id":item["conversation_id"],
-            "view_once_opened":True})
+            "type":"message:update","message":updated_message})
         return Response(blob,media_type=item["content_type"],headers={
             "Cache-Control":"no-store, no-cache, max-age=0, must-revalidate",
             "Pragma":"no-cache","X-Content-Type-Options":"nosniff",
