@@ -229,9 +229,15 @@ def main():
             WebDriverWait(a, 8).until(lambda browser:
                 browser.execute_script("return localStorage.getItem('huddle-notify-opt-in')") == "yes")
             # Hosted AI fallback can be connected without developer credentials.
-            a.find_element(By.ID, "aiQuickBtn").click()
-            WebDriverWait(a, 10).until(lambda browser:
-                browser.find_element(By.ID, "aiView").is_displayed())
+            # Await AI history loading before forcing optional Puter fallback.
+            # Otherwise the pending history response can overwrite the test's
+            # temporary provider state and hide the connect button mid-assertion.
+            loaded=a.execute_async_script("""
+                const done=arguments[arguments.length-1];
+                openAI().then(()=>done(true)).catch(err=>done(err.message));
+            """)
+            assert loaded is True,loaded
+            assert a.find_element(By.ID, "aiView").is_displayed()
             # Explicitly test the optional hosted fallback, independent of
             # whether CI has a server AI provider configured today.
             a.execute_script("""
