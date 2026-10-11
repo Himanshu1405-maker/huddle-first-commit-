@@ -362,6 +362,23 @@ def main():
                   return {actual:scroll.scrollTop,max:scroll.scrollHeight-scroll.clientHeight};
                 """)
                 assert reached['max']<2 or reached['actual']>=reached['max']-2,reached
+                # Verify the real UI submit/connect flow with an isolated
+                # Puter SDK mock. Never use an external account or paid credits in CI.
+                browser.execute_script("""
+                  window.puter={
+                    auth:{signIn:()=>Promise.resolve({username:'qa-only'}),
+                          isSignedIn:()=>true},
+                    ai:{chat:()=>Promise.resolve({message:{content:'Huddle AI mobile QA response'}}),
+                        txt2img:()=>Promise.resolve({src:'data:image/png;base64,iVBORw0KGgo='})}
+                  };
+                """)
+                browser.find_element(By.ID,'aiPuterConnect').click()
+                WebDriverWait(browser,6).until(lambda b:b.find_element(By.ID,'aiSend').is_enabled())
+                browser.find_element(By.ID,'aiPrompt').send_keys('AI mobile test prompt')
+                browser.find_element(By.ID,'aiSend').click()
+                WebDriverWait(browser,8).until(
+                    lambda b:'Huddle AI mobile QA response' in b.find_element(By.ID,'aiMessages').text)
+                assert not browser.find_element(By.ID,'aiNotice').is_displayed()
                 browser.execute_script("showWelcome()")
                 assert browser.find_element(By.ID,'welcomeChat').is_displayed()
                 assert not browser.find_element(By.ID,'aiView').is_displayed()
