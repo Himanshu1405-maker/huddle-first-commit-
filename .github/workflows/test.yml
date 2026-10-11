@@ -16,6 +16,7 @@ jobs:
       - run: node --check app/web/app.js
       - run: node --check app/web/chat-enhancements.js
       - run: node tests/chat_enhancements.cjs
+      - run: node tests/media_preview_studio.cjs
       - run: node tests/frontend_smoke.cjs
       - run: node tests/auth_bloom.cjs
       - run: node tests/auth_luxe.cjs
