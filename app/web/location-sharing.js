@@ -1,7 +1,6 @@
 /* Opt-in location cards. GPS is accessed only after the sender taps Share. */
 'use strict';
 (function () {
-  const activeMaps = new Set();
   let watchId = null;
   let myLiveMessageId = null;
   let lastSent = 0;
@@ -11,7 +10,7 @@
   button.id = 'shareLocationBtn';
   button.className = 'composer-media location-trigger';
   button.textContent = '📍';
-  button.title = 'Share current or live location';
+  button.title = 'Share Google Maps location';
   button.setAttribute('aria-label', 'Share location');
   const composer = document.querySelector('#conversationView .composer');
   const fileInput = document.getElementById('mediaFileInput');
@@ -93,13 +92,13 @@
     overlay.innerHTML='<section class="h-location-sheet" role="dialog" aria-modal="true" aria-labelledby="hLocationTitle">'+
       '<div class="h-location-head"><div><small>HUDDLE / LOCATION</small><h2 id="hLocationTitle">Share your location</h2></div>'+
       '<button type="button" id="hLocationClose" aria-label="Close">×</button></div>'+
-      '<label class="h-location-choice"><input type="radio" name="hLocationMode" value="pin" checked> 📍 Send my current location <span>One-time map pin</span></label>'+
+      '<label class="h-location-choice"><input type="radio" name="hLocationMode" value="pin" checked> 📍 Send my current location <span>Open the pin in Google Maps</span></label>'+
       '<label class="h-location-choice"><input type="radio" name="hLocationMode" value="live"> 🟢 Share live location <span>Updates while Huddle is open</span></label>'+
       '<div id="hLocationDuration" class="h-location-duration" hidden><label for="hLocationMinutes">Sharing duration</label>'+
       '<select id="hLocationMinutes"><option value="15">15 minutes</option><option value="60">1 hour</option><option value="480">8 hours</option></select></div>'+
       '<p class="h-location-privacy">Only members of this conversation can see the shared location. '+
       'Live updates require this browser to stay open. Stop sharing whenever you want. '+
-      'Share your exact location only with people you trust.</p>'+
+      'Share your exact location only with people you trust. Opening Google Maps sends the shared pin to Google.</p>'+
       '<button type="button" id="hLocationShare" class="h-location-submit">Share location →</button></section>';
     document.body.append(overlay);
     overlay.addEventListener('click',event=>{if(event.target===overlay)closeSheet()});
@@ -131,14 +130,21 @@
     });
   });
 
-  function mapURL(lat,lon) {
-    return 'https://www.openstreetmap.org/?mlat='+encodeURIComponent(lat)+'&mlon='+encodeURIComponent(lon)+'#map=16/'+lat+'/'+lon;
+  // Official Google Maps URLs launch the Maps app when installed, otherwise
+  // the browser. They need no Maps SDK, API key, or automatic third-party request.
+  function coordinatePair(lat,lon) {
+    const latitude=Number(lat),longitude=Number(lon);
+    if(lat===null||lon===null||!Number.isFinite(latitude)||!Number.isFinite(longitude)||
+       Math.abs(latitude)>90||Math.abs(longitude)>180) return null;
+    return latitude+','+longitude;
   }
-  function iframeURL(lat,lon) {
-    const spread=0.009;
-    return 'https://www.openstreetmap.org/export/embed.html?bbox='+
-      encodeURIComponent((lon-spread)+','+(lat-spread)+','+(lon+spread)+','+(lat+spread))+
-      '&layer=mapnik&marker='+encodeURIComponent(lat+','+lon);
+  function mapURL(lat,lon) {
+    const point=coordinatePair(lat,lon);
+    return point===null?null:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(point);
+  }
+  function directionsURL(lat,lon) {
+    const point=coordinatePair(lat,lon);
+    return point===null?null:'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(point);
   }
   function decorateLocations() {
     if (!state.me) return;
@@ -151,25 +157,27 @@
       const loc=message.location;
       const live=loc.mode==='live';
       const active=live&&loc.active&&Date.parse(loc.expires_at)>Date.now();
-      const coords=loc.latitude!==null&&loc.longitude!==null&&(!live||active);
+      const locationURL=mapURL(loc.latitude,loc.longitude);
+      const coords=Boolean(locationURL)&&(!live||active);
       const mine=message.sender_id===state.me.id;
       const label=live ? (active?'Live location':'Live location ended') : 'Current location';
-      let inside='<div class="h-location-map">';
-      if (coords && activeMaps.has(message.id)) {
-        inside+='<iframe title="Shared map location" loading="lazy" referrerpolicy="no-referrer" '+
-          'src="'+iframeURL(loc.latitude,loc.longitude)+'"></iframe>';
-      } else {
-        inside+='<div class="h-location-art"><span>📍</span><small>'+(coords?'Map preview available':'Location no longer available')+'</small></div>';
-      }
-      inside+='</div><div class="h-location-card-body"><div class="h-location-card-title">'+
+      // Do not send pinned coordinates to a third party just to show a chat card.
+      // Only a deliberate tap opens the current location in Google Maps.
+      let inside='<div class="h-location-map h-location-google">'+
+        '<div class="h-location-art h-location-google-art"><span aria-hidden="true">'+(coords?'📍':'🔒')+'</span>'+
+        '<strong>'+ (coords?'Google Maps':'Location unavailable') +'</strong>'+
+        '<small>'+ (coords?'Tap below to open the shared pin':'Live location has ended') +'</small></div></div>';
+      inside+='<div class="h-location-card-body"><div class="h-location-card-title">'+
         (active?'<span class="h-location-live-dot"></span>':'')+label+'</div>'+
         '<p>'+(active?'Updated '+fmtTime(loc.updated_at)+' · Ends '+fmtTime(loc.expires_at):
-          live?'This live share has stopped.':'Tap to see this place on a map.')+'</p>';
+          live?'This live share has stopped.':'Open this pin using Google Maps.')+'</p>';
       if (coords) {
         inside+='<div class="h-location-actions">'+
-          '<button type="button" data-h-location-map="'+esc(message.id)+'">'+
-          (activeMaps.has(message.id)?'Hide map':'View map')+'</button>'+
-          '<a href="'+mapURL(loc.latitude,loc.longitude)+'" target="_blank" rel="noopener noreferrer">Open in Maps ↗</a></div>';
+          '<a class="h-location-maps-primary" href="'+locationURL+
+          '" target="_blank" rel="noopener noreferrer" aria-label="Open shared pin in Google Maps">Google Maps ↗</a>'+
+          '<a href="'+directionsURL(loc.latitude,loc.longitude)+
+          '" target="_blank" rel="noopener noreferrer" aria-label="Get directions in Google Maps">Directions ↗</a></div>';
+        if (active) inside+='<small class="h-location-refresh-tip">Live updates appear in Huddle. Reopen Google Maps to see the newest pin.</small>';
       }
       if (mine && active) inside+='<button type="button" class="h-location-stop" data-h-location-stop="'+esc(message.id)+'">■ Stop sharing</button>';
       inside+='</div>';
@@ -183,13 +191,6 @@
   const originalRender=renderMessages;
   renderMessages=function(...args) {originalRender(...args);decorateLocations();};
   document.getElementById('messages')?.addEventListener('click',event=>{
-    const map=event.target.closest('[data-h-location-map]');
-    if (map) {
-      const id=map.dataset.hLocationMap;
-      if (activeMaps.has(id)) activeMaps.delete(id);else activeMaps.add(id);
-      renderMessages(false);
-      return;
-    }
     const stop=event.target.closest('[data-h-location-stop]');
     if (stop) {
       stop.disabled=true;
