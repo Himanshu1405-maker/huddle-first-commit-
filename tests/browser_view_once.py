@@ -78,7 +78,14 @@ def main():
         """,cid)
         WebDriverWait(browser,8).until(lambda d:len(d.find_elements(By.CSS_SELECTOR,
               "button[data-view-once='"+aid+"']"))==1)
-        browser.find_element(By.CSS_SELECTOR,"button[data-view-once='"+aid+"']").click()
+        # Message refreshes can replace the button between Selenium lookup
+        # and its click. Resolve and click within a single browser task.
+        assert browser.execute_script("""
+            const button=document.querySelector('button[data-view-once="'+arguments[0]+'"]');
+            if(!button)return false;
+            button.click();
+            return true;
+        """,aid),"View Once open control must be available"
         WebDriverWait(browser,8).until(lambda d:d.find_element(By.ID,"hViewOnceViewer").is_displayed())
         bounds=browser.execute_script("""
           const v=document.getElementById('hViewOnceViewer'),r=v.getBoundingClientRect();
