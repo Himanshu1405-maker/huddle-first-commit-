@@ -5,7 +5,7 @@ const app=fs.readFileSync('app/web/app.js','utf8');
 const source=fs.readFileSync('app/web/chat-ai.js','utf8');
 const css=fs.readFileSync('app/web/chat-ai.css','utf8');
 new Function(source);new Function(app);
-for(const id of ['hChatAiPanel','hChatAiOpen','hChatAiClose','hChatAiMessages',
+for(const id of ['hChatAiPanel','aiQuickBtn','hChatAiClose','hChatAiMessages',
  'hChatAiPrompt','hChatAiConnect','hChatAiStatus','hChatAiForm','hChatAiQuote',
  'hChatAiUseDraft','hChatAiClear','hChatAiSend']){
   assert(html.includes('id="'+id+'"'),'Missing assistant control '+id);
@@ -27,5 +27,6 @@ assert(source.includes('window.puter.auth.signIn()'),'Sign-in requires user auth
 assert(source.includes("const composer=$('messageInput')"),'AI answers must be used as editable drafts');
 assert(!source.includes("'/conversations/'+"),'No AI response may be auto-sent as a regular chat message');
 assert(css.includes('@media(max-width:720px)'),'Assistant must work on mobile');
+assert(app.includes("state.active&&window.HuddleChatAI?.open"),'Chat header sparkles must open inline assistant');
 assert(css.includes('.h-chat-ai-panel[hidden]'),'Assistant must be hidden when not opened');
 console.log('CHAT_AI_INLINE_PASS: opt-in context, hosted AI, explicit draft sharing, mobile panel, logout reset');
