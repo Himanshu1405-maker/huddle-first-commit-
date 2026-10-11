@@ -64,7 +64,7 @@
 
   function selectionTarget(row){
     // Highlight only actual message content, never the flex row's empty width.
-    return [...(row?.querySelectorAll('.bubble:not(.deleted),.h-location-card,.media-card')||[])]
+    return [...(row?.querySelectorAll('.bubble:not(.deleted),.h-location-card,.media-card,.h-once-card')||[])]
       .find(element=>element.getClientRects().length>0 && getComputedStyle(element).visibility!=='hidden'
         && getComputedStyle(element).display!=='none');
   }
