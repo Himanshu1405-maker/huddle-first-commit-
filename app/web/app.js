@@ -98,7 +98,7 @@ if(action.dataset.action==='report'){
 function setMediaProgress(text){const el=$('#mediaProgress');if(el)el.textContent=text||'';}
 async function sendMediaFile(file,caption='',durationMs=null){
   const cid=state.active?.id;if(!cid||!file)return;
-  if(file.size>(file.type.startsWith('video/')?20:6)*1024*1024){toast('Selected file exceeds upload size limit.',true);return;}
+  if(file.size>(file.type.startsWith('video/')||/\.(mp4|mov)$/i.test(file.name||'')?50:25)*1024*1024){toast('File is too large. Maximum 50 MB for videos or 25 MB for other files.',true);return;}
   const name=file.name||'attachment';
   const btn=$('#voiceNoteBtn');btn.disabled=true;setMediaProgress('Uploading '+name+'…');
   try{
