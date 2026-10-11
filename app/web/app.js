@@ -445,7 +445,9 @@ function renderAI(){
   $('#aiSuggestions').classList.toggle('hidden',messages.length>0);
   $('#aiView').classList.toggle('ai-has-history',messages.length>0);
   const scroller=$('#aiScroll');
-  requestAnimationFrame(()=>{scroller.scrollTop=(aiModeAvailable()&&!state.aiError)?scroller.scrollHeight:0});
+  // Only auto-follow messages when AI is active. Never reset a user's manual scroll
+  // while loading history or showing the hosted connection prompt.
+  requestAnimationFrame(()=>{if(aiModeAvailable()&&!state.aiError)scroller.scrollTop=scroller.scrollHeight});
 }
 function aiModeAvailable(){return state.aiMode==='image'?(Boolean(state.config.ai_image)||Boolean(state.puter.connected&&window.puter?.ai?.txt2img)):Boolean(state.config.ai_chat)||Boolean(state.puter.connected&&window.puter?.ai?.chat)}
 function aiStatus(){
