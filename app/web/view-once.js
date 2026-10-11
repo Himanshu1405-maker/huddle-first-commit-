@@ -8,7 +8,7 @@
  if(!messages)return;
  let overlay=null,objectURL=null,openedFor=null;
  function close(){
-   if(!overlay)return;
+   if(!overlay){if(objectURL){URL.revokeObjectURL(objectURL);objectURL=null;}openedFor=null;return;}
    const media=overlay.querySelector('video');
    if(media){media.pause();media.removeAttribute('src');media.load();}
    overlay.remove();overlay=null;
