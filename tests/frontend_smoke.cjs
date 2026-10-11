@@ -16,7 +16,7 @@ const calls = [];
 function mockNode() {
   return {
     value: '', innerHTML: '', textContent: '', dataset: {}, style: {}, required: false,
-    disabled: false, scrollHeight: 0, scrollTop: 0, clientHeight: 0,
+    disabled: false, scrollHeight: 0, scrollTop: 0, clientHeight: 0, children: [],
     handlers: {}, focus() { this.focused = true; },
     addEventListener(event, handler) { this.handlers[event] = handler; },
     querySelector() { return mockNode(); },
@@ -34,7 +34,13 @@ class FakeSocket {
   send() {}
 }
 const context = vm.createContext({
-  document: { querySelector: selector, querySelectorAll: () => [], addEventListener() {}, visibilityState: 'visible' },
+  document: {
+    querySelector: selector, querySelectorAll: () => [], addEventListener() {}, visibilityState: 'visible',
+    createElement(tag) {
+      if (tag === 'template') return {content: {children: []}, set innerHTML(value) {this.html=value;}};
+      return mockNode();
+    }
+  },
   window: { addEventListener() {} },
   fetch: async (url, config) => {
     calls.push({ url, config });

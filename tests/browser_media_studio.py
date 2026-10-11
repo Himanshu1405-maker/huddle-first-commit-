@@ -148,12 +148,17 @@ def main():
                 browser.find_element(By.ID,"hEditorSend").click()
                 WebDriverWait(browser,15).until(
                     lambda d:not d.find_elements(By.CSS_SELECTOR,".h-editor-overlay"))
-                response=alice.get(base+f"/api/conversations/{room}/messages")
-                assert response.status_code==200,response.text
-                images=[m for m in response.json()["messages"]
-                    if m.get("attachments") and
-                       m["attachments"][0]["content_type"].startswith("image/")]
-                assert len(images)>=(1 if width==1150 else 2 if width==390 else 3)
+                # The editor closes before the asynchronous XHR upload finishes.
+                # Wait for the real server-side attachment instead of racing it.
+                expected=1 if width==1150 else 2 if width==390 else 3
+                def uploaded_images(_):
+                    response=alice.get(base+f"/api/conversations/{room}/messages")
+                    assert response.status_code==200,response.text
+                    images=[m for m in response.json()["messages"]
+                        if m.get("attachments") and
+                           m["attachments"][0]["content_type"].startswith("image/")]
+                    return images if len(images)>=expected else False
+                images=WebDriverWait(browser,15,poll_frequency=.3).until(uploaded_images)
                 recent=images[-1]
                 assert "Media Studio looks fresh" in recent["body"]
                 assert bool(recent["attachments"][0]["view_once"])==(width==390)

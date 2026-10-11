@@ -24,6 +24,10 @@ on:
       - app/web/moments.js
       - app/web/moments.css
       - app/web/inbox-moments-refinement.css
+      - app/web/chat-list-preview-polish.css
+      - tests/browser_chat_previews.py
+      - tests/chat_list_previews.cjs
+      - tests/test_chat_preview_labels.py
       - tests/inbox_moments_refinement.cjs
       - app/moments.py
       - tests/test_moments.py
@@ -91,6 +95,10 @@ on:
       - app/web/moments.js
       - app/web/moments.css
       - app/web/inbox-moments-refinement.css
+      - app/web/chat-list-preview-polish.css
+      - tests/browser_chat_previews.py
+      - tests/chat_list_previews.cjs
+      - tests/test_chat_preview_labels.py
       - tests/inbox_moments_refinement.cjs
       - app/moments.py
       - tests/test_moments.py
@@ -169,6 +177,8 @@ jobs:
         run: PYTHONPATH=. python tests/browser_message_actions.py
       - name: Verify compact images, voice controls and reaction layout on mobile
         run: PYTHONPATH=. python tests/browser_voice_media_polish.py
+      - name: Check semantic vector chat previews and smooth inbox rendering in Chrome
+        run: PYTHONPATH=. python tests/browser_chat_previews.py
       - name: Check refreshed photo, video and document preview across desktop and Android
         run: PYTHONPATH=. python tests/browser_media_studio.py
       - name: Check View Once media preview, consumption and mobile scrolling

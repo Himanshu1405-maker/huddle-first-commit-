@@ -1,0 +1,107 @@
+/* Huddle clean chat list — vector media badges, stable updates and soft touch.
+   Scoped to inbox and sidebar; does not alter actual message media. */
+#appScreen .h-preview-wrap{
+ display:flex;align-items:center;gap:6px;min-width:0;width:100%;max-width:100%;
+ line-height:1.35;white-space:nowrap;overflow:hidden;
+}
+#appScreen .h-preview-sender{
+ flex:0 0 auto;color:var(--v-title,#5b5179);font-weight:750;
+ font-size:inherit;opacity:.75;
+}
+#appScreen .h-preview-separator{
+ color:var(--v-accent,#7763bc);opacity:.55;flex:0 0 auto;font-weight:800;
+}
+#appScreen .h-preview-symbol{
+ display:inline-grid;place-items:center;flex:0 0 26px;
+ width:26px;height:26px;border-radius:9px;
+ background:#eee9fd;color:#7762bf;
+ border:1px solid #e7e0fb;
+ vertical-align:middle;
+}
+#appScreen .h-preview-symbol svg{width:15px;height:15px;display:block;flex:0 0 auto}
+#appScreen .h-preview-symbol-photo{color:#705bb7;background:#efeafe;border-color:#e7ddff}
+#appScreen .h-preview-symbol-video{color:#a46b45;background:#fff1e5;border-color:#ffe5cf}
+#appScreen .h-preview-symbol-location{color:#188c7f;background:#e2f7f2;border-color:#d0ece6}
+#appScreen .h-preview-symbol-voice{color:#4181c3;background:#e9f3ff;border-color:#dbeafc}
+#appScreen .h-preview-symbol-file{color:#737c98;background:#eef1f8;border-color:#e1e6f0}
+#appScreen .h-preview-symbol-sticker{color:#b06b96;background:#fbedf6;border-color:#f5ddec}
+#appScreen .h-preview-label{
+ flex:0 0 auto;font-size:inherit;line-height:1.35;
+ color:var(--v-title,#514967);font-weight:680;overflow:hidden;text-overflow:ellipsis;
+}
+#appScreen .h-preview-caption{
+ flex:1 1 auto;min-width:0;overflow:hidden;
+ white-space:nowrap;text-overflow:ellipsis;
+ font-size:inherit;font-weight:450;opacity:.84;
+}
+#appScreen .h-preview-text{
+ display:block;flex:1 1 auto;min-width:0;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;
+ font-size:inherit;font-weight:450;
+}
+#appScreen .inbox-chat-bottom,
+#appScreen .inbox-chat-bottom .h-inbox-preview,
+#appScreen .conv-preview-row{min-width:0}
+#appScreen .inbox-chat-bottom>.h-inbox-preview{
+ display:flex;align-items:center;min-width:0;flex:1 1 auto;
+ font-size:calc(13px * var(--h-text-scale,1));color:var(--v-muted,#89879b);
+}
+#appScreen .conv-preview{
+ display:flex;align-items:center;max-width:none;min-width:0;flex:1 1 auto;
+ font-size:calc(11px * var(--h-text-scale,1));
+ overflow:hidden;margin-top:5px;
+}
+#appScreen .conv-preview-row .unread,
+#appScreen .inbox-chat-bottom .inbox-unread{flex:0 0 auto}
+#appScreen #welcomeChat>.inbox-list .inbox-chat{
+ border:1px solid color-mix(in srgb,var(--v-accent,#7662bc) 11%,#fff)!important;
+ border-radius:22px!important;
+ background:color-mix(in srgb,#fff 96%,var(--v-accent,#7662bc))!important;
+ box-shadow:0 3px 13px rgba(57,48,105,.045)!important;
+ transform:none!important;
+ transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease!important;
+ -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+#appScreen #welcomeChat>.inbox-list .inbox-chat:hover,
+#appScreen #welcomeChat>.inbox-list .inbox-chat:focus-visible{
+ transform:none!important;
+ background:color-mix(in srgb,#fff 90%,var(--v-accent,#7662bc))!important;
+ border-color:color-mix(in srgb,var(--v-accent,#7662bc) 32%,#fff)!important;
+ box-shadow:0 5px 19px rgba(57,48,105,.075)!important;
+}
+#appScreen #welcomeChat>.inbox-list .inbox-chat:active{
+ transform:none!important;
+ background:color-mix(in srgb,#fff 84%,var(--v-accent,#7662bc))!important;
+}
+#appScreen #welcomeChat>.inbox-list .inbox-chat .inbox-chat-detail{
+ min-width:0;flex:1 1 auto;
+}
+#appScreen #welcomeChat>.inbox-list .inbox-chat .inbox-chat-top{min-width:0}
+#appScreen #welcomeChat>.inbox-list .inbox-chat .inbox-chat-top strong{min-width:0;flex:1 1 auto}
+#appScreen .conversation-list .conv-item{
+ transform:none!important;
+ transition:background-color .15s ease,border-color .15s ease!important;
+}
+#appScreen .conversation-list .conv-item:hover,
+#appScreen .conversation-list .conv-item:focus-visible{transform:none!important}
+#appScreen .inbox-list,#appScreen .conversation-list{
+ overscroll-behavior-y:contain;
+ -webkit-overflow-scrolling:touch;
+ overflow-anchor:auto;
+}
+@media(max-width:720px){
+ #appScreen #welcomeChat>.inbox-list{
+   scrollbar-gutter:auto!important;
+   scrollbar-width:none!important;
+   scroll-behavior:auto!important;
+ }
+ #appScreen #welcomeChat>.inbox-list::-webkit-scrollbar{display:none}
+ #appScreen #welcomeChat>.inbox-list .inbox-chat{border-radius:21px!important}
+ #appScreen .h-preview-symbol{width:25px;height:25px;flex-basis:25px;border-radius:9px}
+ #appScreen .h-preview-wrap{gap:5px}
+ #appScreen .h-inbox-preview{font-size:calc(12px * var(--h-text-scale,1))!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #appScreen #welcomeChat>.inbox-list .inbox-chat,
+ #appScreen .conversation-list .conv-item{transition:none!important;transform:none!important}
+}
