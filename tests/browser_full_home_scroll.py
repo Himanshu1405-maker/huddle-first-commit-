@@ -145,7 +145,7 @@ def main():
                 pos=browser.execute_script("""
                     return {top:document.getElementById('welcomeChat').scrollTop,
                       title:document.querySelector('#welcomeChat h1').textContent,
-                      search:document.getElementById('homeSearch').getBoundingClientRect().height};
+                      search:document.querySelector('#welcomeChat .inbox-search-wrap').getBoundingClientRect().height};
                 """)
                 assert pos["top"]==0 and pos["title"]=="Chats" and pos["search"]>25,pos
             print("FULL_HOME_SCROLL_BROWSER_PASS",flush=True)
