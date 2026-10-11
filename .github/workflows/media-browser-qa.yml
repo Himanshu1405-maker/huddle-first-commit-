@@ -7,6 +7,8 @@ on:
       - app/web/app.js
       - app/web/chat-enhancements.js
       - app/web/chat-enhancements.css
+      - app/web/media-preview-studio.css
+      - tests/browser_media_studio.py
       - app/web/chat-ai.js
       - app/web/chat-ai.css
       - tests/browser_chat_ai.py
@@ -72,6 +74,8 @@ on:
       - app/web/app.js
       - app/web/chat-enhancements.js
       - app/web/chat-enhancements.css
+      - app/web/media-preview-studio.css
+      - tests/browser_media_studio.py
       - app/web/chat-ai.js
       - app/web/chat-ai.css
       - tests/browser_chat_ai.py
@@ -165,6 +169,8 @@ jobs:
         run: PYTHONPATH=. python tests/browser_message_actions.py
       - name: Verify compact images, voice controls and reaction layout on mobile
         run: PYTHONPATH=. python tests/browser_voice_media_polish.py
+      - name: Check refreshed photo, video and document preview across desktop and Android
+        run: PYTHONPATH=. python tests/browser_media_studio.py
       - name: Check View Once media preview, consumption and mobile scrolling
         run: PYTHONPATH=. python tests/browser_view_once.py
       - name: Check private inline AI in mobile chats and opt-in message context
