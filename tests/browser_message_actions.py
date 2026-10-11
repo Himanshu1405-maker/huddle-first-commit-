@@ -69,11 +69,13 @@ def main():
                 print('INTERACTION_INITIAL',width,appearance,flush=True)
                 assert appearance['width']<=appearance['viewport']+3
                 assert appearance['iconCount']==4 and appearance['selectedBar']
-                bubble=browser.find_element(By.CSS_SELECTOR,'.bubble[data-huddle-message-id]')
+                # Use the same public Huddle message-selection UI API as
+                # the long-press handler; avoid a websocket rerender between
+                # locating a bubble and dispatching the synthetic dblclick.
                 browser.execute_script("""
-                  arguments[0].dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-                """,bubble)
-                WebDriverWait(browser,5).until(lambda b:
+                    window.HuddleMessageUI.selectMessage(arguments[0],true)
+                """,first['id'])
+                WebDriverWait(browser,6).until(lambda b:
                     b.find_element(By.ID,'hSelectedBar').is_displayed() and
                     len(b.find_elements(By.CSS_SELECTOR,'.h-message-menu [data-h-reaction]'))==8)
                 assert browser.find_element(By.CSS_SELECTOR,'.message-row.h-msg-selected')
