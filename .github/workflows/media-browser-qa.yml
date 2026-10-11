@@ -26,6 +26,9 @@ on:
       - app/web/inbox-moments-refinement.css
       - app/web/chat-list-preview-polish.css
       - app/web/sidebar-home-navigation.css
+      - app/web/chat-home-full-scroll.css
+      - tests/browser_full_home_scroll.py
+      - tests/full_home_scroll.cjs
       - tests/browser_sidebar_navigation.py
       - tests/sidebar_navigation.cjs
       - app/web/moments.js
@@ -101,6 +104,9 @@ on:
       - app/web/inbox-moments-refinement.css
       - app/web/chat-list-preview-polish.css
       - app/web/sidebar-home-navigation.css
+      - app/web/chat-home-full-scroll.css
+      - tests/browser_full_home_scroll.py
+      - tests/full_home_scroll.cjs
       - tests/browser_sidebar_navigation.py
       - tests/sidebar_navigation.cjs
       - app/web/moments.js
@@ -185,6 +191,8 @@ jobs:
         run: PYTHONPATH=. python tests/browser_message_actions.py
       - name: Verify compact images, voice controls and reaction layout on mobile
         run: PYTHONPATH=. python tests/browser_voice_media_polish.py
+      - name: Check entire Chats home page scrolling and filter navigation
+        run: PYTHONPATH=. python tests/browser_full_home_scroll.py
       - name: Check Back to Chats and whole-sidebar scrolling at desktop and mobile widths
         run: PYTHONPATH=. python tests/browser_sidebar_navigation.py
       - name: Check semantic vector chat previews and smooth inbox rendering in Chrome
