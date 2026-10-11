@@ -1,0 +1,106 @@
+/* Huddle navigation repair.
+ * The ENTIRE desktop/mobile sidebar scrolls, not just the conversation list.
+ * Home navigation remains discoverable from chats, Moments, and Huddle AI.
+ */
+#appScreen #sidebar{
+  height:100%;
+  max-height:100%;
+  min-height:0!important;
+  box-sizing:border-box;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:#c6bfdf transparent;
+  scroll-behavior:auto;
+  scrollbar-gutter:auto;
+}
+#appScreen #sidebar::-webkit-scrollbar{width:7px}
+#appScreen #sidebar::-webkit-scrollbar-thumb{
+  border-radius:999px;
+  background:#c9c3db;
+}
+#appScreen #sidebar::-webkit-scrollbar-track{background:transparent}
+/* Without this override .conversation-list flex:1 steals the scroll region,
+   leaving branding, Moments, search and profile controls unreachable. */
+#appScreen #sidebar>.conversation-list{
+  flex:0 0 auto!important;
+  height:auto!important;
+  max-height:none!important;
+  min-height:0!important;
+  overflow:visible!important;
+  overscroll-behavior:initial;
+}
+#appScreen #sidebar>:is(.side-top,.side-intro,.side-actions,.searchbox,.h-sidebar-starred,.filter-nav,.h-moments-nav,.side-bottom){
+  flex-shrink:0!important;
+}
+#appScreen #sidebar>.side-bottom{
+  margin-top:auto;
+  position:relative;
+}
+#appScreen #chatHeader{
+  gap:9px;
+}
+#appScreen #chatHeader #headerIdentity{
+  flex:1 1 0;
+  min-width:0;
+}
+#appScreen #chatHeader .header-actions{
+  flex:0 0 auto;
+}
+#appScreen #backToChats{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  flex:0 0 auto;
+  min-height:39px;
+  border:1px solid #e1dcf2;
+  border-radius:12px;
+  padding:8px 11px;
+  background:#f3effc;
+  color:#6653a7;
+  font:800 12px/1.2 Manrope,system-ui,sans-serif;
+  cursor:pointer;
+  white-space:nowrap;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  transition:background-color .15s,border-color .15s,box-shadow .15s;
+}
+#appScreen #backToChats svg{
+  flex:0 0 19px;
+  width:19px;
+  height:19px;
+}
+#appScreen #backToChats:hover{
+  background:#e7dffc;
+  border-color:#d3c6ef;
+}
+#appScreen #backToChats:active{
+  background:#ddd2f8;
+}
+#appScreen #backToChats:focus-visible{
+  outline:3px solid #9e8ce0;
+  outline-offset:2px;
+}
+#appScreen #backToChats.hidden,
+#appScreen #openSidebar.hidden{
+  display:none!important;
+}
+@media(max-width:720px){
+  #appScreen #chatHeader{gap:4px}
+  #appScreen #backToChats{
+    width:41px;
+    height:41px;
+    min-height:41px;
+    padding:0;
+    border-radius:12px;
+  }
+  #appScreen #backToChats span{display:none}
+  #appScreen #sidebar{scrollbar-width:none}
+  #appScreen #sidebar::-webkit-scrollbar{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  #appScreen #backToChats{transition:none!important}
+}
