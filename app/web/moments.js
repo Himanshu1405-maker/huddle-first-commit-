@@ -75,6 +75,7 @@
    page.classList.remove('hidden');
    $('headerIdentity').innerHTML='<span class="header-placeholder">✦ HUDDLE MOMENTS</span>';
    $('hMomentsNav').classList.add('selected');
+   if(typeof syncChatNavigation==='function')syncChatNavigation();
    if(typeof mobileDrawer==='function')mobileDrawer(false);
    refresh();
  }
