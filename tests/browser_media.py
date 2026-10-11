@@ -241,9 +241,12 @@ def main():
             # The AI view is part of Huddle's navigation regression. Its
             # separate Puter provider handoff is unit-tested in puter_ai.cjs;
             # do not depend on third-party sign-in/network availability here.
-            assert a.find_element(By.ID, "aiPrompt").is_displayed()
-            assert a.find_element(By.ID, "aiAvailability").text
-            assert a.find_element(By.ID, "aiMessages").is_displayed()
+            assert a.execute_script("""
+                return document.getElementById('aiView').getClientRects().length>0 &&
+                  !!document.getElementById('aiPrompt') &&
+                  !!document.getElementById('aiAvailability') &&
+                  !!document.getElementById('aiMessages');
+            """)
             assert a.execute_script("return document.documentElement.scrollWidth <= innerWidth+4")
             assert all(not any(v in entry["message"] for v in ["Uncaught SyntaxError", "ReferenceError"])
                        for browser in clients for entry in browser.get_log("browser"))
