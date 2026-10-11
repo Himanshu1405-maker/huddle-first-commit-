@@ -2,7 +2,7 @@
 
 /* Permanent panels never shrink into the scrollable chat list. On short phones,
    only the conversation list scrolls; filters and search stay fully visible. */
-#appScreen #welcomeChat{
+#appScreen #welcomeChat:not(.hidden){
   display:flex!important;
   flex-direction:column!important;
   align-items:stretch!important;
@@ -95,6 +95,9 @@
 #appScreen #welcomeChat .inbox-home-actions .inbox-new-btn{
   min-width:44px;min-height:44px;border-radius:13px;
 }
+
+/* Explicitly honor navigation; the inbox must never sit above AI or chats. */
+#appScreen #welcomeChat.hidden{display:none!important}
 
 /* Font adjustments stay available in the SINGLE top toolbar appearance panel. */
 .h-font-quick{

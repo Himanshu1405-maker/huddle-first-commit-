@@ -7,6 +7,7 @@ on:
       - app/web/app.js
       - app/web/chat-enhancements.js
       - app/web/chat-enhancements.css
+      - app/web/cloud-ai.css
       - app/web/index.html
       - app/web/auth-bloom.css
       - app/web/auth-luxe.css
@@ -65,6 +66,7 @@ on:
       - app/web/app.js
       - app/web/chat-enhancements.js
       - app/web/chat-enhancements.css
+      - app/web/cloud-ai.css
       - app/web/index.html
       - app/web/auth-bloom.css
       - app/web/auth-luxe.css

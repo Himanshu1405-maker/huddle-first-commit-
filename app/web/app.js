@@ -445,9 +445,11 @@ function renderAI(){
   $('#aiSuggestions').classList.toggle('hidden',messages.length>0);
   $('#aiView').classList.toggle('ai-has-history',messages.length>0);
   const scroller=$('#aiScroll');
-  requestAnimationFrame(()=>{scroller.scrollTop=scroller.scrollHeight});
+  // Only auto-follow messages when AI is active. Never reset a user's manual scroll
+  // while loading history or showing the hosted connection prompt.
+  requestAnimationFrame(()=>{if(aiModeAvailable()&&!state.aiError)scroller.scrollTop=scroller.scrollHeight});
 }
-function aiModeAvailable(){return state.aiMode==='image'?(Boolean(state.config.ai_image)||Boolean(state.puter.connected)):Boolean(state.config.ai_chat)||Boolean(state.puter.connected)}
+function aiModeAvailable(){return state.aiMode==='image'?(Boolean(state.config.ai_image)||Boolean(state.puter.connected&&window.puter?.ai?.txt2img)):Boolean(state.config.ai_chat)||Boolean(state.puter.connected&&window.puter?.ai?.chat)}
 function aiStatus(){
  const image=state.aiMode==='image',ready=Boolean(state.config.ai_chat),puterReady=Boolean(state.puter.connected),available=aiModeAvailable(),provider=state.config.ai_provider||'';
  const status=$('#aiAvailability'),notice=$('#aiNotice'),body=$('#aiNoticeText'),button=$('#aiSend'),connect=$('#aiPuterConnect'),step=$('#aiPuterStep');
@@ -471,6 +473,8 @@ async function openAI(){
  state.aiOpen=true;state.active=null;
  $('#welcomeChat').classList.add('hidden');$('#conversationView').classList.add('hidden');
  $('#aiView').classList.remove('hidden');mobileDrawer(false);renderSidebar();
+ // In a short mobile browser AI must never share space with the inbox.
+ $('#aiScroll').scrollTop=0;
  $('#headerIdentity').innerHTML='<span class="header-placeholder">✦ HUDDLE INTELLIGENCE</span>';
  state.aiError='';aiStatus();
  try{const result=await api('/ai/history');state.aiMessages=result.messages;state.config.ai_chat=Boolean(result.enabled);state.config.ai_provider=result.provider||null;renderAI();aiStatus();}

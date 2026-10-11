@@ -54,7 +54,11 @@ async function connectPuterAI(){
       state.puter.note='Hosted AI connected. You can ask a question now.';
     }
   }catch(error){
-    state.puter.error=String(error?.msg||error?.message||'Could not connect hosted AI.').slice(0,180);
+    const reason=String(error?.msg||error?.message||error?.code||'Could not connect hosted AI.');
+    const blocked=/popup.blocked|pop.up|blocked|not.supported|unsupported.origin|auth.window.closed/i.test(reason);
+    state.puter.error=blocked
+      ?'Puter sign-in could not open or was cancelled. Open Huddle in your regular Chrome browser and tap Continue with Puter. No payment is required to try any included free allowance.'
+      :reason.slice(0,220);
     state.puter.note='';
   }finally{
     state.puter.connecting=false;
