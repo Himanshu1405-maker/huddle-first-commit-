@@ -30,7 +30,7 @@ def test_media_validation_privacy_and_message_integrity(tmp_path):
         assert a.post(url,content=b"%PDF-1.4\n/JavaScript",headers={"Content-Type":"application/pdf","X-Huddle-Filename":"bad.pdf"}).status_code==422
         assert a.post(url,content=b"<html>",headers={"Content-Type":"text/html","X-Huddle-Filename":"bad.html"}).status_code==422
         assert a.post(url,content=b"hello!",headers={"Content-Type":"text/plain","X-Huddle-Filename":"notes.txt"}).status_code==201
-        assert a.post(url,content=b"x"*(6*1024*1024+1),headers={"Content-Type":"text/plain","X-Huddle-Filename":"huge.txt"}).status_code==413
+        assert a.post(url,content=b"x"*(25*1024*1024+1),headers={"Content-Type":"text/plain","X-Huddle-Filename":"huge.txt"}).status_code==413
         audio=b"RIFF"+(36).to_bytes(4,"little")+b"WAVEfmt "+bytes(30)
         assert a.post(url,content=audio,headers={"Content-Type":"audio/wav","X-Huddle-Filename":"note.wav"}).status_code==201
         assert a.delete("/api/messages/"+msg["id"]).status_code==200
