@@ -1,0 +1,62 @@
+/* Huddle Chats: full-page scrolling, not only the message-card list.
+ * The main Huddle header stays available; every section under it (Chats,
+ * Moments, search, filters and conversations) travels together naturally.
+ */
+#appScreen #welcomeChat:not(.hidden){
+  display:flex!important;
+  flex:1 1 0!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  min-height:0!important;
+  max-height:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:#bfb3de transparent;
+  scrollbar-gutter:auto!important;
+  scroll-behavior:auto;
+  overflow-anchor:auto;
+}
+#appScreen #welcomeChat:not(.hidden)::-webkit-scrollbar{width:7px}
+#appScreen #welcomeChat:not(.hidden)::-webkit-scrollbar-thumb{
+  border-radius:999px;
+  background:#bfb3de;
+}
+#appScreen #welcomeChat:not(.hidden)::-webkit-scrollbar-track{background:transparent}
+/* Allow the list to add to the page's overall height; do not make it an
+   isolated scrolling pane that traps the user below the fixed Moments area. */
+#appScreen #welcomeChat:not(.hidden)>.inbox-list{
+  box-sizing:border-box!important;
+  flex:0 0 auto!important;
+  height:auto!important;
+  min-height:104px!important;
+  max-height:none!important;
+  width:100%!important;
+  overflow-y:visible!important;
+  overflow-x:visible!important;
+  overscroll-behavior-y:auto!important;
+  scrollbar-gutter:auto!important;
+}
+#appScreen #welcomeChat:not(.hidden)>.inbox-home-header,
+#appScreen #welcomeChat:not(.hidden)>.h-moments-strip-section,
+#appScreen #welcomeChat:not(.hidden)>.inbox-search-wrap,
+#appScreen #welcomeChat:not(.hidden)>.inbox-filters{
+  flex-shrink:0!important;
+}
+/* Preserve the old visibility fix; hidden Chats must never overlap AI or a
+   conversation even when the visible page uses its own scrollport. */
+#appScreen #welcomeChat.hidden{display:none!important}
+@media(max-width:720px){
+  #appScreen #welcomeChat:not(.hidden){
+    scroll-padding-top:12px;
+    scrollbar-width:thin!important;
+  }
+  #appScreen #welcomeChat:not(.hidden)::-webkit-scrollbar{width:4px}
+  #appScreen #welcomeChat:not(.hidden)::-webkit-scrollbar-thumb{background:#cfc5e6}
+}
+@media(prefers-reduced-motion:reduce){
+  #appScreen #welcomeChat:not(.hidden){scroll-behavior:auto!important}
+}
