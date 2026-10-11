@@ -167,7 +167,7 @@
      }else{
        const file=pendingFile;
        if(!file){errorMessage('Choose a photo or video first.');return}
-       if(file.size>12*1024*1024){errorMessage('Choose a file smaller than 12 MB.');return}
+       if(file.size>24*1024*1024){errorMessage('Choose a file up to 24 MB.');return}
        if(!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(file.type)){
          errorMessage('Choose a JPG, PNG, WebP, MP4 or WebM file.');return;
        }
@@ -390,7 +390,7 @@
      if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null}
      $('hMomentMediaPreview').replaceChildren();
      if(!file)return;
-     if(file.size>12*1024*1024){errorMessage('Use a file under 12 MB');return}
+     if(file.size>24*1024*1024){errorMessage('Use a file up to 24 MB');return}
      pendingFile=file;previewUrl=URL.createObjectURL(file);
      const el=document.createElement(file.type.startsWith('video/')?'video':'img');
      el.src=previewUrl;el.className='h-moment-upload-preview';
