@@ -330,6 +330,41 @@ def main():
                 assert inbox['scrollOverflow']<=2,inbox
                 assert all(pill['top']>=inbox['top']-1 and pill['bottom']<=inbox['bottom']+1
                            for pill in inbox['pills']),inbox
+                # Opening AI must fully hide Chats, with the connection card
+                # inside a scrollable region and an always-reachable composer.
+                browser.find_element(By.ID,'aiQuickBtn').click()
+                WebDriverWait(browser,8).until(lambda b:b.find_element(By.ID,'aiView').is_displayed())
+                ai=browser.execute_script("""
+                  const ai=document.getElementById('aiView');
+                  const inbox=document.getElementById('welcomeChat');
+                  const scroll=document.getElementById('aiScroll');
+                  const form=document.getElementById('aiForm');
+                  const input=document.getElementById('aiPrompt');
+                  const header=document.getElementById('chatHeader').getBoundingClientRect();
+                  const r=form.getBoundingClientRect(),view=ai.getBoundingClientRect();
+                  return {inboxHidden:getComputedStyle(inbox).display==='none',
+                    aiShown:getComputedStyle(ai).display!=='none',
+                    scrollContainsConsent:scroll.contains(document.getElementById('aiNotice')),
+                    scrollHeight:scroll.scrollHeight,scrollClient:scroll.clientHeight,
+                    regionHeight:view.height,headerBottom:header.bottom,
+                    formTop:r.top,formBottom:r.bottom,screenHeight:innerHeight,
+                    promptVisible:input.getBoundingClientRect().height>0,
+                    overflow:document.documentElement.scrollWidth-innerWidth};
+                """)
+                print('AI_MOBILE_LAYOUT',width,ai,flush=True)
+                assert ai['inboxHidden'] and ai['aiShown'] and ai['scrollContainsConsent'],ai
+                assert ai['regionHeight']>250 and ai['scrollClient']>40,ai
+                assert ai['formTop']>=ai['headerBottom'] and ai['formBottom']<=ai['screenHeight']+2,ai
+                assert ai['promptVisible'] and ai['overflow']<=2,ai
+                browser.execute_script("document.getElementById('aiScroll').scrollTop=99999")
+                reached=browser.execute_script("""
+                  const scroll=document.getElementById('aiScroll');
+                  return {actual:scroll.scrollTop,max:scroll.scrollHeight-scroll.clientHeight};
+                """)
+                assert reached['max']<2 or reached['actual']>=reached['max']-2,reached
+                browser.execute_script("showWelcome()")
+                assert browser.find_element(By.ID,'welcomeChat').is_displayed()
+                assert not browser.find_element(By.ID,'aiView').is_displayed()
             print('MODERN_COMPOSER_BROWSER_PASS',flush=True)
         finally:
             browser.quit();server.should_exit=True
