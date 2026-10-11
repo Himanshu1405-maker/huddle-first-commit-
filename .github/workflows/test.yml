@@ -44,6 +44,7 @@ jobs:
       - run: node tests/moments_static.cjs
       - run: node tests/inbox_moments_refinement.cjs
       - run: node tests/chat_list_previews.cjs
+      - run: node tests/sidebar_navigation.cjs
       - run: node --check app/web/location-sharing.js
       - run: node tests/google_maps_location.cjs
       - run: node tests/larger_upload_limits.cjs

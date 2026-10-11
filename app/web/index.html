@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="/assets/inbox-moments-refinement.css" />
   <link rel="stylesheet" href="/assets/media-preview-studio.css" />
   <link rel="stylesheet" href="/assets/chat-list-preview-polish.css" />
+  <link rel="stylesheet" href="/assets/sidebar-home-navigation.css" />
 </head>
 <body>
   <div class="auth-screen" id="authScreen">
@@ -109,6 +110,7 @@
     <main class="chat-main">
       <header class="chat-top" id="chatHeader">
         <button class="icon-btn mobile-menu only-mobile" id="openSidebar" aria-label="Open conversations"><span data-icon="menu"></span></button>
+        <button type="button" class="h-back-chats hidden" id="backToChats" aria-label="Back to all chats" title="Back to all chats"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h12"/></svg><span>All chats</span></button>
         <div class="header-identity" id="headerIdentity"><span class="header-placeholder">YOUR CONVERSATION SPACE</span></div>
         <div class="header-actions"><span class="ws-status" id="wsStatus" title="Connection status"><span></span> Connecting</span><button class="icon-btn toolbar-btn" id="searchMessagesBtn" aria-label="Search your messages" title="Search messages"><span data-icon="search"></span></button><button class="icon-btn toolbar-btn toolbar-ai" id="aiQuickBtn" aria-label="Open Huddle AI" title="Open Huddle AI"><span data-icon="sparkles"></span></button><button type="button" class="icon-btn toolbar-btn toolbar-theme" id="vHeaderThemeBtn" title="Chat themes and wallpapers" aria-label="Customize chat theme">🎨</button><button class="icon-btn toolbar-btn" id="profileQuickBtn" aria-label="Your profile and settings" title="Your profile"><span data-icon="user-round"></span></button></div>
       </header>
