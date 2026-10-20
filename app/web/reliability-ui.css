@@ -1,0 +1,31 @@
+/* New Huddle organization tools — compatible with current desktop/mobile themes. */
+.h-plus-trigger{flex:0 0 38px;width:38px;height:38px;border:1px solid #dcd5ef;
+ background:#f2effa;color:#6653a7;border-radius:12px;cursor:pointer;font-size:20px;font-weight:800}
+.h-plus-trigger.hidden,.h-plus-overlay.hidden{display:none!important}
+.h-archive-toggle{display:block;flex:0 0 auto;align-self:stretch;margin:6px 17px 3px;padding:9px 12px;text-align:left;border:1px solid #e1d9f2;background:#f7f5fc;color:#7664b1;border-radius:12px;font:700 12px system-ui;cursor:pointer}
+.h-archive-toggle:hover{background:#eee9fa}
+.h-plus-overlay{position:fixed;inset:0;z-index:260;display:flex;align-items:center;justify-content:center;background:#12101ed0;padding:15px;overscroll-behavior:contain}
+.h-plus-panel{display:flex;flex-direction:column;min-width:0;width:min(480px,100%);max-height:min(92dvh,760px);background:#fff;border:1px solid #eee9f6;border-radius:23px;box-shadow:0 20px 75px #0003;overflow:hidden}
+.h-plus-panel>header{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:17px 20px;background:#241d39;color:#fff}
+.h-plus-panel>header small{color:#d3c3ff;font-size:10px;letter-spacing:1.2px;font-weight:800}
+.h-plus-panel h2{margin:3px 0 0;color:#fff;font-size:20px;line-height:1.25}
+.h-plus-panel header button{min-height:42px;min-width:42px;background:#ffffff21;border:1px solid #ffffff33;border-radius:12px;color:#fff;cursor:pointer}
+.h-plus-content{padding:17px;overflow:auto;min-height:0;overscroll-behavior:contain;scrollbar-width:thin}
+.h-plus-muted{font:500 13px/1.6 system-ui;color:#748096;margin:6px 0 14px}
+.h-plus-action,.h-plus-choice{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px;border:1px solid #e3dff1;border-radius:13px;background:#f9f7fe;color:#423b66;margin:7px 0;text-align:left;cursor:pointer;font:600 13px system-ui}
+.h-plus-action span{color:#7866ba;font-weight:750}
+.h-plus-primary{background:#715bbe;color:#fff;padding:12px 17px;border:0;border-radius:12px;font:750 13px system-ui;cursor:pointer;min-height:42px;margin:8px 0}
+.h-plus-danger{color:#b03e4c;background:#fff0f2;border:1px solid #f1d4dd;padding:12px 17px;border-radius:12px;cursor:pointer;display:block;width:100%;margin:12px 0}
+.h-plus-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.h-plus-buttons>*{flex:1}
+.h-plus-card{padding:13px;background:#f8f7fd;border:1px solid #eae4f7;border-radius:14px;margin:10px 0;color:#342c53}
+.h-plus-card b{font-size:14px}
+.h-plus-card p{font-size:12px;color:#716988}
+.h-plus-content h3{margin:20px 0 8px;font-size:14px;color:#3f3766}
+.h-plus-choice{padding:9px 11px;font-size:12px;background:#fff}
+.h-plus-form{display:flex;flex-direction:column;gap:14px}
+.h-plus-form label{display:flex;flex-direction:column;gap:5px;color:#4d4567;font:700 12px system-ui}
+.h-plus-form input,.h-plus-form textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #dcd5ed;border-radius:11px;color:#342d58;background:#fff;font:500 14px system-ui}
+.h-install-btn{width:100%;padding:10px;border:1px solid #c7bbed;border-radius:11px;background:#f0eafd;color:#6654a2;cursor:pointer;font:750 12px system-ui}
+@media(max-width:720px){.h-plus-overlay{padding:0;align-items:flex-end}.h-plus-panel{width:100%;max-height:94dvh;border-radius:24px 24px 0 0}.h-plus-trigger{width:35px;flex-basis:35px;height:35px}}
+@media(prefers-reduced-motion:reduce){.h-plus-panel,.h-plus-trigger,.h-archive-toggle{animation:none!important;transition:none!important}}
