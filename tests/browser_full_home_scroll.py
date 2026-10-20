@@ -32,6 +32,12 @@ def main():
         group=alice.post(base+"/api/conversations/group",json={
             "name":"Real group filter fixture","member_ids":[bob["id"]]})
         assert group.status_code==201,group.text
+        # Use real persisted chats for scrolling assertions; a background
+        # WebSocket refresh can replace synthetic JavaScript-only fixtures.
+        for i in range(24):
+            created=alice.post(base+"/api/conversations/group",json={
+                "name":"Scroll test circle "+str(i),"member_ids":[bob["id"]]})
+            assert created.status_code==201,created.text
         opts=webdriver.ChromeOptions()
         for arg in ["--headless=new","--no-sandbox","--disable-dev-shm-usage",
                     "--window-size=1280,850"]:
