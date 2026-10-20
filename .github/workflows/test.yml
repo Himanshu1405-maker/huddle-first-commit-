@@ -46,6 +46,9 @@ jobs:
       - run: node tests/chat_list_previews.cjs
       - run: node tests/sidebar_navigation.cjs
       - run: node tests/full_home_scroll.cjs
+      - run: node tests/reliability_release.cjs
+      - run: node --check app/web/webrtc-calls.js
+      - run: node --check app/web/video-trim.js
       - run: node --check app/web/location-sharing.js
       - run: node tests/google_maps_location.cjs
       - run: node tests/larger_upload_limits.cjs
