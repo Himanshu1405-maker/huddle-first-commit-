@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Huddle - Campus Chats",
+  "short_name": "Huddle",
+  "description": "Real-time conversations, campus moments and groups",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#16132b",
+  "theme_color": "#6753b7",
+  "icons": [
+    {
+      "src": "/assets/huddle-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
