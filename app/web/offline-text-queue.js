@@ -51,7 +51,7 @@ async function flush(){
   }
  }finally{flushing=false}
 }
-window.HuddleOffline={enqueue,flush,clear:()=>{const k=key();if(k)localStorage.removeItem(k)},
+window.HuddleOffline={enqueue,flush,clear:()=>{const k=key();if(k){localStorage.removeItem(k);localStorage.removeItem('huddle-failed-text-'+state.me.id)}},
  count:()=>read().length};
 window.addEventListener('online',()=>void flush());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void flush()});
