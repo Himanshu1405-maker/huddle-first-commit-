@@ -6,6 +6,8 @@ A complete, responsive real-time web chat application built around the challenge
 
 **Built for a 24-hour hackathon: zero front-end compilation, zero paid APIs, and a single-command local server.**
 
+**Current development:** See [October 2026 reliability additions and limitations](docs/RELIABILITY_RELEASE_2026.md), including per-chat preferences, blocking, polls/events, recovery, offline mode, PWA, opt-in push, beta calling, video trim, and backups that need external setup.
+
 ## 1. Quick start
 
 You need **Python 3.11+**. Open a terminal in this directory.
@@ -68,7 +70,7 @@ Demo users (all share the password `DemoPass123!`):
 
 ### Feature honesty
 
-File attachments, voice/video calls, and end-to-end encrypted messages are **not** implemented. Huddle AI chat and image generation integrations are implemented but require external provider credentials and available credits to activate. The hackathon PDF lists these as optional examples, not mandatory requirements. This implementation prioritizes the reliable communication foundation plus several useful optional features. The connection is encrypted in transit **when deployed under HTTPS/WSS**, but message content is stored in regular SQLite and **is not end-to-end encrypted**.
+Photo, video, audio and document attachments are implemented. **Voice/video calling is an experimental direct-chat WebRTC beta** requiring actual device/network testing and TURN for restricted networks. **End-to-end encrypted messaging is not implemented.** Huddle AI chat and image generation integrations are implemented but require external provider credentials and available credits to activate. The hackathon PDF lists these as optional examples, not mandatory requirements. This implementation prioritizes the reliable communication foundation plus several useful optional features. The connection is encrypted in transit **when deployed under HTTPS/WSS**, but message content is stored in regular SQLite and **is not end-to-end encrypted**.
 
 ## 3. Architecture
 
