@@ -882,7 +882,7 @@ def create_app(database_path: str | None = None):
         result, created = send_message(conversation_id, user["id"], payload.body, payload.client_nonce)
         if created:
             await hub.notify(member_ids(conversation_id), {"type": "message:new", "message": result})
-            await send_push(conversation_id,user["id"])
+            asyncio.create_task(send_push(conversation_id,user["id"]))
         return {"message": result, "created": created}
 
     @app.post("/api/conversations/{conversation_id}/read")
@@ -1133,7 +1133,7 @@ def create_app(database_path: str | None = None):
                         result, created = send_message(cid, uid, str(data.get("body", "")), data.get("nonce"))
                         if created:
                             await hub.notify(member_ids(cid), {"type": "message:new", "message": result})
-                            await send_push(cid,uid)
+                            asyncio.create_task(send_push(cid,uid))
                         await ws.send_json({"type": "message:ack", "nonce": data.get("nonce"), "message_id": result["id"]})
                     except HTTPException as exc:
                         await ws.send_json({"type": "error", "detail": exc.detail, "nonce": data.get("nonce")})
