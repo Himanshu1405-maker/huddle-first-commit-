@@ -478,7 +478,7 @@ def create_app(database_path: str | None = None):
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
         response.headers["Cache-Control"] = "no-store"
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=(self)"
+        response.headers["Permissions-Policy"] = "camera=(self), microphone=(self), geolocation=(self)"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
@@ -1127,6 +1127,42 @@ def create_app(database_path: str | None = None):
                         await hub.notify([x for x in member_ids(cid) if x != uid],
                                          {"type": "typing:update", "conversation_id": cid, "user_id": uid,
                                           "typing": data.get("typing") is True})
+                elif kind == "call:signal":
+                    # Media is peer-to-peer. Huddle only relays bounded SDP/ICE
+                    # to one authenticated DM participant; no group fan-out.
+                    try:
+                        cid=str(data.get("conversation_id",""))
+                        peer=str(data.get("recipient_id",""))
+                        action=str(data.get("action",""))
+                        payload=data.get("payload")
+                        if action not in {"offer","answer","candidate","hangup","reject","busy"}:
+                            fail(422,"Unsupported call signal")
+                        if not isinstance(payload,dict) or len(str(payload))>28000:
+                            fail(422,"Call signaling payload too large")
+                        enforce_rate_limit(message_attempts,"call:"+uid,100,60)
+                        with db.connection() as cx:
+                            cv=cx.execute("SELECT kind FROM conversations WHERE id=?",(cid,)).fetchone()
+                            if not cv or cv["kind"]!="dm":fail(403,"Calls are only available in direct chats")
+                            ensure_membership(cx,cid,uid)
+                            ensure_membership(cx,cid,peer)
+                            if uid==peer:fail(422,"Invalid recipient")
+                            if cx.execute("""SELECT 1 FROM user_blocks WHERE
+                                (blocker_id=? AND blocked_id=?) OR
+                                (blocker_id=? AND blocked_id=?)""",(uid,peer,peer,uid)).fetchone():
+                                fail(403,"This person is blocked")
+                        if action in {"offer","answer"} and (
+                          not isinstance(payload.get("sdp"),str) or
+                          len(payload.get("sdp"))>25000 or
+                          payload.get("type")!=action):
+                            fail(422,"Invalid call description")
+                        if action=="candidate" and (
+                          not isinstance(payload.get("candidate"),str) or
+                          len(payload.get("candidate"))>2300):
+                            fail(422,"Invalid ICE candidate")
+                        await hub.notify([peer],{"type":"call:signal","conversation_id":cid,
+                            "from_user_id":uid,"action":action,"payload":payload})
+                    except HTTPException as exc:
+                        await ws.send_json({"type":"error","detail":exc.detail})
                 elif kind == "message:send":
                     try:
                         cid = str(data.get("conversation_id", ""))
