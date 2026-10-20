@@ -29,6 +29,9 @@ def main():
         _,bob=register("bobby")
         cid=alice.post(base+"/api/conversations/direct",
                        json={"user_id":bob["id"]}).json()["conversation"]["id"]
+        group=alice.post(base+"/api/conversations/group",json={
+            "name":"Real group filter fixture","member_ids":[bob["id"]]})
+        assert group.status_code==201,group.text
         opts=webdriver.ChromeOptions()
         for arg in ["--headless=new","--no-sandbox","--disable-dev-shm-usage",
                     "--window-size=1280,850"]:
