@@ -5,3 +5,4 @@ cryptography>=42.0,<47.0
 huggingface_hub>=0.34,<2.0
 pillow>=10.0,<13.0
 google-auth[requests]>=2.36,<3.0
+pywebpush>=2.0,<3
