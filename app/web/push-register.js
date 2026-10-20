@@ -12,7 +12,7 @@ const post=async(endpoint,obj)=>{
  if(!r.ok)throw Error('Push subscription unavailable');
 };
 async function subscribe(){
- if(!('serviceWorker' in navigator)||!('PushManager' in window)||Notification.permission!=='granted')return false;
+ if (!('serviceWorker' in navigator) || !('PushManager' in window) || Notification.permission!=='granted') return false;
  const config=await fetch('/api/push/config',{credentials:'same-origin'}).then(r=>r.json());
  if(!config.enabled||!config.public_key)return false;
  const reg=await navigator.serviceWorker.ready;
@@ -22,7 +22,7 @@ async function subscribe(){
  return true;
 }
 async function unsubscribe(){
- if(!('serviceWorker' in navigator)||!('PushManager' in window)return;
+ if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
  const reg=await navigator.serviceWorker.ready;
  const sub=await reg.pushManager.getSubscription();
  if(sub){await post('unsubscribe',sub.toJSON()).catch(()=>{});await sub.unsubscribe();}
