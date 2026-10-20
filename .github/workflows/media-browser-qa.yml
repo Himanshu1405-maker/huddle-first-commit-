@@ -27,6 +27,16 @@ on:
       - app/web/chat-list-preview-polish.css
       - app/web/sidebar-home-navigation.css
       - app/web/chat-home-full-scroll.css
+      - app/reliability.py
+      - app/account_recovery.py
+      - app/push_alerts.py
+      - app/web/reliability-ui.js
+      - app/web/webrtc-calls.js
+      - app/web/offline-text-queue.js
+      - app/web/video-trim.js
+      - app/web/pwa-register.js
+      - tests/test_reliability_upgrade.py
+      - tests/reliability_release.cjs
       - tests/browser_full_home_scroll.py
       - tests/full_home_scroll.cjs
       - tests/browser_sidebar_navigation.py
@@ -105,6 +115,16 @@ on:
       - app/web/chat-list-preview-polish.css
       - app/web/sidebar-home-navigation.css
       - app/web/chat-home-full-scroll.css
+      - app/reliability.py
+      - app/account_recovery.py
+      - app/push_alerts.py
+      - app/web/reliability-ui.js
+      - app/web/webrtc-calls.js
+      - app/web/offline-text-queue.js
+      - app/web/video-trim.js
+      - app/web/pwa-register.js
+      - tests/test_reliability_upgrade.py
+      - tests/reliability_release.cjs
       - tests/browser_full_home_scroll.py
       - tests/full_home_scroll.cjs
       - tests/browser_sidebar_navigation.py
