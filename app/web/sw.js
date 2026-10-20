@@ -1,6 +1,6 @@
 /* Safe offline shell: NEVER cache messages, API responses, uploaded media or credentials. */
 const CACHE='huddle-shell-v1';
-const SHELL=['/','/assets/style.css','/assets/app.js','/assets/index.html','/assets/huddle-icon.svg'];
+const SHELL=['/','/assets/style.css','/assets/app.js','/assets/huddle-icon.svg'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(SHELL.map(url=>cache.add(url)))));
  self.skipWaiting();
