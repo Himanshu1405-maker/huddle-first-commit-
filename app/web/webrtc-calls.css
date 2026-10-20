@@ -1,0 +1,17 @@
+.h-call-header{flex:0 0 35px;width:35px;height:35px;background:#f0ebfc;color:#59469e;border:1px solid #dcd4f1;border-radius:12px;font-size:17px;cursor:pointer}
+.h-call-header.hidden,.h-call-overlay.hidden,.h-call-buttons .hidden{display:none!important}
+.h-call-overlay{position:fixed;inset:0;z-index:280;display:grid;place-items:center;background:#141527de;padding:14px;overscroll-behavior:contain}
+.h-call-panel{width:min(450px,100%);border:1px solid #393147;border-radius:24px;background:#201b30;color:#fff;padding:18px;display:flex;flex-direction:column;gap:14px;max-height:95dvh}
+.h-call-panel header{display:flex;flex-direction:column;gap:7px}
+.h-call-panel header strong{font:800 18px system-ui}
+.h-call-panel header small,.h-call-panel>p{font:500 11px/1.5 system-ui;color:#c9c2dd}
+.h-call-video{height:min(350px,44dvh);min-height:100px;background:#100e1b;border-radius:16px;position:relative;overflow:hidden;display:grid;place-items:center}
+#hCallRemote{max-width:100%;width:100%;height:100%;object-fit:contain}
+#hCallLocal{position:absolute;right:11px;bottom:11px;width:30%;max-height:42%;border-radius:12px;object-fit:cover;box-shadow:0 3px 20px #0008}
+.h-call-video video.hidden{display:none}
+.h-call-buttons{display:flex;gap:9px;flex-wrap:wrap;justify-content:center}
+.h-call-buttons button{border:1px solid #ffffff30;background:#554778;color:white;border-radius:12px;padding:11px 14px;min-height:43px;cursor:pointer}
+#hCallAccept{background:#0b8d79}
+#hCallEnd,#hCallReject{background:#ac4959}
+@media(max-width:720px){.h-call-panel{padding:13px}.h-call-header{flex-basis:32px;width:32px;height:32px}}
+@media(prefers-reduced-motion:reduce){.h-call-panel,.h-call-header{animation:none!important;transition:none!important}}
