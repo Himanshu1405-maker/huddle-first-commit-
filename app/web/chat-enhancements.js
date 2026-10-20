@@ -307,7 +307,28 @@ async function openMediaEditor(file){
     video.addEventListener('loadedmetadata',()=>{const info=tools.querySelector('#hEditorVideoDetail');if(!info)return;
       const seconds=Number.isFinite(video.duration)?Math.round(video.duration):null;
       const stamp=seconds===null?'':Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
-      info.textContent=(stamp?stamp+' · ':'')+'Preview with sound before sending. Video trimming is not available yet.';
+      info.textContent=(stamp?stamp+' · ':'')+'Preview with sound. Use the trim controls below when your browser supports them.';
+      if(window.HuddleTrimClip&&Number.isFinite(video.duration)&&video.duration>=1
+         &&typeof video.captureStream==='function'&&window.MediaRecorder){
+        const max=Math.min(45,Math.floor(video.duration*10)/10);
+        const group=document.createElement('div');
+        group.className='h-editor-trim';
+        group.innerHTML='<label>Trim from (seconds) <input id="hTrimStart" type="number" min="0" max="'+max+'" step=".5" value="0" /></label>'+
+          '<label>To (seconds) <input id="hTrimEnd" type="number" min=".5" max="'+video.duration+'" step=".5" value="'+max+'" /></label>'+
+          '<label class="h-trim-compress"><input id="hTrimCompress" type="checkbox" /> Smaller file</label>'+
+          '<small>Export as WebM. Limit 45 seconds; original remains untouched.</small>';
+        tools.append(group);
+        const initialEnd=max;
+        buildFile=async()=>{
+          const start=Number(group.querySelector('#hTrimStart').value);
+          const end=Number(group.querySelector('#hTrimEnd').value);
+          if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end>video.duration||end-start<.5)
+            throw Error('Choose a valid video clip of at least 0.5 seconds.');
+          if(start===0&&Math.abs(end-video.duration)<.1&&!group.querySelector('#hTrimCompress').checked)
+            return file;
+          return window.HuddleTrimClip.trim(video,file,start,end,group.querySelector('#hTrimCompress').checked);
+        };
+      }
     });
   }else{
     stage.innerHTML='<div class="h-document-preview"><span>📄</span><strong></strong><small></small></div>';
