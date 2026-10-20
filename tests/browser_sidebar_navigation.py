@@ -81,7 +81,11 @@ def main():
                 assert before["footerVisible"],before
                 browser.execute_script("document.getElementById('sidebar').scrollTop=0;")
                 if mobile:
-                    browser.find_element(By.ID,"closeSidebar").click()
+                    # Headless Chrome can mark the sticky drawer icon offscreen
+                    # immediately after programmatic scroll; verify handler and
+                    # actual drawer state using a single browser task.
+                    browser.execute_script("document.getElementById('closeSidebar').click()")
+                    assert "open" not in browser.find_element(By.ID,"sidebar").get_attribute("class")
                 # Open a real conversation and then return to the full inbox.
                 result=browser.execute_async_script("""
                     const done=arguments[arguments.length-1];
