@@ -24,3 +24,21 @@ self.addEventListener('fetch',event=>{
   event.respondWith(fetch(req).catch(async()=>await caches.match(req)||Response.error()));
  }
 });
+
+/* Push is opt-in and sends no private message text to the operating system. */
+self.addEventListener('push',event=>{
+ let info={title:'Huddle',body:'You have a new message.',url:'/'};
+ try{const payload=event.data?.json();if(payload&&payload.title==='Huddle')info=payload}catch{}
+ event.waitUntil(self.registration.showNotification('Huddle',{
+   body:info.body,icon:'/assets/huddle-icon.svg',badge:'/assets/huddle-icon.svg',
+   tag:'huddle-new-message',data:{url:'/'}
+ }));
+});
+self.addEventListener('notificationclick',event=>{
+ event.notification.close();
+ event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(async clients=>{
+   for(const client of clients){if(new URL(client.url).origin===self.location.origin){
+     await client.focus();return;}}
+   await self.clients.openWindow('/');
+ }));
+});
