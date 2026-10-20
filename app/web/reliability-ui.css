@@ -29,3 +29,10 @@
 .h-install-btn{width:100%;padding:10px;border:1px solid #c7bbed;border-radius:11px;background:#f0eafd;color:#6654a2;cursor:pointer;font:750 12px system-ui}
 @media(max-width:720px){.h-plus-overlay{padding:0;align-items:flex-end}.h-plus-panel{width:100%;max-height:94dvh;border-radius:24px 24px 0 0}.h-plus-trigger{width:35px;flex-basis:35px;height:35px}}
 @media(prefers-reduced-motion:reduce){.h-plus-panel,.h-plus-trigger,.h-archive-toggle{animation:none!important;transition:none!important}}
+
+.h-editor-trim{display:flex;flex-wrap:wrap;align-items:center;gap:9px 13px;padding:10px 12px;background:#fff;border:1px solid #e5e0f2;border-radius:12px;width:100%}
+.h-editor-trim label{display:flex;align-items:center;gap:6px;font:700 11px system-ui;color:#584a79}
+.h-editor-trim input[type=number]{width:66px;padding:7px;background:#f8f6fb;border:1px solid #d8d1e8;border-radius:8px}
+.h-editor-trim input[type=checkbox]{accent-color:#6653a7}
+.h-editor-trim small{color:#847b97;font-size:10px}
+.h-plus-panel :is(input,textarea,button):focus-visible,.h-call-panel button:focus-visible{outline:3px solid #8f7cdb;outline-offset:2px}
