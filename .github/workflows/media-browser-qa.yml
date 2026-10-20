@@ -35,6 +35,12 @@ on:
       - app/web/offline-text-queue.js
       - app/web/video-trim.js
       - app/web/pwa-register.js
+      - app/web/push-register.js
+      - app/web/webrtc-calls.css
+      - app/web/reliability-ui.css
+      - app/web/recover-account.js
+      - app/web/sw.js
+      - app/web/manifest.webmanifest
       - tests/test_reliability_upgrade.py
       - tests/reliability_release.cjs
       - tests/browser_full_home_scroll.py
@@ -123,6 +129,12 @@ on:
       - app/web/offline-text-queue.js
       - app/web/video-trim.js
       - app/web/pwa-register.js
+      - app/web/push-register.js
+      - app/web/webrtc-calls.css
+      - app/web/reliability-ui.css
+      - app/web/recover-account.js
+      - app/web/sw.js
+      - app/web/manifest.webmanifest
       - tests/test_reliability_upgrade.py
       - tests/reliability_release.cjs
       - tests/browser_full_home_scroll.py
