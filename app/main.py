@@ -491,6 +491,17 @@ def create_app(database_path: str | None = None):
         )
         return response
 
+    @app.get("/sw.js", include_in_schema=False)
+    async def offline_service_worker():
+        return FileResponse(WEB / "sw.js",media_type="text/javascript",
+                            headers={"Service-Worker-Allowed":"/","Cache-Control":"no-cache"})
+
+    @app.get("/manifest.webmanifest", include_in_schema=False)
+    async def web_manifest():
+        return FileResponse(WEB / "manifest.webmanifest",
+                            media_type="application/manifest+json",
+                            headers={"Cache-Control":"public, max-age=3600"})
+
     @app.get("/health")
     async def health():
         return {"ok": True, "service": "huddle"}
