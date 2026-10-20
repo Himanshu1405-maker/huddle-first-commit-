@@ -44,10 +44,10 @@ def install_recovery(app,db,PH,now):
             cx.execute("DELETE FROM password_resets WHERE expires_at<?",(now(),))
             found=cx.execute("""SELECT u.id FROM users u JOIN verified_emails ve ON ve.user_id=u.id
                 WHERE ve.email=?""",(email,)).fetchone()
-            if not found:return {"message":generic,"requires_code":True}
+            if not found:return {"message":generic,"requires_code":True,"ticket":secrets.token_hex(24)}
             recent=cx.execute("""SELECT count(*) AS count FROM password_resets WHERE user_id=?
                 AND created_at>?""",(found["id"],(datetime.now(timezone.utc)-timedelta(hours=1)).isoformat())).fetchone()
-            if recent["count"]>=4:return {"message":generic,"requires_code":True}
+            if recent["count"]>=4:return {"message":generic,"requires_code":True,"ticket":secrets.token_hex(24)}
             ticket=secrets.token_hex(24)
             code=f"{secrets.randbelow(100000000):08d}"
             digest=hashlib.sha256((ticket+':'+code).encode()).hexdigest()
