@@ -133,7 +133,7 @@ def test_public_preview_safety_headers_and_message_rate_limit(pair):
     headers = a.get('/').headers
     assert 'frame-ancestors' in headers['content-security-policy']
     assert headers['x-frame-options'] == 'DENY'
-    assert 'camera=()' in headers['permissions-policy']
+    assert 'camera=(self)' in headers['permissions-policy']  # WebRTC requires user permission
     for i in range(30):
         result = a.post(f'/api/conversations/{room}/messages', json={'body':f'message {i}'})
         assert result.status_code == 201
