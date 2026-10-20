@@ -34,6 +34,7 @@ from .location import install_location, serialize_location
 from .message_context import install_message_context, serialize_context
 from .message_stars import install_message_stars
 from .moments import install_moments
+from .reliability import install_reliability
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
@@ -367,6 +368,8 @@ def create_app(database_path: str | None = None):
             AND created_at>? AND deleted_at IS NULL""", (conv["id"], user_id, me["last_read_at"] if me else "")).fetchone()[0]
         # Semantic preview metadata makes the inbox independent of emoji and
         # attachment filenames. Do not send location coordinates or media URLs.
+        pref=cx.execute("""SELECT pinned,archived,muted FROM chat_preferences
+            WHERE conversation_id=? AND user_id=?""",(conv["id"],user_id)).fetchone()
         latest_text = ("Message deleted" if latest["deleted_at"] else
                        message_preview(decrypt_text(latest["body"]))) if latest else ""
         preview_kind, preview_label, preview_caption = "text", "", ""
@@ -404,6 +407,7 @@ def create_app(database_path: str | None = None):
             "handle": other["handle"] if other and conv["kind"] == "dm" else "",
             "members": [{**public_user(m), "role": m["role"], "online": hub.online(m["id"])} for m in members],
             "unread": unread, "updated_at": conv["updated_at"],
+            "preferences": dict(pref) if pref else {"pinned":0,"archived":0,"muted":0},
             "last_message": ({"body": latest_text,
                               "preview_kind": preview_kind,
                               "preview_label": preview_label,
@@ -431,6 +435,18 @@ def create_app(database_path: str | None = None):
             fail(422, "Invalid client nonce")
         with db.connection() as cx:
             ensure_membership(cx, conv_id, user_id)
+            # A blocked user cannot bypass their block using a stale WebSocket
+            # or the HTTP fallback, even if a DM already exists.
+            dm=cx.execute("SELECT kind FROM conversations WHERE id=?",(conv_id,)).fetchone()
+            if dm and dm["kind"]=="dm":
+                others=cx.execute("SELECT user_id FROM members WHERE conversation_id=? AND user_id<>?",
+                                  (conv_id,user_id)).fetchall()
+                for person in others:
+                    if cx.execute("""SELECT 1 FROM user_blocks
+                      WHERE (blocker_id=? AND blocked_id=?) OR
+                            (blocker_id=? AND blocked_id=?)""",
+                            (user_id,person["user_id"],person["user_id"],user_id)).fetchone():
+                        fail(403,"Private messages are unavailable because a participant is blocked")
             if nonce:
                 duplicate = cx.execute("SELECT * FROM messages WHERE sender_id=? AND client_nonce=?", (user_id, nonce)).fetchone()
                 if duplicate:
@@ -728,7 +744,11 @@ def create_app(database_path: str | None = None):
             needle = f"%{escape_like(search)}%"
             found = cx.execute("""SELECT * FROM users WHERE id<>? AND
                 (LOWER(name) LIKE ? ESCAPE '\\' OR handle LIKE ? ESCAPE '\\')
-                ORDER BY name LIMIT 40""", (user["id"], needle, needle)).fetchall()
+                AND NOT EXISTS (SELECT 1 FROM user_blocks b WHERE
+                   (b.blocker_id=? AND b.blocked_id=users.id) OR
+                   (b.blocked_id=? AND b.blocker_id=users.id))
+                ORDER BY name LIMIT 40""",
+                (user["id"], needle, needle,user["id"],user["id"])).fetchall()
         return {"users": [{**public_user(u), "online": hub.online(u["id"])} for u in found]}
 
     @app.get("/api/conversations")
@@ -751,6 +771,10 @@ def create_app(database_path: str | None = None):
             other = cx.execute("SELECT id FROM users WHERE id=?", (payload.user_id,)).fetchone()
             if not other:
                 fail(404, "User not found")
+            if cx.execute("""SELECT 1 FROM user_blocks WHERE
+                (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)""",
+                (a,b,b,a)).fetchone():
+                fail(403,"Private messages are unavailable because a participant is blocked")
             conv = cx.execute("SELECT * FROM conversations WHERE dm_key=?", (key,)).fetchone()
             if conv is None:
                 ts, cid = now(), new_id()
@@ -1112,6 +1136,7 @@ def create_app(database_path: str | None = None):
     install_message_context(app, db, hub, require_user, serialize_message, send_message, member_ids, ensure_membership, now, new_id)
     install_message_stars(app, db, require_user, ensure_membership, serialize_message, now)
     install_moments(app, db, require_user, now, new_id)
+    install_reliability(app, db, hub, require_user, ensure_membership, member_ids, now, new_id)
     # Lazy migration of legacy plaintext message records after installing a stable
     # Fernet key. Existing conversation text remains readable; new writes encrypt.
     if os.getenv("HUDDLE_MESSAGE_KEY"):
