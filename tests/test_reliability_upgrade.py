@@ -73,6 +73,6 @@ def test_recovery_disabled_without_sender_and_pwa_manifest(tmp_path):
         assert response.json()['display']=='standalone'
         sw=client.get('/sw.js')
         assert sw.status_code==200 and "CacheStorage" in sw.text
-        assert 'no-cache' in sw.headers['cache-control']
+        assert 'no-store' in sw.headers['cache-control']
         recovery=client.post('/api/auth/recover',json={'email':'test@example.com'})
         assert recovery.status_code==503
