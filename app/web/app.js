@@ -312,12 +312,14 @@ $('#notificationsBtn').addEventListener('click',async()=>{
   if(!('Notification' in window)){toast('This browser does not support notifications.',true);return;}
   if(notificationPreference()){
     localStorage.removeItem('huddle-notify-opt-in');
+    window.HuddlePush?.unsubscribe?.().catch(()=>{});
     $('#notificationsBtn').textContent='🔔 Enable message alerts';
     toast('Message alerts turned off.');return;
   }
   const permission=await Notification.requestPermission();
   if(permission!=='granted'){toast('Allow notifications in browser settings to turn on alerts.',true);return;}
   localStorage.setItem('huddle-notify-opt-in','yes');
+  window.HuddlePush?.subscribe?.().catch(()=>{});
   $('#notificationsBtn').textContent='🔔 Alerts on · tap to turn off';
   toast('Alerts enabled while Huddle is open.');
 });
