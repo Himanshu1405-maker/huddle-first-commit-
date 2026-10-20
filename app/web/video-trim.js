@@ -47,7 +47,10 @@ async function trim(video,file,start,end,smaller=false){
   const timeout=setTimeout(finish,Math.ceil((end-start)*1200)+4500);
   const blob=await finished.finally(()=>clearTimeout(timeout));
   return new File([blob],(file.name.replace(/\.[^/.]+$/,'')||'video')+'-clip.webm',{type:'video/webm'});
- }finally{clearInterval(timer);video.pause();}
+ }finally{
+   clearInterval(timer);video.pause();
+   try{stream.getTracks().forEach(track=>track.stop())}catch{}
+ }
 }
 window.HuddleTrimClip={trim};
 })();
