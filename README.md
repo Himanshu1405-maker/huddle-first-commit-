@@ -68,7 +68,7 @@ Demo users (all share the password `DemoPass123!`):
 
 ### Feature honesty
 
-File attachments, voice/video calls, and end-to-end encrypted messages are **not** implemented. Huddle AI chat and image generation integrations are implemented but require external provider credentials and available credits to activate. The hackathon PDF lists these as optional examples, not mandatory requirements. This implementation prioritizes the reliable communication foundation plus several useful optional features. The connection is encrypted in transit **when deployed under HTTPS/WSS**, but message content is stored in regular SQLite and **is not end-to-end encrypted**.
+File attachments (photos, video, audio, PDF/TXT and DOCX) and View Once for direct-chat photos/videos **are implemented**. Voice/video calls and end-to-end encrypted messages are **not** implemented. Huddle AI chat and image generation integrations are implemented but require external provider credentials and available credits to activate. The hackathon PDF lists these as optional examples, not mandatory requirements. This implementation prioritizes the reliable communication foundation plus several useful optional features. The connection is encrypted in transit **when deployed under HTTPS/WSS**, but message content is stored in regular SQLite and **is not end-to-end encrypted**.
 
 ## 3. Architecture
 
@@ -260,3 +260,26 @@ Do not set placeholders for API keys: `google_login`, `email_otp` and `ai_chat` 
 
 ### Google Identity Services reliability mode
 When `GOOGLE_CLIENT_ID` is set, Huddle uses Google's official sign-in button directly rather than Firebase's OAuth popup. The server validates its Google-issued ID token cryptographically against the exact OAuth client ID before creating a Huddle session. This resolves Firebase intermediary popup failures but still requires the website to be an allowed JavaScript origin in Google OAuth client settings. Firebase Spark config remains available as the backup. Never enable this merely based on deployment health: test the actual Google account sign-in.
+
+
+## Current hardening and feature roadmap (October 2026)
+
+This is a roadmap, **not a claim that these features are implemented**. The current live site runs one Railway replica with SQLite on a persistent volume. Media are encrypted at rest and private, but the service is not end-to-end encrypted.
+
+| Workstream | Acceptance criteria before marking complete |
+|---|---|
+| Closed-app push notifications | Service worker, opt-in Push API subscriptions, secure per-user subscription management, push delivery tests on Android and desktop; respect permission denial |
+| Password reset | Verified email recovery with short-lived single-use tokens, rate limiting, audit logs, account-enumeration protection; verified transactional email sender |
+| Block and privacy controls | Block/unblock API with enforcement in search, new chats, messages, groups, location and presence; privacy UI and tests |
+| Backup and disaster recovery | Encrypted, versioned, **off-server** SQLite and media backups; scheduled restore drills and documented recovery point objective |
+| Installable PWA | Manifest, installable icons, service worker with safe caching, update UX, install tests; never cache private responses insecurely |
+| Offline drafts and outbox | Local encrypted-at-rest drafts or safe client storage design, queued message idempotency and retry after reconnect; duplicate-send tests |
+| Huddle AI | User-friendly server-hosted AI with consent, quotas and costs controlled by owner, optional chat context and robust fallback; real provider test |
+| Audio/video calls | WebRTC signaling, STUN/TURN, call permissions and signaling auth, disconnect recovery, real two-party device tests |
+| Pin/archive/mute | Persist per-user conversation settings, filtering and sorting, notification suppression, migration and multi-device tests |
+| Media studio | Video trim/transcode, size previews, upload resume/progress, secure validation and mobile low-memory testing |
+| Campus collaboration | Group polls, votes, event RSVPs/reminders, role and authorization tests |
+| End-to-end encryption | Formal threat model, audited client key lifecycle, device verification, multi-device recovery and independent security review; never advertise E2EE before independent validation |
+| Scale, safety and observability | Database migration path, shared WebSocket fan-out, durable media store, metrics/alerts, rate limits, anti-abuse and full CI regression suite |
+
+**Deployment prerequisites:** A real transactional email sender, web push VAPID keys, TURN infrastructure for reliable calls, off-server backup destination and any paid AI-provider credentials require owner-managed external accounts and secret configuration. Do not commit these secrets. Implement and ship workstreams independently with tests; don't enable insecure placeholder features.
