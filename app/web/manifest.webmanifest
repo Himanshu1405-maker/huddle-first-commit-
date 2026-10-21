@@ -1,0 +1,32 @@
+{
+  "id": "/",
+  "name": "Huddle — Chats, Moments & Campus Circles",
+  "short_name": "Huddle",
+  "description": "Real-time campus conversations, group circles, and Moments.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#33275e",
+  "theme_color": "#33275e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/assets/huddle-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/huddle-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/huddle-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
